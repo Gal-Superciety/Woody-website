@@ -95,9 +95,9 @@ export default function Home() {
               A professional meme-token presence with real-time monitoring tools, clean liquidity access, and a roadmap focused on long-term expansion.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#" className="rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-400">Buy</a>
-              <a href="#" className="rounded-xl border border-sky-400/60 bg-sky-400/10 px-6 py-3 text-sm font-semibold text-sky-200 transition hover:bg-sky-400/20">Telegram</a>
-              <a href="#" className="rounded-xl border border-emerald-400/60 bg-emerald-400/10 px-6 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/20">X</a>
+              <a href="https://e-compass.io/token/WOODY-5f9d9c" target="_blank" rel="noopener noreferrer" className="rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:bg-orange-400">Buy</a>
+              <a href="https://t.me/wooodymeme" target="_blank" rel="noopener noreferrer" className="rounded-xl border border-sky-400/60 bg-sky-400/10 px-6 py-3 text-sm font-semibold text-sky-200 transition hover:bg-sky-400/20">Telegram</a>
+              <a href="https://x.com/WOODY_EX" target="_blank" rel="noopener noreferrer" className="rounded-xl border border-emerald-400/60 bg-emerald-400/10 px-6 py-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/20">X</a>
             </div>
           </div>
 
