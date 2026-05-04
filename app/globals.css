@@ -8,14 +8,24 @@
 
 body {
   @apply bg-bg text-white antialiased;
-  background-image: radial-gradient(circle at 20% 10%, rgba(53, 224, 161, 0.12), transparent 40%),
-    radial-gradient(circle at 80% 0%, rgba(62, 130, 255, 0.15), transparent 35%);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.18), transparent 35%),
+    radial-gradient(circle at 90% 0%, rgba(249, 115, 22, 0.14), transparent 30%),
+    radial-gradient(circle at 30% 90%, rgba(16, 185, 129, 0.1), transparent 35%);
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-orbitron), var(--font-inter), sans-serif;
 }
 
 .section-title {
-  @apply text-2xl md:text-3xl font-bold tracking-tight;
+  @apply text-xl font-bold tracking-wide md:text-2xl;
 }
 
 .card {
-  @apply rounded-2xl border border-white/10 bg-card/80 backdrop-blur-sm;
+  @apply rounded-2xl border border-white/10 bg-card/75 backdrop-blur-md;
 }
