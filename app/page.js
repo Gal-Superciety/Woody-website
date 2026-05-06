@@ -1,4 +1,9 @@
+'use client';
+
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
+
+const TOKEN_ID = 'WOODY-5f9d9c';
 
 const quickStats = [
   { label: 'Ticker', value: 'WOODY' },
@@ -21,7 +26,7 @@ const roadmap = [
   'Phase 4: Expanded utility and multi-chain visibility',
 ];
 
-const infoCards = [/* unchanged */
+const infoCards = [
   {
     title: 'Token Info',
     content: (
@@ -29,7 +34,7 @@ const infoCards = [/* unchanged */
         <dt className="text-white/50">Token Name</dt><dd className="font-semibold">WOODY Meme</dd>
         <dt className="text-white/50">Symbol</dt><dd className="font-semibold text-sky-300">$WOODY</dd>
         <dt className="text-white/50">Supply Model</dt><dd className="font-semibold">Transparent</dd>
-        <dt className="text-white/50">Contract</dt><dd className="truncate font-semibold">WOODY-5f9d9c</dd>
+        <dt className="text-white/50">Contract</dt><dd className="truncate font-semibold">{TOKEN_ID}</dd>
       </dl>
     ),
   },
@@ -55,7 +60,81 @@ const infoCards = [/* unchanged */
   },
 ];
 
+const liveDataDefaults = {
+  price: 'Data unavailable',
+  holders: 'Data unavailable',
+  liquidity: 'Data unavailable',
+};
+
 export default function Home() {
+  const [liveData, setLiveData] = useState(liveDataDefaults);
+  const [loadingLiveData, setLoadingLiveData] = useState(true);
+  const [liveDataError, setLiveDataError] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadLiveData() {
+      setLoadingLiveData(true);
+      setLiveDataError(false);
+
+      try {
+        const [tokenRes, holdersRes] = await Promise.allSettled([
+          fetch(`https://api.multiversx.com/tokens/${TOKEN_ID}`),
+          fetch(`https://api.multiversx.com/tokens/${TOKEN_ID}/accounts/count`),
+        ]);
+
+        let nextPrice = liveDataDefaults.price;
+        let nextHolders = liveDataDefaults.holders;
+        let hasError = false;
+
+        if (tokenRes.status === 'fulfilled' && tokenRes.value.ok) {
+          const tokenData = await tokenRes.value.json();
+          const numericPrice = Number(tokenData.priceUsd ?? tokenData.usdPrice ?? tokenData.price);
+          if (Number.isFinite(numericPrice) && numericPrice > 0) {
+            nextPrice = `$${numericPrice.toLocaleString(undefined, { maximumFractionDigits: 8 })}`;
+          }
+        } else {
+          hasError = true;
+        }
+
+        if (holdersRes.status === 'fulfilled' && holdersRes.value.ok) {
+          const holdersValue = await holdersRes.value.json();
+          const count = typeof holdersValue === 'number' ? holdersValue : Number(holdersValue?.count);
+          if (Number.isFinite(count)) {
+            nextHolders = count.toLocaleString();
+          }
+        } else {
+          hasError = true;
+        }
+
+        if (mounted) {
+          setLiveData({
+            price: nextPrice,
+            holders: nextHolders,
+            liquidity: '$-- (pool API pending)',
+          });
+          setLiveDataError(hasError && (nextPrice === liveDataDefaults.price || nextHolders === liveDataDefaults.holders));
+        }
+      } catch {
+        if (mounted) {
+          setLiveData({ ...liveDataDefaults, liquidity: '$-- (pool API pending)' });
+          setLiveDataError(true);
+        }
+      } finally {
+        if (mounted) {
+          setLoadingLiveData(false);
+        }
+      }
+    }
+
+    loadLiveData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-8 md:gap-14 md:px-8 md:py-12">
       <section className="card relative overflow-hidden p-6 shadow-[0_0_50px_rgba(59,130,246,0.16)] md:p-10">
@@ -81,6 +160,29 @@ export default function Home() {
         </div>
       </section>
       <section className="grid gap-6 md:grid-cols-2">{infoCards.map((card) => (<article key={card.title} className="card p-6 md:p-7"><h3 className="section-title">{card.title}</h3><div className="mt-4">{card.content}</div></article>))}</section>
+
+      <section className="card p-6 md:p-7">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="section-title">Live Data</h3>
+          <a href="https://e-compass.io/token/WOODY-5f9d9c" target="_blank" rel="noopener noreferrer" className="text-xs font-semibold uppercase tracking-wider text-sky-300 hover:text-sky-200">View on e-Compass</a>
+        </div>
+        <p className="mt-2 text-sm text-white/65">Real-time market snapshot for {TOKEN_ID}.</p>
+        {liveDataError && !loadingLiveData ? <p className="mt-3 text-sm text-orange-300">Some endpoints failed. Data unavailable where needed.</p> : null}
+
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {[
+            { title: 'Price', value: liveData.price, note: 'USD, sourced from public token API' },
+            { title: 'Holders', value: liveData.holders, note: 'Unique wallets' },
+            { title: 'Liquidity', value: liveData.liquidity, note: 'Placeholder, pool API connector ready' },
+          ].map((card) => (
+            <article key={card.title} className="rounded-xl border border-white/10 bg-[#0b1324]/80 p-4">
+              <p className="text-xs uppercase tracking-widest text-white/50">{card.title}</p>
+              <p className="mt-2 text-2xl font-bold text-white">{loadingLiveData ? 'Loading...' : card.value}</p>
+              <p className="mt-2 text-xs text-white/60">{card.note}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <footer className="card mt-2 p-6 md:p-7">
         <h3 className="section-title">Community</h3>
