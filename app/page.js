@@ -81,6 +81,16 @@ export default function Home() {
         </div>
       </section>
       <section className="grid gap-6 md:grid-cols-2">{infoCards.map((card) => (<article key={card.title} className="card p-6 md:p-7"><h3 className="section-title">{card.title}</h3><div className="mt-4">{card.content}</div></article>))}</section>
+
+      <footer className="card mt-2 p-6 md:p-7">
+        <h3 className="section-title">Community</h3>
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+          <a href="https://t.me/wooodymeme" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-sky-400/50 bg-sky-400/10 px-4 py-2 font-semibold text-sky-200 transition hover:bg-sky-400/20">Telegram</a>
+          <a href="https://x.com/WOODY_EX" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-emerald-400/50 bg-emerald-400/10 px-4 py-2 font-semibold text-emerald-200 transition hover:bg-emerald-400/20">X / Twitter</a>
+        </div>
+        <p className="mt-5 text-sm text-white/80">Contract: <span className="font-semibold text-orange-300">WOODY-5f9d9c</span></p>
+        <p className="mt-2 text-xs text-white/60">WOODY is a community meme project. Nothing on this site is financial advice.</p>
+      </footer>
     </main>
   );
 }
