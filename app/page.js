@@ -85,14 +85,28 @@ const liveDataDefaults = {
   price: 'Data unavailable',
   holders: 'Data unavailable',
   pools: POOLS.reduce((acc, pool) => ({ ...acc, [pool.key]: 'Data unavailable' }), {}),
-  totalLiquidity: 'Data unavailable',
+  totalLiquidity: 'Balance view only',
 };
 
 const formatAmount = (value, maxFractionDigits = 2) => value.toLocaleString(undefined, { maximumFractionDigits: maxFractionDigits });
 
-const getTokenUsdPrice = (token) => {
-  const price = Number(token?.price ?? token?.priceUsd ?? token?.usdPrice);
+const getUsdPriceFromTokenApi = (tokenApiData) => {
+  const price = Number(tokenApiData?.price ?? tokenApiData?.priceUsd ?? tokenApiData?.usdPrice);
   return Number.isFinite(price) && price > 0 ? price : null;
+};
+
+const toDecimalAmount = (balance, decimals) => {
+  const raw = String(balance ?? '0');
+  const precision = Number.isFinite(Number(decimals)) ? Number(decimals) : 18;
+  if (!/^\d+$/.test(raw)) {
+    return null;
+  }
+
+  const padded = raw.padStart(precision + 1, '0');
+  const wholePart = padded.slice(0, -precision) || '0';
+  const fractionPart = padded.slice(-precision).replace(/0+$/, '');
+  const numericValue = Number(fractionPart ? `${wholePart}.${fractionPart}` : wholePart);
+  return Number.isFinite(numericValue) ? numericValue : null;
 };
 
 export default function Home() {
@@ -108,9 +122,10 @@ export default function Home() {
       setLiveDataError(false);
 
       try {
-        const [tokenRes, holdersRes, ...poolResponses] = await Promise.allSettled([
+        const [tokenRes, holdersRes, wegldPriceRes, ...poolResponses] = await Promise.allSettled([
           fetch(`https://api.multiversx.com/tokens/${TOKEN_ID}`),
           fetch(`https://api.multiversx.com/tokens/${TOKEN_ID}/accounts/count`),
+          fetch('https://api.multiversx.com/tokens/WEGLD-bd4d79'),
           ...POOLS.map((pool) => fetch(`https://api.multiversx.com/accounts/${pool.address}/tokens?size=200`)),
         ]);
 
@@ -120,16 +135,26 @@ export default function Home() {
         let nextTotalLiquidity = liveDataDefaults.totalLiquidity;
         let hasError = false;
         let totalUsd = 0;
-        let hasUsdEstimate = false;
+        let hasReliableTotal = true;
+        let woodyUsdPrice = null;
+        let egldUsdPrice = null;
 
         if (tokenRes.status === 'fulfilled' && tokenRes.value.ok) {
           const tokenData = await tokenRes.value.json();
           const numericPrice = Number(tokenData.priceUsd ?? tokenData.usdPrice ?? tokenData.price);
+          woodyUsdPrice = getUsdPriceFromTokenApi(tokenData);
           if (Number.isFinite(numericPrice) && numericPrice > 0) {
             nextPrice = `$${numericPrice.toLocaleString(undefined, { maximumFractionDigits: 8 })}`;
           }
         } else {
           hasError = true;
+        }
+
+        if (wegldPriceRes.status === 'fulfilled' && wegldPriceRes.value.ok) {
+          const wegldTokenData = await wegldPriceRes.value.json();
+          egldUsdPrice = getUsdPriceFromTokenApi(wegldTokenData);
+        } else {
+          hasReliableTotal = false;
         }
 
         if (holdersRes.status === 'fulfilled' && holdersRes.value.ok) {
@@ -159,26 +184,29 @@ export default function Home() {
             continue;
           }
 
-          const pairBalance = Number(pairedToken.balance) / 10 ** Number(pairedToken.decimals ?? 18);
+          const pairBalance = toDecimalAmount(pairedToken.balance, pairedToken.decimals);
           if (!Number.isFinite(pairBalance)) {
             hasError = true;
+            hasReliableTotal = false;
             continue;
           }
 
           nextPools[pool.key] = `${formatAmount(pairBalance, 4)} ${pool.displaySymbol}`;
 
-          const woodyBalance = Number(woodyToken.balance) / 10 ** Number(woodyToken.decimals ?? 18);
-          const woodyUsdPrice = getTokenUsdPrice(woodyToken);
-          const pairUsdPrice = getTokenUsdPrice(pairedToken);
+          const woodyBalance = toDecimalAmount(woodyToken.balance, woodyToken.decimals);
+          const pairUsdPrice = pool.displaySymbol === 'USDC' ? 1 : egldUsdPrice;
 
           if (Number.isFinite(woodyBalance) && woodyUsdPrice && pairUsdPrice) {
             totalUsd += (woodyBalance * woodyUsdPrice) + (pairBalance * pairUsdPrice);
-            hasUsdEstimate = true;
+          } else {
+            hasReliableTotal = false;
           }
         }
 
-        if (hasUsdEstimate && totalUsd > 0) {
+        if (hasReliableTotal && totalUsd > 0) {
           nextTotalLiquidity = `~$${formatAmount(totalUsd, 2)}`;
+        } else {
+          nextTotalLiquidity = 'Balance view only';
         }
 
         if (mounted) {
