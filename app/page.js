@@ -5,6 +5,27 @@ import { useEffect, useState } from 'react';
 
 const TOKEN_ID = 'WOODY-5f9d9c';
 
+const POOLS = [
+  {
+    key: 'onedex',
+    label: 'OneDex',
+    address: 'erd1qqqqqqqqqqqqqpgqqz6vp9y50ep867vnr296mqf3dduh6guvmvlsu3sujc',
+    displaySymbol: 'EGLD',
+  },
+  {
+    key: 'xexchange',
+    label: 'xExchange',
+    address: 'erd1qqqqqqqqqqqqqpgqvmgnk26tfvz6sj5yasw7p6yfvqpv628d2jpsnvmeaz',
+    displaySymbol: 'EGLD',
+  },
+  {
+    key: 'usdc',
+    label: 'USDC pool',
+    address: 'erd1qqqqqqqqqqqqqpgqjhy8hut0d9rzwqlz37e5nsmlj2rch6vd2jpss7a69j',
+    displaySymbol: 'USDC',
+  },
+];
+
 const quickStats = [
   { label: 'Ticker', value: 'WOODY' },
   { label: 'Network', value: 'MultiversX' },
@@ -63,7 +84,15 @@ const infoCards = [
 const liveDataDefaults = {
   price: 'Data unavailable',
   holders: 'Data unavailable',
-  liquidity: 'Data unavailable',
+  pools: POOLS.reduce((acc, pool) => ({ ...acc, [pool.key]: 'Data unavailable' }), {}),
+  totalLiquidity: 'Data unavailable',
+};
+
+const formatAmount = (value, maxFractionDigits = 2) => value.toLocaleString(undefined, { maximumFractionDigits: maxFractionDigits });
+
+const getTokenUsdPrice = (token) => {
+  const price = Number(token?.price ?? token?.priceUsd ?? token?.usdPrice);
+  return Number.isFinite(price) && price > 0 ? price : null;
 };
 
 export default function Home() {
@@ -79,14 +108,19 @@ export default function Home() {
       setLiveDataError(false);
 
       try {
-        const [tokenRes, holdersRes] = await Promise.allSettled([
+        const [tokenRes, holdersRes, ...poolResponses] = await Promise.allSettled([
           fetch(`https://api.multiversx.com/tokens/${TOKEN_ID}`),
           fetch(`https://api.multiversx.com/tokens/${TOKEN_ID}/accounts/count`),
+          ...POOLS.map((pool) => fetch(`https://api.multiversx.com/accounts/${pool.address}/tokens?size=200`)),
         ]);
 
         let nextPrice = liveDataDefaults.price;
         let nextHolders = liveDataDefaults.holders;
+        const nextPools = { ...liveDataDefaults.pools };
+        let nextTotalLiquidity = liveDataDefaults.totalLiquidity;
         let hasError = false;
+        let totalUsd = 0;
+        let hasUsdEstimate = false;
 
         if (tokenRes.status === 'fulfilled' && tokenRes.value.ok) {
           const tokenData = await tokenRes.value.json();
@@ -108,17 +142,57 @@ export default function Home() {
           hasError = true;
         }
 
+        for (let i = 0; i < POOLS.length; i += 1) {
+          const pool = POOLS[i];
+          const poolResponse = poolResponses[i];
+          if (!(poolResponse?.status === 'fulfilled' && poolResponse.value.ok)) {
+            hasError = true;
+            continue;
+          }
+
+          const tokens = await poolResponse.value.json();
+          const woodyToken = tokens.find((token) => token.identifier === TOKEN_ID);
+          const pairedToken = tokens.find((token) => token.identifier !== TOKEN_ID && (pool.displaySymbol === 'USDC' ? token.ticker?.toUpperCase().includes('USDC') : token.ticker?.toUpperCase().includes('EGLD') || token.identifier?.toUpperCase().includes('EGLD')));
+
+          if (!woodyToken || !pairedToken) {
+            hasError = true;
+            continue;
+          }
+
+          const pairBalance = Number(pairedToken.balance) / 10 ** Number(pairedToken.decimals ?? 18);
+          if (!Number.isFinite(pairBalance)) {
+            hasError = true;
+            continue;
+          }
+
+          nextPools[pool.key] = `${formatAmount(pairBalance, 4)} ${pool.displaySymbol}`;
+
+          const woodyBalance = Number(woodyToken.balance) / 10 ** Number(woodyToken.decimals ?? 18);
+          const woodyUsdPrice = getTokenUsdPrice(woodyToken);
+          const pairUsdPrice = getTokenUsdPrice(pairedToken);
+
+          if (Number.isFinite(woodyBalance) && woodyUsdPrice && pairUsdPrice) {
+            totalUsd += (woodyBalance * woodyUsdPrice) + (pairBalance * pairUsdPrice);
+            hasUsdEstimate = true;
+          }
+        }
+
+        if (hasUsdEstimate && totalUsd > 0) {
+          nextTotalLiquidity = `~$${formatAmount(totalUsd, 2)}`;
+        }
+
         if (mounted) {
           setLiveData({
             price: nextPrice,
             holders: nextHolders,
-            liquidity: '$-- (pool API pending)',
+            pools: nextPools,
+            totalLiquidity: nextTotalLiquidity,
           });
-          setLiveDataError(hasError && (nextPrice === liveDataDefaults.price || nextHolders === liveDataDefaults.holders));
+          setLiveDataError(hasError);
         }
       } catch {
         if (mounted) {
-          setLiveData({ ...liveDataDefaults, liquidity: '$-- (pool API pending)' });
+          setLiveData(liveDataDefaults);
           setLiveDataError(true);
         }
       } finally {
@@ -169,11 +243,14 @@ export default function Home() {
         <p className="mt-2 text-sm text-white/65">Real-time market snapshot for {TOKEN_ID}.</p>
         {liveDataError && !loadingLiveData ? <p className="mt-3 text-sm text-orange-300">Some endpoints failed. Data unavailable where needed.</p> : null}
 
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[
             { title: 'Price', value: liveData.price, note: 'USD, sourced from public token API' },
             { title: 'Holders', value: liveData.holders, note: 'Unique wallets' },
-            { title: 'Liquidity', value: liveData.liquidity, note: 'Placeholder, pool API connector ready' },
+            { title: 'OneDex', value: liveData.pools.onedex, note: 'WOODY/EGLD paired balance' },
+            { title: 'xExchange', value: liveData.pools.xexchange, note: 'WOODY/EGLD paired balance' },
+            { title: 'USDC pool', value: liveData.pools.usdc, note: 'WOODY/USDC paired balance' },
+            { title: 'Total liquidity', value: liveData.totalLiquidity, note: 'Estimated USD when both token prices are available' },
           ].map((card) => (
             <article key={card.title} className="rounded-xl border border-white/10 bg-[#0b1324]/80 p-4">
               <p className="text-xs uppercase tracking-widest text-white/50">{card.title}</p>
