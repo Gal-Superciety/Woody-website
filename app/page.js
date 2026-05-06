@@ -47,6 +47,29 @@ const roadmap = [
   'Phase 4: Expanded utility and multi-chain visibility',
 ];
 
+const woodyAiFeatures = [
+  {
+    title: 'On-chain Insights',
+    description: 'Analyze price movement, wallet activity, and liquidity behavior.',
+    accent: 'sky',
+  },
+  {
+    title: 'Liquidity Signals',
+    description: 'Track unusual liquidity changes and market momentum.',
+    accent: 'orange',
+  },
+  {
+    title: 'Community Assistant',
+    description: 'Future AI-powered helper for the WOODY community ecosystem.',
+    accent: 'emerald',
+  },
+  {
+    title: 'MultiversX AI Integration',
+    description: 'Preparing for future AI agent infrastructure on MultiversX.',
+    accent: 'sky',
+  },
+];
+
 const infoCards = [
   {
     title: 'Token Info',
@@ -286,6 +309,35 @@ export default function Home() {
               <p className="mt-2 text-xs text-white/60">{card.note}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="card relative overflow-hidden p-6 md:p-8">
+        <div className="pointer-events-none absolute -left-20 -top-16 h-56 w-56 rounded-full bg-sky-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-20 top-1/3 h-56 w-56 rounded-full bg-orange-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-1/4 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl" />
+
+        <div className="relative z-10">
+          <p className="inline-flex rounded-full border border-sky-400/40 bg-sky-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">In Development</p>
+          <h3 className="mt-4 text-3xl font-black text-white md:text-4xl">WOODY AI Agent</h3>
+          <p className="mt-3 max-w-3xl text-base text-white/75 md:text-lg">From meme monitoring to intelligent on-chain insights.</p>
+          <p className="mt-3 max-w-3xl text-sm text-white/60">WOODY AI tooling is evolving and currently in active development. This section outlines planned capabilities and future integration direction.</p>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {woodyAiFeatures.map((feature) => (
+              <article key={feature.title} className="rounded-2xl border border-white/10 bg-[#0b1324]/80 p-5">
+                <p className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  feature.accent === 'orange'
+                    ? 'border border-orange-400/40 bg-orange-400/10 text-orange-300'
+                    : feature.accent === 'emerald'
+                      ? 'border border-emerald-400/40 bg-emerald-400/10 text-emerald-300'
+                      : 'border border-sky-400/40 bg-sky-400/10 text-sky-300'
+                }`}>Planned</p>
+                <h4 className="mt-3 text-lg font-bold text-white">{feature.title}</h4>
+                <p className="mt-2 text-sm text-white/75">{feature.description}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
