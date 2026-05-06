@@ -74,7 +74,7 @@ export default function Home() {
             </div>
           </div>
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b1324]/80 p-5">
-            <Image src="//woody-hero.png" alt="WOODY mascot full body" width={640} height={820} priority sizes="(max-width: 1024px) 100vw, 36vw" className="mx-auto h-auto w-full max-w-sm object-contain" />
+            <Image src="/woody-hero.png" alt="WOODY mascot full body" width={640} height={820} priority sizes="(max-width: 1024px) 100vw, 36vw" className="mx-auto h-auto w-full max-w-sm object-contain" />
             <h2 className="mt-4 text-lg font-bold text-white">WOODY Pulse</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">{quickStats.map((item) => (<div key={item.label} className="rounded-xl border border-white/10 bg-white/5 p-3"><p className="text-xs uppercase tracking-widest text-white/50">{item.label}</p><p className="mt-1 text-sm font-semibold text-white">{item.value}</p></div>))}</div>
           </div>
