@@ -7,8 +7,20 @@ const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-orbitron' });
 
 export const metadata = {
   title: 'WOODY Meme',
-  description: 'WOODY Meme - Crypto community token landing page',
+  description: 'Community-driven meme ecosystem on MultiversX',
   icons: { icon: '/icon.svg' },
+  openGraph: {
+    title: 'WOODY Meme',
+    description: 'Community-driven meme ecosystem on MultiversX',
+    images: [{ url: '/woody-logo.png', alt: 'WOODY Meme logo' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'WOODY Meme',
+    description: 'Community-driven meme ecosystem on MultiversX',
+    images: ['/woody-logo.png'],
+  },
 };
 
 export default function RootLayout({ children }) {
