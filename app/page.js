@@ -9,10 +9,49 @@ const monitorItems = [
   { title: 'Holders', value: 'Growing', note: 'Community wallet base expanding' },
 ];
 
-const aiItems = [
-  'Future smart signal scoring for meme-market timing',
-  'On-chain pattern analysis for wallet and liquidity behavior',
-  'AI-assisted direction layer for market awareness',
+const aiDashboardModules = [
+  {
+    title: 'Market Pulse',
+    value: '42/100',
+    status: 'Steady signal',
+    description: 'AI module that scores current meme-market strength and directional conviction.',
+  },
+  {
+    title: 'Risk Radar',
+    value: 'LOW',
+    status: 'Risk Level',
+    description: 'AI module that evaluates volatility clusters, whale shifts, and sudden downside pressure.',
+  },
+  {
+    title: 'Wallet Intelligence',
+    value: 'Active',
+    status: 'Smart watch',
+    description: 'AI module tracking notable wallet behavior, rotation patterns, and potential intent.',
+  },
+  {
+    title: 'Accumulation Detection',
+    value: 'MODERATE',
+    status: 'Build phase',
+    description: 'AI module scanning for sustained buy-side buildup across tracked WOODY ecosystem pools.',
+  },
+  {
+    title: 'Fake Pump Detection',
+    value: 'HEALTHY MOMENTUM',
+    status: 'No spoof pattern',
+    description: 'AI module differentiating organic continuation from short-lived liquidity traps.',
+  },
+  {
+    title: 'Live Buy/Sell Alerts',
+    value: 'Demo stream',
+    status: 'Static preview',
+    description: 'AI module previewing event-style buy/sell notifications for community market awareness.',
+  },
+  {
+    title: 'Multi-Pool Liquidity Watch',
+    value: '7 pools',
+    status: 'Coverage map',
+    description: 'AI module surveying depth, slippage pressure, and routing health across liquidity venues.',
+  },
 ];
 
 const gameItems = [
@@ -56,12 +95,26 @@ export default function Home() {
       </section>
 
       <section className="card glow-card p-6 md:p-8">
-        <h2 className="section-title">AI Signals</h2>
-        <ul className="mt-5 space-y-3">
-          {aiItems.map((item) => (
-            <li key={item} className="signal-widget text-sm text-white/80">{item}</li>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="section-title">WOODY Monitor AI Dashboard</h2>
+            <p className="mt-2 text-sm text-white/70">Premium static preview of WOODY Monitor AI modules (demo values only — no live backend yet).</p>
+          </div>
+          <span className="module-pill">AI Modules • Static Demo</span>
+        </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {aiDashboardModules.map((item) => (
+            <article key={item.title} className="ai-module-card">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-sky-300/90">WOODY Monitor AI Module</p>
+              <h3 className="mt-2 text-lg font-bold text-white">{item.title}</h3>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <p className="text-xl font-black text-orange-300">{item.value}</p>
+                <span className="signal-chip">{item.status}</span>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-white/75">{item.description}</p>
+            </article>
           ))}
-        </ul>
+        </div>
       </section>
 
       <section className="card glow-card p-6 md:p-8">

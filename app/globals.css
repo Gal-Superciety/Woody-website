@@ -94,3 +94,26 @@ h3 {
   .divider-wave,
   .divider-angle { height: 24px; }
 }
+
+.ai-module-card {
+  @apply rounded-2xl p-4;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  background:
+    radial-gradient(circle at 90% 10%, rgba(249, 115, 22, 0.2), transparent 34%),
+    linear-gradient(150deg, rgba(8, 18, 36, 0.95), rgba(8, 13, 28, 0.88));
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15) inset, 0 8px 28px rgba(2, 6, 23, 0.65), 0 0 26px rgba(56, 189, 248, 0.12);
+}
+
+.module-pill {
+  @apply rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-[0.15em];
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(14, 165, 233, 0.08);
+  color: rgba(186, 230, 253, 0.95);
+}
+
+.signal-chip {
+  @apply rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em];
+  border: 1px solid rgba(251, 146, 60, 0.45);
+  background: rgba(249, 115, 22, 0.12);
+  color: rgba(254, 215, 170, 0.95);
+}
