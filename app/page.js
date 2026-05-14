@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
+const DEFAULT_WOODY_MONITOR_STATUS_URL = 'https://worker-production-3838.up.railway.app/status.json';
+
 const monitorItems = [
   { title: 'Monitoring', value: '24/7', note: 'Wallet flow and momentum tracking' },
   { title: 'Liquidity', value: 'Multi-pool', note: 'Depth watch across WOODY pairs' },
@@ -115,17 +117,12 @@ export default function Home() {
   const [isLiveData, setIsLiveData] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  const statusUrl = process.env.NEXT_PUBLIC_WOODY_MONITOR_STATUS_URL;
+  const statusUrl = process.env.NEXT_PUBLIC_WOODY_MONITOR_STATUS_URL || DEFAULT_WOODY_MONITOR_STATUS_URL;
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchStatus = async () => {
-      if (!statusUrl) {
-        setIsLiveData(false);
-        return;
-      }
-
       try {
         const response = await fetch(statusUrl, { cache: 'no-store' });
         if (!response.ok) throw new Error('Status endpoint unavailable');
