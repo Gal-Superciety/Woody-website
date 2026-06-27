@@ -11,7 +11,9 @@
   "dependencies": {
     "next": "14.2.5",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "@multiversx/sdk-extension-provider": "^5.1.2",
+    "@multiversx/sdk-web-wallet-cross-window-provider": "^3.2.2"
   },
   "devDependencies": {
     "autoprefixer": "10.4.20",
