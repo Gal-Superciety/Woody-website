@@ -1,6 +1,7 @@
 const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Launch App', href: '#dashboard' },
+  { label: 'Buy WOODY', href: '/buy' },
   { label: 'WOODY Spin', href: '/spin' },
   { label: 'Dashboard', href: '#dashboard' },
   { label: 'Monitor', href: '#woody-monitor' },

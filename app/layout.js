@@ -40,6 +40,7 @@ export default function RootLayout({ children }) {
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Link href="/" className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80 transition hover:border-sky-300/40 hover:text-sky-200">Home</Link>
               <Link href="/app" className="rounded-full border border-sky-400/40 bg-sky-400/10 px-3 py-1 text-xs font-semibold text-sky-100 transition hover:border-sky-300 hover:bg-sky-400/20">Launch App</Link>
+              <Link href="/buy" className="rounded-full border border-orange-400/40 bg-orange-400/10 px-3 py-1 text-xs font-semibold text-orange-200 transition hover:border-orange-300 hover:bg-orange-400/20">Buy WOODY</Link>
               <Link href="/spin" className="rounded-full border border-orange-400/40 bg-orange-400/10 px-3 py-1 text-xs font-semibold text-orange-200 transition hover:border-orange-300 hover:bg-orange-400/20">WOODY Spin</Link>
               <span className="nav-live-badge"><span className="live-pulse-dot" /> LIVE</span>
             </div>
