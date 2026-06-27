@@ -149,3 +149,43 @@ h3 {
 .status-soon {
   @apply border-orange-400/45 bg-orange-400/10 text-orange-200;
 }
+
+.cta-buy {
+  @apply border border-orange-300/70 bg-orange-400/15 text-orange-100 hover:bg-orange-400/25;
+  box-shadow: 0 0 22px rgba(249, 115, 22, 0.12);
+}
+
+.live-ecosystem-badge,
+.nav-live-badge {
+  @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.16em];
+  border-color: rgba(16, 185, 129, 0.48);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.14), rgba(14, 165, 233, 0.1));
+  color: rgba(167, 243, 208, 0.96);
+  box-shadow: 0 0 22px rgba(16, 185, 129, 0.16), 0 0 0 1px rgba(56, 189, 248, 0.08) inset;
+}
+
+.live-pulse-dot {
+  @apply h-2 w-2 rounded-full bg-emerald-300;
+  box-shadow: 0 0 0 0 rgba(110, 231, 183, 0.9), 0 0 12px rgba(110, 231, 183, 0.9);
+  animation: live-pulse 1.8s ease-out infinite;
+}
+
+.live-stat-card,
+.wallet-status-card {
+  @apply rounded-2xl p-4;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background:
+    radial-gradient(circle at 85% 10%, rgba(249, 115, 22, 0.14), transparent 38%),
+    linear-gradient(150deg, rgba(15, 23, 42, 0.74), rgba(2, 6, 23, 0.72));
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.06) inset, 0 10px 24px rgba(2, 6, 23, 0.32);
+}
+
+.wallet-status-card {
+  border-color: rgba(251, 146, 60, 0.22);
+}
+
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(110, 231, 183, 0.72), 0 0 12px rgba(110, 231, 183, 0.9); }
+  70% { box-shadow: 0 0 0 8px rgba(110, 231, 183, 0), 0 0 12px rgba(110, 231, 183, 0.9); }
+  100% { box-shadow: 0 0 0 0 rgba(110, 231, 183, 0), 0 0 12px rgba(110, 231, 183, 0.9); }
+}

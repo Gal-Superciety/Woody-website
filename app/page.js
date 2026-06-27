@@ -6,6 +6,15 @@ import { useEffect, useMemo, useState } from 'react';
 
 const DEFAULT_WOODY_MONITOR_STATUS_URL = 'https://worker-production-3838.up.railway.app/status.json';
 
+const BUY_WOODY_URL = 'https://e-compass.io/token/WOODY-5f9d9c'; // TODO: Replace with the official primary buy URL if it changes before launch.
+
+const liveStatsPreview = [
+  { label: 'Price', value: 'Coming Soon', note: 'Live feed placeholder' },
+  { label: 'Holders', value: '—', note: 'Wallet count placeholder' },
+  { label: 'Liquidity', value: 'Coming Soon', note: 'Pool depth placeholder' },
+  { label: '24h Volume', value: '—', note: 'Volume feed placeholder' },
+];
+
 const monitorItems = [
   { title: 'Monitoring', value: '24/7', note: 'Wallet flow and momentum tracking' },
   { title: 'Liquidity', value: 'Multi-pool', note: 'Depth watch across WOODY pairs' },
@@ -161,14 +170,26 @@ export default function Home() {
       <section className="card cyber-grid relative overflow-hidden p-6 md:p-10">
         <div className="relative z-10 grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
-            <p className="badge mb-4">WOODY Ecosystem</p>
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <p className="badge">WOODY Ecosystem</p>
+              <span className="live-ecosystem-badge"><span className="live-pulse-dot" /> Ecosystem Active</span>
+            </div>
             <h1 className="text-4xl font-black leading-tight text-white md:text-6xl">WOODY</h1>
             <p className="mt-4 max-w-xl text-white/75 md:text-lg">A cinematic crypto brand focused on signals, games, and community momentum.</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/app" className="cta cta-orange">Launch App</Link>
-              <a href="https://e-compass.io/token/WOODY-5f9d9c" target="_blank" rel="noopener noreferrer" className="cta cta-blue">Buy WOODY</a>
+              <a href={BUY_WOODY_URL} target="_blank" rel="noopener noreferrer" className="cta cta-buy">Buy WOODY</a>
               <a href="https://t.me/wooodymeme" target="_blank" rel="noopener noreferrer" className="cta cta-blue">Telegram</a>
               <a href="https://x.com/WOODY_EX" target="_blank" rel="noopener noreferrer" className="cta cta-green">Twitter / X</a>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {liveStatsPreview.map((stat) => (
+                <article key={stat.label} className="live-stat-card">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-sky-200/75">{stat.label}</p>
+                  <p className="mt-2 text-lg font-black text-white">{stat.value}</p>
+                  <p className="mt-1 text-xs text-white/55">{stat.note}</p>
+                </article>
+              ))}
             </div>
           </div>
           <div className="glow-card rounded-2xl p-5">
@@ -232,7 +253,7 @@ export default function Home() {
         <div className="mt-5 flex flex-wrap gap-3">
           <a href="https://t.me/wooodymeme" target="_blank" rel="noopener noreferrer" className="cta cta-blue">Telegram</a>
           <a href="https://x.com/WOODY_EX" target="_blank" rel="noopener noreferrer" className="cta cta-green">Twitter / X</a>
-          <a href="https://e-compass.io/token/WOODY-5f9d9c" target="_blank" rel="noopener noreferrer" className="cta cta-orange">Buy</a>
+          <a href={BUY_WOODY_URL} target="_blank" rel="noopener noreferrer" className="cta cta-buy">Buy WOODY</a>
         </div>
       </section>
     </main>

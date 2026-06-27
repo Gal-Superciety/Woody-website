@@ -1,4 +1,7 @@
 const navItems = [
+  { label: 'Home', href: '/' },
+  { label: 'Launch App', href: '#dashboard' },
+  { label: 'WOODY Spin', href: '/spin' },
   { label: 'Dashboard', href: '#dashboard' },
   { label: 'Monitor', href: '#woody-monitor' },
   { label: 'Premium', href: '#premium-access' },
@@ -70,6 +73,13 @@ export const metadata = {
   description: 'The utility hub for the WOODY ecosystem',
 };
 
+const walletStatusItems = [
+  { label: 'Wallet', value: 'Not connected' },
+  { label: 'WOODY Balance', value: '—' },
+  { label: 'Holder Tier', value: '—' },
+  { label: 'Premium Access', value: 'Locked' },
+];
+
 export default function WoodyApp() {
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-8 md:py-10">
@@ -78,9 +88,20 @@ export default function WoodyApp() {
           <div>
             <p className="badge mb-4">Dashboard Foundation</p>
             <h1 className="text-3xl font-black leading-tight text-white md:text-5xl">WOODY App</h1>
-            <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-lg">The utility hub for the WOODY ecosystem</p>
+            <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-lg">The utility hub for the WOODY ecosystem — a clean foundation for wallet status, premium access, and future holder tools.</p>
           </div>
-          <button type="button" className="cta cta-orange w-full sm:w-fit">Connect Wallet</button>
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+            <button type="button" className="cta cta-orange w-full sm:w-fit">Connect Wallet</button>
+            <p className="text-xs text-white/50">Demo foundation: no wallet connection yet.</p>
+          </div>
+        </div>
+        <div className="relative z-10 mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {walletStatusItems.map((item) => (
+            <article key={item.label} className="wallet-status-card">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">{item.label}</p>
+              <p className={item.value === 'Locked' ? 'mt-2 text-lg font-black text-orange-200' : 'mt-2 text-lg font-black text-white'}>{item.value}</p>
+            </article>
+          ))}
         </div>
       </section>
 
