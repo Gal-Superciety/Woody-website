@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 const DEFAULT_WOODY_MONITOR_STATUS_URL = 'https://worker-production-3838.up.railway.app/status.json';
@@ -164,7 +165,8 @@ export default function Home() {
             <h1 className="text-4xl font-black leading-tight text-white md:text-6xl">WOODY</h1>
             <p className="mt-4 max-w-xl text-white/75 md:text-lg">A cinematic crypto brand focused on signals, games, and community momentum.</p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <a href="https://e-compass.io/token/WOODY-5f9d9c" target="_blank" rel="noopener noreferrer" className="cta cta-orange">Buy WOODY</a>
+              <Link href="/app" className="cta cta-orange">Launch App</Link>
+              <a href="https://e-compass.io/token/WOODY-5f9d9c" target="_blank" rel="noopener noreferrer" className="cta cta-blue">Buy WOODY</a>
               <a href="https://t.me/wooodymeme" target="_blank" rel="noopener noreferrer" className="cta cta-blue">Telegram</a>
               <a href="https://x.com/WOODY_EX" target="_blank" rel="noopener noreferrer" className="cta cta-green">Twitter / X</a>
             </div>

@@ -117,3 +117,35 @@ h3 {
   background: rgba(249, 115, 22, 0.12);
   color: rgba(254, 215, 170, 0.95);
 }
+
+.app-nav-link {
+  @apply rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/70 transition hover:border-sky-300/40 hover:bg-sky-400/10 hover:text-sky-100;
+}
+
+.app-dashboard-card {
+  @apply rounded-2xl p-5 transition duration-300 hover:-translate-y-1;
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  background:
+    radial-gradient(circle at 88% 12%, rgba(249, 115, 22, 0.18), transparent 34%),
+    linear-gradient(150deg, rgba(15, 23, 42, 0.88), rgba(8, 13, 28, 0.94));
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.08) inset, 0 12px 28px rgba(2, 6, 23, 0.48);
+}
+
+.app-card-icon {
+  @apply flex h-12 w-12 items-center justify-center rounded-2xl text-2xl;
+  border: 1px solid rgba(251, 146, 60, 0.32);
+  background: linear-gradient(145deg, rgba(249, 115, 22, 0.16), rgba(14, 165, 233, 0.14));
+  box-shadow: 0 0 22px rgba(249, 115, 22, 0.14);
+}
+
+.status-badge {
+  @apply rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em];
+}
+
+.status-active {
+  @apply border-emerald-400/45 bg-emerald-400/10 text-emerald-200;
+}
+
+.status-soon {
+  @apply border-orange-400/45 bg-orange-400/10 text-orange-200;
+}
