@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const DEFAULT_WOODY_MONITOR_STATUS_URL = 'https://worker-production-3838.up.railway.app/status.json';
 
-const BUY_WOODY_URL = 'https://e-compass.io/token/WOODY-5f9d9c'; // TODO: Replace with the official primary buy URL if it changes before launch.
+const BUY_WOODY_URL = '/buy';
 
 const liveStatsPreview = [
   { label: 'Price', value: 'Coming Soon', note: 'Live feed placeholder' },
@@ -178,7 +178,7 @@ export default function Home() {
             <p className="mt-4 max-w-xl text-white/75 md:text-lg">A cinematic crypto brand focused on signals, games, and community momentum.</p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href="/app" className="cta cta-orange">Launch App</Link>
-              <a href={BUY_WOODY_URL} target="_blank" rel="noopener noreferrer" className="cta cta-buy">Buy WOODY</a>
+              <Link href={BUY_WOODY_URL} className="cta cta-buy">Buy WOODY</Link>
               <a href="https://t.me/wooodymeme" target="_blank" rel="noopener noreferrer" className="cta cta-blue">Telegram</a>
               <a href="https://x.com/WOODY_EX" target="_blank" rel="noopener noreferrer" className="cta cta-green">Twitter / X</a>
             </div>
@@ -253,7 +253,7 @@ export default function Home() {
         <div className="mt-5 flex flex-wrap gap-3">
           <a href="https://t.me/wooodymeme" target="_blank" rel="noopener noreferrer" className="cta cta-blue">Telegram</a>
           <a href="https://x.com/WOODY_EX" target="_blank" rel="noopener noreferrer" className="cta cta-green">Twitter / X</a>
-          <a href={BUY_WOODY_URL} target="_blank" rel="noopener noreferrer" className="cta cta-buy">Buy WOODY</a>
+          <Link href={BUY_WOODY_URL} className="cta cta-buy">Buy WOODY</Link>
         </div>
       </section>
     </main>
