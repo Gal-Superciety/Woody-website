@@ -1,129 +1,220 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 const STORAGE_KEY = 'woody:multiversx-wallet-session';
 const WEB_WALLET_URL = 'https://wallet.multiversx.com';
+const WALLETCONNECT_RELAY_URL = 'wss://relay.walletconnect.com';
+const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '';
+const CHAIN_ID = process.env.NEXT_PUBLIC_MULTIVERSX_CHAIN_ID || '1';
+const FRIENDLY_FAILURE = 'Wallet connection failed or cancelled. Please try again.';
+const isBrowser = () => typeof window !== 'undefined';
+const runtimeImport = (specifier) => new Function('specifier', 'return import(specifier)')(specifier);
 
 function shortenAddress(address) {
   if (!address) return 'Not connected';
   return `${address.slice(0, 8)}...${address.slice(-6)}`;
 }
 
-function getFriendlyError(error) {
-  if (error?.message?.toLowerCase().includes('cancel')) {
-    return 'Wallet connection was cancelled. Please try again when you are ready.';
-  }
+function isValidAddress(address) {
+  return typeof address === 'string' && /^erd1[023456789acdefghjklmnpqrstuvwxyz]{58}$/i.test(address);
+}
 
-  return 'Could not connect your wallet. Please make sure your wallet is unlocked and try again.';
+function safeSessionStorage() {
+  if (!isBrowser()) return null;
+  try {
+    const storage = window.sessionStorage;
+    const testKey = 'woody:storage-test';
+    storage.setItem(testKey, '1');
+    storage.removeItem(testKey);
+    return storage;
+  } catch {
+    return null;
+  }
+}
+
+function getProviderAddress(provider, loginAddress) {
+  return loginAddress || provider?.account?.address || provider?.address || '';
 }
 
 export default function WalletConnectPanel() {
+  const router = useRouter();
+  const providerRef = useRef(null);
   const [address, setAddress] = useState('');
   const [providerType, setProviderType] = useState('');
-  const [provider, setProvider] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [activeProvider, setActiveProvider] = useState('');
   const [error, setError] = useState('');
+  const [xPortalUri, setXPortalUri] = useState('');
 
   const walletStatusItems = useMemo(() => [
-    { label: 'Wallet', value: address ? shortenAddress(address) : 'Not connected', tone: address ? 'success' : 'default' },
+    { label: 'Wallet', value: address ? 'Connected' : 'Not connected', detail: address ? shortenAddress(address) : '', tone: address ? 'success' : 'default' },
     { label: 'WOODY Balance', value: '—' },
     { label: 'Holder Tier', value: '—' },
     { label: 'Premium Access', value: 'Locked', tone: 'locked' },
   ], [address]);
 
   useEffect(() => {
+    const storage = safeSessionStorage();
+    if (!storage) return;
+
     try {
-      const storedSession = window.sessionStorage.getItem(STORAGE_KEY);
+      const storedSession = storage.getItem(STORAGE_KEY);
       if (!storedSession) return;
 
       const parsedSession = JSON.parse(storedSession);
-      if (parsedSession?.address) {
-        setAddress(parsedSession.address);
-        setProviderType(parsedSession.providerType || 'Saved session');
+      if (!isValidAddress(parsedSession?.address)) {
+        storage.removeItem(STORAGE_KEY);
+        return;
       }
+
+      setAddress(parsedSession.address);
+      setProviderType(parsedSession.providerType || 'Saved session');
     } catch {
-      window.sessionStorage.removeItem(STORAGE_KEY);
+      storage.removeItem(STORAGE_KEY);
     }
   }, []);
 
-  const saveSession = (nextAddress, nextProviderType) => {
+  const clearSession = () => {
+    safeSessionStorage()?.removeItem(STORAGE_KEY);
+  };
+
+  const failConnection = (message = FRIENDLY_FAILURE) => {
+    providerRef.current = null;
+    setAddress('');
+    setProviderType('');
+    setXPortalUri('');
+    setError(message);
+    clearSession();
+    router.replace('/app');
+  };
+
+  const saveSession = (nextAddress, nextProviderType, nextProvider) => {
+    if (!isValidAddress(nextAddress)) {
+      failConnection(FRIENDLY_FAILURE);
+      return;
+    }
+
+    providerRef.current = nextProvider || null;
     setAddress(nextAddress);
     setProviderType(nextProviderType);
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: nextProviderType }));
+    setError('');
+    setXPortalUri('');
+    safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: nextProviderType }));
+    router.replace('/app');
+  };
+
+  const startConnection = (label) => {
+    setIsConnecting(true);
+    setActiveProvider(label);
+    setError('');
+    setXPortalUri('');
+    clearSession();
+  };
+
+  const finishConnection = () => {
+    setIsConnecting(false);
+    setActiveProvider('');
   };
 
   const connectExtension = async () => {
-    const { ExtensionProvider } = await import('@multiversx/sdk-extension-provider');
-    const extensionProvider = ExtensionProvider.getInstance();
-    const initialized = await extensionProvider.init();
+    startConnection('extension');
+    try {
+      const { ExtensionProvider } = await runtimeImport('@multiversx/sdk-extension-provider');
+      const extensionProvider = ExtensionProvider?.getInstance?.();
+      if (!extensionProvider?.init || !extensionProvider?.login) throw new Error('MultiversX DeFi Wallet provider is unavailable.');
 
-    if (!initialized) {
-      throw new Error('MultiversX DeFi Wallet extension is not available.');
+      const initialized = await extensionProvider.init();
+      if (!initialized) throw new Error('MultiversX DeFi Wallet browser extension was not detected.');
+
+      const loginAddress = await extensionProvider.login();
+      const resolvedAddress = getProviderAddress(extensionProvider, loginAddress);
+      saveSession(resolvedAddress, 'MultiversX DeFi Wallet / Browser Extension', extensionProvider);
+    } catch (connectionError) {
+      console.error('WOODY extension wallet connection failed', connectionError);
+      failConnection(FRIENDLY_FAILURE);
+    } finally {
+      finishConnection();
     }
-
-    const nextAddress = await extensionProvider.login();
-    const resolvedAddress = nextAddress || extensionProvider.account?.address;
-
-    if (!resolvedAddress) {
-      throw new Error('Wallet did not return an address.');
-    }
-
-    setProvider(extensionProvider);
-    saveSession(resolvedAddress, 'MultiversX DeFi Wallet');
   };
 
   const connectWebWallet = async () => {
-    const { CrossWindowProvider } = await import('@multiversx/sdk-web-wallet-cross-window-provider');
-    const webWalletProvider = CrossWindowProvider.getInstance();
-    await webWalletProvider.init();
-    webWalletProvider.setWalletUrl(WEB_WALLET_URL);
+    startConnection('web');
+    try {
+      const { CrossWindowProvider } = await runtimeImport('@multiversx/sdk-web-wallet-cross-window-provider');
+      const webWalletProvider = CrossWindowProvider?.getInstance?.();
+      if (!webWalletProvider?.init || !webWalletProvider?.login) throw new Error('MultiversX Web Wallet provider is unavailable.');
 
-    const nextAddress = await webWalletProvider.login();
-    const resolvedAddress = nextAddress || webWalletProvider.account?.address;
-
-    if (!resolvedAddress) {
-      throw new Error('Web Wallet did not return an address.');
+      await webWalletProvider.init();
+      webWalletProvider.setWalletUrl?.(WEB_WALLET_URL);
+      const loginAddress = await webWalletProvider.login();
+      const resolvedAddress = getProviderAddress(webWalletProvider, loginAddress);
+      saveSession(resolvedAddress, 'MultiversX Web Wallet', webWalletProvider);
+    } catch (connectionError) {
+      console.error('WOODY web wallet connection failed', connectionError);
+      failConnection(FRIENDLY_FAILURE);
+    } finally {
+      finishConnection();
     }
-
-    setProvider(webWalletProvider);
-    saveSession(resolvedAddress, 'MultiversX Web Wallet');
   };
 
-  const handleConnect = async () => {
-    setIsConnecting(true);
-    setError('');
-
+  const connectXPortal = async () => {
+    startConnection('xportal');
     try {
-      await connectExtension();
-    } catch (extensionError) {
-      try {
-        await connectWebWallet();
-      } catch (webWalletError) {
-        console.error('WOODY wallet connection failed', { extensionError, webWalletError });
-        setError(getFriendlyError(webWalletError));
+      if (!WALLETCONNECT_PROJECT_ID) {
+        throw new Error('WalletConnect Project ID is not configured.');
       }
+
+      const walletConnectModule = await runtimeImport('@multiversx/sdk-wallet-connect-provider');
+      const WalletConnectProvider = walletConnectModule.WalletConnectV2Provider || walletConnectModule.WalletConnectProvider;
+      if (!WalletConnectProvider) throw new Error('xPortal WalletConnect provider is unavailable.');
+
+      let walletConnectProvider;
+      const callbacks = {
+        onClientLogin: async () => {
+          const connectedAddress = await walletConnectProvider?.getAddress?.();
+          if (isValidAddress(connectedAddress)) {
+            saveSession(connectedAddress, 'xPortal', walletConnectProvider);
+          }
+        },
+        onClientLogout: () => clearSession(),
+        onClientEvent: () => {},
+      };
+
+      walletConnectProvider = new WalletConnectProvider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID);
+
+      await walletConnectProvider.init?.();
+      const { uri, approval } = await walletConnectProvider.connect();
+      if (uri) setXPortalUri(uri);
+      await walletConnectProvider.login({ approval });
+      const resolvedAddress = await walletConnectProvider.getAddress?.();
+      saveSession(resolvedAddress, 'xPortal', walletConnectProvider);
+    } catch (connectionError) {
+      console.error('WOODY xPortal wallet connection failed', connectionError);
+      const missingPackage = String(connectionError?.message || '').includes('sdk-wallet-connect-provider');
+      failConnection(missingPackage ? 'xPortal connection is not available in this build. Please try the browser extension or Web Wallet.' : FRIENDLY_FAILURE);
     } finally {
-      setIsConnecting(false);
+      finishConnection();
     }
   };
 
   const handleDisconnect = async () => {
     setError('');
-
     try {
-      if (provider?.logout) {
-        await provider.logout();
-      }
+      if (providerRef.current?.logout) await providerRef.current.logout();
     } catch (disconnectError) {
       console.error('WOODY wallet disconnect failed', disconnectError);
     } finally {
-      setProvider(null);
+      providerRef.current = null;
       setAddress('');
       setProviderType('');
-      window.sessionStorage.removeItem(STORAGE_KEY);
+      clearSession();
+      router.replace('/app');
     }
   };
+
+  const disabled = isConnecting || Boolean(address);
 
   return (
     <>
@@ -137,13 +228,17 @@ export default function WalletConnectPanel() {
           {address ? (
             <button type="button" onClick={handleDisconnect} className="cta cta-blue w-full sm:w-fit">Disconnect</button>
           ) : (
-            <button type="button" onClick={handleConnect} disabled={isConnecting} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70 sm:w-fit">
-              {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-            </button>
+            <div className="grid w-full gap-2 sm:w-80">
+              <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Connecting xPortal...' : 'Connect xPortal'}</button>
+              <button type="button" onClick={connectExtension} disabled={disabled} className="cta cta-blue w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'extension' ? 'Connecting Extension...' : 'Connect MultiversX DeFi Wallet / Browser Extension'}</button>
+              <button type="button" onClick={connectWebWallet} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'web' ? 'Connecting Web Wallet...' : 'Connect Web Wallet'}</button>
+            </div>
           )}
           <p className={address ? 'text-xs text-emerald-200' : 'text-xs text-white/50'}>
-            {address ? `Status: Connected${providerType ? ` via ${providerType}` : ''}` : 'Wallet: Not connected'}
+            {address ? `Wallet: Connected${providerType ? ` via ${providerType}` : ''}` : 'Wallet: Not connected'}
           </p>
+          {address ? <p className="text-xs text-white/70">{shortenAddress(address)}</p> : null}
+          {xPortalUri ? <a className="max-w-xs break-words text-xs text-sky-200 underline" href={xPortalUri}>Open xPortal on this device</a> : null}
           {error ? <p className="max-w-xs text-xs leading-relaxed text-orange-200">{error}</p> : null}
         </div>
       </div>
@@ -152,6 +247,7 @@ export default function WalletConnectPanel() {
           <article key={item.label} className="wallet-status-card">
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">{item.label}</p>
             <p className={item.tone === 'locked' ? 'mt-2 text-lg font-black text-orange-200' : item.tone === 'success' ? 'mt-2 text-lg font-black text-emerald-200' : 'mt-2 text-lg font-black text-white'}>{item.value}</p>
+            {item.detail ? <p className="mt-1 text-xs text-white/60">{item.detail}</p> : null}
           </article>
         ))}
       </div>
