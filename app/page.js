@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -46,6 +46,7 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isLiveData, setIsLiveData] = useState(false);
   const [error, setError] = useState('');
+  const monitorRequestRef = useRef(0);
 
   const statusUrl = process.env.NEXT_PUBLIC_WOODY_MONITOR_STATUS_URL || DEFAULT_WOODY_MONITOR_STATUS_URL;
 
@@ -53,18 +54,22 @@ export default function Home() {
     let isMounted = true;
 
     const fetchStatus = async () => {
+      const requestId = ++monitorRequestRef.current;
       try {
         const response = await fetch(statusUrl, { cache: 'no-store' });
         if (!response.ok) throw new Error('Status endpoint unavailable');
         const data = await response.json();
-        if (!isMounted) return;
+        if (!isMounted || requestId !== monitorRequestRef.current) return;
         setStatusData(data);
         setLastUpdated(data.updatedAt || new Date().toISOString());
         setIsLiveData(true);
         setError('');
       } catch (fetchError) {
         console.error('WOODY monitor status fetch failed', fetchError);
-        if (isMounted) setError('Live monitor unavailable');
+        if (isMounted && requestId === monitorRequestRef.current) {
+          setIsLiveData(false);
+          setError('Live monitor unavailable');
+        }
       }
     };
 
