@@ -13,6 +13,12 @@ const usd = (v) => {
   if (n < 0.01) return `$${n.toFixed(8)}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 };
+const formatUpdatedAt = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '';
+  const millis = n < 1e12 ? n * 1000 : n;
+  return new Date(millis).toLocaleString();
+};
 const plain = (v) => {
   const n = num(v);
   return n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -92,7 +98,7 @@ export default function CommandCenter() {
         </div>
 
         <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-white/40">{live ? 'Auto-refresh every 30 seconds' : 'Live monitor data is temporarily unavailable'}{updated ? ` · Updated ${new Date(updated).toLocaleString()}` : ''}</p>
+          <p className="text-xs text-white/40">{live ? 'Auto-refresh every 30 seconds' : 'Live monitor data is temporarily unavailable'}{updated ? ` · Updated ${formatUpdatedAt(updated)}` : ''}</p>
           <div className="flex gap-2">
             <Link href="/buy" className="cta cta-orange text-center">Buy WOODY</Link>
             <Link href="/" className="cta cta-blue text-center">Home</Link>
