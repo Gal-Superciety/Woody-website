@@ -75,6 +75,7 @@ async function readWalletData(address) {
 export default function WalletConnectPanel() {
   const router = useRouter();
   const providerRef = useRef(null);
+  const balanceRequestRef = useRef(0);
   const [address, setAddress] = useState('');
   const [providerType, setProviderType] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -87,16 +88,18 @@ export default function WalletConnectPanel() {
 
   const refreshBalances = useCallback(async (walletAddress) => {
     if (!isValidAddress(walletAddress)) return;
+    const requestId = ++balanceRequestRef.current;
     setIsLoadingBalances(true);
     try {
       const data = await readWalletData(walletAddress);
+      if (requestId !== balanceRequestRef.current) return;
       setWalletData(data);
       setError('');
     } catch (balanceError) {
       console.error('WOODY wallet data read failed', balanceError);
-      setError('Connected, but live balances could not be loaded. Try Refresh.');
+      if (requestId === balanceRequestRef.current) setError('Connected, but live balances could not be loaded. Try Refresh.');
     } finally {
-      setIsLoadingBalances(false);
+      if (requestId === balanceRequestRef.current) setIsLoadingBalances(false);
     }
   }, []);
 
@@ -126,7 +129,10 @@ export default function WalletConnectPanel() {
     }
   }, [refreshBalances]);
 
-  const clearSession = () => safeSessionStorage()?.removeItem(STORAGE_KEY);
+  const clearSession = () => {
+    balanceRequestRef.current += 1;
+    safeSessionStorage()?.removeItem(STORAGE_KEY);
+  };
 
   const failConnection = (message = FRIENDLY_FAILURE) => {
     providerRef.current = null;
