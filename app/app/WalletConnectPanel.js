@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const STORAGE_KEY = 'woody:multiversx-wallet-session';
