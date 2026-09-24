@@ -4,7 +4,27 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 const WOODY_TOKEN_ID = 'WOODY-5f9d9c';
-const XEXCHANGE_APP_URL = 'https://xexchange.com';
+
+const venues = [
+  {
+    name: 'xExchange',
+    href: 'https://xexchange.com/trade?firstToken=EGLD&secondToken=WOODY-5f9d9c',
+    detail: 'WOODY/EGLD and other monitored WOODY pools',
+    status: 'Verified venue',
+  },
+  {
+    name: 'OneDex',
+    href: 'https://onedex.app/',
+    detail: 'WOODY/EGLD liquidity is tracked by WOODY Monitor',
+    status: 'Verified venue',
+  },
+  {
+    name: 'JEX',
+    href: 'https://app.jexchange.io/',
+    detail: 'WOODY/JEX, WOODY/BOBER and WOODY/OLV pools are tracked',
+    status: 'Verified venue',
+  },
+];
 
 export default function BuyWoodyPage() {
   const [copied, setCopied] = useState(false);
@@ -20,67 +40,72 @@ export default function BuyWoodyPage() {
   };
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-8 md:py-10">
-      <section className="card cyber-grid relative overflow-hidden p-6 md:p-10">
+    <main className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 md:px-8 md:py-10">
+      <section className="card cyber-grid relative overflow-hidden p-5 md:p-9">
         <div className="relative z-10 max-w-3xl">
-          <p className="badge mb-4">Official Buy Hub</p>
+          <p className="badge mb-4">WOODY Buy Hub</p>
           <h1 className="text-4xl font-black leading-tight text-white md:text-6xl">Buy WOODY</h1>
-          <p className="mt-4 text-sm leading-relaxed text-white/72 md:text-lg">Use the official token ID below, connect your MultiversX wallet, and continue to the trading venue. Never send WOODY to an address supplied in a random message.</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/app" className="cta cta-orange">Launch dApp</Link>
-            <a href={XEXCHANGE_APP_URL} target="_blank" rel="noopener noreferrer" className="cta cta-blue">Open xExchange</a>
+          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/70 md:text-lg">
+            Verify the official token identifier first, then choose a confirmed MultiversX trading venue.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link href="/app" className="cta cta-orange text-center">Open Command Center</Link>
+            <Link href="/" className="cta cta-blue text-center">Home</Link>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <article className="card glow-card p-6 md:p-8">
+      <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <article className="card glow-card p-5 md:p-7">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-300">Official token ID</p>
-          <div className="mt-4 rounded-2xl border border-orange-300/25 bg-orange-400/10 p-5">
-            <p className="break-all font-mono text-2xl font-black text-white md:text-3xl">{WOODY_TOKEN_ID}</p>
+          <div className="mt-4 rounded-2xl border border-orange-300/25 bg-orange-400/10 p-4 md:p-5">
+            <p className="break-all font-mono text-xl font-black text-white md:text-3xl">{WOODY_TOKEN_ID}</p>
           </div>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={copyTokenId} className="cta cta-orange">{copied ? 'Copied ✓' : 'Copy Token ID'}</button>
-            <a href={XEXCHANGE_APP_URL} target="_blank" rel="noopener noreferrer" className="cta cta-blue text-center">Open xExchange</a>
-          </div>
-          <p className="mt-4 text-xs text-white/50">Always compare the complete token identifier before swapping.</p>
+          <button type="button" onClick={copyTokenId} className="cta cta-orange mt-4 w-full sm:w-auto">
+            {copied ? 'Copied ✓' : 'Copy Token ID'}
+          </button>
+          <p className="mt-3 text-xs text-white/50">Compare the complete identifier before every swap.</p>
         </article>
 
-        <aside className="card glow-card p-6 md:p-8">
+        <aside className="card glow-card p-5 md:p-7">
           <p className="badge mb-4">Safety</p>
-          <h2 className="section-title">Verify before you swap</h2>
-          <ul className="mt-5 space-y-3 text-sm leading-relaxed text-white/75">
-            <li>✓ Verify the token ID exactly: <span className="font-mono text-orange-200">{WOODY_TOKEN_ID}</span></li>
-            <li>✓ Use the official WOODY site links.</li>
-            <li>✓ Keep your seed phrase and private key private.</li>
-            <li>✓ Review the transaction in your wallet before signing.</li>
-          </ul>
+          <h2 className="section-title">Wallet stays in control</h2>
+          <div className="mt-4 space-y-2 text-sm leading-relaxed text-white/70">
+            <p>✓ Verify <span className="font-mono text-orange-200">{WOODY_TOKEN_ID}</span>.</p>
+            <p>✓ Review token, amount, route and slippage before signing.</p>
+            <p>✓ Never enter a seed phrase or private key on a trading link.</p>
+            <p>✓ If a venue cannot find WOODY, stop instead of selecting a similar ticker.</p>
+          </div>
         </aside>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <article className="card glow-card p-6 md:p-8">
-          <h2 className="section-title">How to Buy WOODY</h2>
-          <ol className="mt-6 space-y-4">
-            {['Open xExchange', 'Connect xPortal or another MultiversX wallet', 'Search or paste WOODY-5f9d9c', 'Choose the asset and amount, then review the quote', 'Approve and sign the transaction in your wallet'].map((step, index) => (
-              <li key={step} className="flex gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-orange-300/50 bg-orange-400/15 font-bold text-orange-100">{index + 1}</span>
-                <span className="pt-2 text-sm font-semibold text-white/80">{step}</span>
-              </li>
-            ))}
-          </ol>
-        </article>
+      <section className="card glow-card p-5 md:p-8">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">Confirmed MultiversX access</p>
+          <h2 className="mt-2 text-2xl font-black text-white">Choose a trading venue</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
+            These venues are included because WOODY Monitor tracks WOODY liquidity associated with them. Availability and routing can change, so always verify the token ID in the venue before signing.
+          </p>
+        </div>
 
-        <article className="card glow-card p-6 md:p-8">
-          <h2 className="section-title">dApp status</h2>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="wallet-status-card"><p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Token ID</p><p className="mt-2 break-all font-mono text-sm font-black text-white">{WOODY_TOKEN_ID}</p></div>
-            <div className="wallet-status-card"><p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Wallet</p><p className="mt-2 text-lg font-black text-emerald-200">Supported</p></div>
-            <div className="wallet-status-card"><p className="text-[10px] uppercase tracking-[0.2em] text-white/50">On-chain balances</p><p className="mt-2 text-lg font-black text-emerald-200">Live</p></div>
-            <div className="wallet-status-card"><p className="text-[10px] uppercase tracking-[0.2em] text-white/50">Signing</p><p className="mt-2 text-lg font-black text-white">Wallet-confirmed</p></div>
-          </div>
-          <p className="mt-5 text-sm leading-relaxed text-white/60">The dApp does not custody funds. Wallets remain in control of signing.</p>
-        </article>
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          {venues.map((venue) => (
+            <article key={venue.name} className="app-dashboard-card flex flex-col">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-black text-white">{venue.name}</h3>
+                <span className="status-badge status-active">{venue.status}</span>
+              </div>
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-white/60">{venue.detail}</p>
+              <a href={venue.href} target="_blank" rel="noopener noreferrer" className="cta cta-blue mt-5 text-center">
+                Open {venue.name}
+              </a>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-sky-400/15 bg-sky-400/5 p-4 text-xs leading-relaxed text-white/55">
+        <span className="font-semibold text-sky-200">Aggregator note:</span> XOXNO&apos;s MultiversX aggregator API is still documented as routing across xExchange, OneDex and JEX, but no current public WOODY swap UI is linked here until the user-facing route is independently confirmed.
       </section>
     </main>
   );
