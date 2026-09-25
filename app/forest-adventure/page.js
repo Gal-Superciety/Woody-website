@@ -30,10 +30,11 @@ function createGame(){
 }
 export default function ForestAdventure(){
  const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null);
- const [mode,setMode]=useState('ready'),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0});
+ const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0});
  const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0});setMode('playing');},[]);
  useEffect(()=>{
-   const img=new Image();img.src='/woody-logo.png';img.onload=()=>{sprite.current=img;};
+   try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0); } catch {}
+   const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
  },[]);
  useEffect(()=>{
   const key=(e,down)=>{
@@ -94,6 +95,7 @@ export default function ForestAdventure(){
     g.particles=g.particles.filter(v=>v.life>0);
     for(const v of g.particles){v.x+=v.vx*dt;v.y+=v.vy*dt;v.vy+=250*dt;v.life-=dt;}
     uiClock+=dt;
+    if(g.ended){setBest(previous=>{const next=Math.max(previous,g.score);try{localStorage.setItem('woody-adventure-best-v1',String(next));}catch{}return next;});}
     if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor(p.x/WORLD*100))});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
@@ -158,14 +160,17 @@ export default function ForestAdventure(){
    const p=g?.player||START;
    if(p.invuln===0||Math.floor(clock*12)%2===0){
     ctx.save();ctx.translate(p.x+p.w/2,p.y+p.h/2);ctx.scale(p.facing,1);
-    const bob=p.ground?Math.sin(clock*16)*3:0;
+    const stride=p.ground&&Math.abs(p.vx)>20?Math.sin(clock*19):0;
+    const tilt=p.ground?stride*.055:Math.max(-.25,Math.min(.28,p.vy/1300));
+    ctx.rotate(tilt);
+    const bob=p.ground&&Math.abs(p.vx)>20?Math.abs(stride)*-3:0;
     // Until the supplied bird art is packaged as an animation sprite sheet, render the site's existing mascot.
-    if(sprite.current){ctx.save();ctx.beginPath();ctx.ellipse(0,bob,24,29,0,0,Math.PI*2);ctx.clip();ctx.drawImage(sprite.current,-28,-32+bob,56,64);ctx.restore();}
+    if(sprite.current){ctx.save();ctx.beginPath();ctx.ellipse(0,bob,24,29,0,0,Math.PI*2);ctx.clip();ctx.drawImage(sprite.current,-32,-42+bob,64,86);ctx.restore();}
     else{
      ctx.fillStyle='#f9a044';ctx.beginPath();ctx.ellipse(0,bob,22,27,0,0,Math.PI*2);ctx.fill();
      ctx.fillStyle='#b0ffb7';ctx.beginPath();ctx.arc(9,-9+bob,6,0,Math.PI*2);ctx.fill();
     }
-    ctx.strokeStyle='#f5a444';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-13,13+bob);ctx.lineTo(-24,p.ground?20+bob:4+bob);ctx.stroke();
+    ctx.strokeStyle='#f5a444';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-12,17+bob);ctx.lineTo(-18+stride*5,29+bob);ctx.moveTo(8,17+bob);ctx.lineTo(13-stride*5,29+bob);ctx.stroke();
     ctx.restore();
    }
    ctx.restore();
@@ -190,6 +195,7 @@ export default function ForestAdventure(){
     <div className="mb-3 flex flex-wrap gap-3 text-xs font-bold text-white/90 md:text-sm">
       <span className="rounded-full bg-amber-500/20 px-3 py-2">✦ {hud.score} POINTS</span>
       <span className="rounded-full bg-rose-500/20 px-3 py-2">♥ {hud.lives} LIVES</span>
+      <span className="rounded-full bg-orange-500/20 px-3 py-2">★ {best} BEST</span>
       <span className="rounded-full bg-sky-500/20 px-3 py-2">◷ {hud.time}s</span>
       <span className="rounded-full bg-emerald-500/20 px-3 py-2">MAP {hud.progress}%</span>
     </div>
@@ -207,6 +213,6 @@ export default function ForestAdventure(){
     </div>
     <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Coins are in-game points only.</p>
    </section>
-   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 gameplay prototype. Original WOODY bird animation artwork and polished environment assets are the next art-production milestone.</p>
+   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 prototype: custom illustrated WOODY-inspired sprite with procedural run and jump motion. Full frame-by-frame character art and hand-painted scenery remain in development.</p>
  </main>;
 }
