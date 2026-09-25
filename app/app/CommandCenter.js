@@ -105,6 +105,17 @@ export default function CommandCenter() {
           </div>
         </div>
       </section>
+      <section aria-labelledby="woody-arcade-title" className="card relative overflow-hidden border border-emerald-400/30 bg-gradient-to-br from-emerald-950/70 via-slate-950 to-orange-950/30 p-5 md:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-xl">
+            <p className="text-xs font-bold uppercase tracking-[.22em] text-emerald-300">WOODY Arcade · Season 1</p>
+            <h2 id="woody-arcade-title" className="mt-2 text-2xl font-black text-white md:text-3xl">WOODY Forest Adventure</h2>
+            <p className="mt-2 text-sm leading-relaxed text-white/65">Three levels. Collect coins, dodge traps and face Shadow WOODY King. Your personal records and unlocked levels stay on this device.</p>
+            <p className="mt-2 text-xs text-amber-200/80">Free browser game · No wallet connection required · In-game points have no token value</p>
+          </div>
+          <Link href="/forest-adventure" className="cta cta-orange shrink-0 text-center" aria-label="Play WOODY Forest Adventure">▶ PLAY WOODY</Link>
+        </div>
+      </section>
     </>
   );
 }
