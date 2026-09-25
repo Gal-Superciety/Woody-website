@@ -419,7 +419,7 @@ export default function ForestAdventure(){
     if(c.taken)continue;
     const bob=Math.sin(clock*4+c.x)*5;
     ctx.fillStyle='#ffda68';ctx.shadowBlur=14;ctx.shadowColor='#ffda68';ctx.beginPath();ctx.arc(c.x,c.y+bob,12,0,Math.PI*2);ctx.fill();
-    ctx.shadowBlur=0;ctx.strokeStyle='#fff1a8';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#855122';ctx.font='bold 13px sans-serif';ctx.fillText('viewW',c.x-6,c.y+5+bob);
+    ctx.shadowBlur=0;ctx.strokeStyle='#fff1a8';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#855122';ctx.font='bold 13px sans-serif';ctx.fillText('W',c.x-6,c.y+5+bob);
    }
    for(const e of g?.enemies||[]){
     if(!e.alive)continue;
@@ -509,7 +509,7 @@ export default function ForestAdventure(){
     <div className="woody-stage relative mx-auto w-full overflow-hidden rounded-xl">
       {mode==="playing"&&hud.notice&&<div role="status" className="pointer-events-none absolute left-1/2 top-6 z-10 w-max max-w-[90%] -translate-x-1/2 rounded-xl border-2 border-orange-300 bg-red-950/95 px-5 py-3 text-center text-sm font-black text-white shadow-xl md:text-xl">{hud.notice}</div>}
       {mode==="playing"&&hud.remaining<=20&&<div className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-red-700/95 px-3 py-2 text-sm font-black text-white animate-pulse">HURRY UP!</div>}
-      <canvas ref={canvas} width={viewW} height={H} aria-label="WOODY Forest Adventure playable level" className="woody-canvas block aspect-[16/9] w-full"/>
+      <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="woody-canvas block aspect-[16/9] w-full"/>
       {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 px-4 text-center">
         <h2 className="text-xl font-black text-orange-200 md:text-4xl">{mode==='won'?(game.current?.level===3?'FOREST CONQUEROR!':'LEVEL COMPLETE!'):mode==='over'?'GAME OVER':'CHOOSE YOUR LEVEL'}</h2>
         <p className="mt-3 max-w-md text-sm text-white/80">{mode==='won'?'You reached the portal! Can you improve your score?':'Find the glowing blue crystals to unlock double jumps. Time your moves across shifting platforms.'}</p>
@@ -521,7 +521,7 @@ export default function ForestAdventure(){
       <div className="flex min-w-0 gap-1.5">{button('left','◀')}{button('right','▶')}</div>
       <div className="flex min-w-0 gap-1.5">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
     </div>
-    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / viewW to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
+    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
    </section>
    <p className="woody-footer mt-4 text-center text-xs text-white/50">Chapter 1 time trial: reach the portal before the 1:50 timer expires. Time-outs restart the entire map; other hazards use checkpoints. Hand-painted production art is still in progress.</p>
    <style jsx global>{`
