@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createForestAudio } from './audio';
 
 const W = 960, H = 540, WORLD = 7900, FLOOR = 456;
 const LEVELS=[
@@ -76,7 +77,10 @@ function createGame(level=1){
  elapsed:0,remaining:config.seconds,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
- const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null),arcade=useRef(null);
+ const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
+ const [soundOn,setSoundOn]=useState(true);
+ const toggleSound=()=>{const next=!soundOn;setSoundOn(next);audio.current?.setEnabled(next);};
+ useEffect(()=>{audio.current=createForestAudio();return()=>{audio.current?.dispose();audio.current=null;};},[]);
  const [fullScreen,setFullScreen]=useState(false);
  const enterFullscreen=async()=>{
    try{
@@ -91,7 +95,7 @@ export default function ForestAdventure(){
  },[]);
  const [selectedLevel,setSelectedLevel]=useState(1),[unlocked,setUnlocked]=useState(1);
  const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});
- const start=useCallback((level=selectedLevel)=>{game.current=createGame(level);setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:LEVELS[level-1].seconds,notice:''});setMode('playing');},[selectedLevel]);
+ const start=useCallback((level=selectedLevel)=>{audio.current?.start();game.current=createGame(level);setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:LEVELS[level-1].seconds,notice:''});setMode('playing');},[selectedLevel]);
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1))); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
@@ -130,17 +134,17 @@ export default function ForestAdventure(){
     if(g.remaining<=0){
       // Time-out is the only hazard that ignores checkpoints. Keep earned score,
       // collected coins, crystals and defeated enemies, but restart the map.
-      g.lives--;g.timeouts++;g.checkpoint=g.config.start;g.remaining=g.config.seconds;
+      audio.current?.play('hit');g.lives--;g.timeouts++;g.checkpoint=g.config.start;g.remaining=g.config.seconds;
       g.crumble=crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false}));
       p.x=g.config.start;p.y=START.y;p.vx=0;p.vy=0;p.ground=false;p.jumps=0;p.jumpHeld=false;
       p.invuln=1.5;g.camera=0;g.keys.jump=false;g.keys.shoot=false;g.shots=[];
       g.notice=g.lives>0?'TIME UP! ONE LIFE LOST — BACK TO START':'TIME UP! GAME OVER';
       g.noticeUntil=g.elapsed+3;
-      if(g.lives<=0){g.ended=true;setMode('over');}
+      if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
     }
     p.vx=(Number(g.keys.right)-Number(g.keys.left))*280;
     if(p.vx)p.facing=Math.sign(p.vx);
-    if(g.keys.jump&&!p.jumpHeld){
+    if(g.keys.jump&&!p.jumpHeld){audio.current?.play(p.ground?'jump':'double');
       if(p.ground){p.vy=-620;p.ground=false;p.jumps=1;}
       else if(p.doubleJump>0&&p.jumps===1){p.vy=-570;p.jumps=2;p.doubleJump--;g.score+=15;
        for(let i=0;i<16;i++)g.particles.push({x:p.x+p.w/2,y:p.y+p.h,vx:(Math.random()-.5)*250,vy:(Math.random()-.5)*140,life:.65});}
@@ -148,7 +152,7 @@ export default function ForestAdventure(){
     p.jumpHeld=g.keys.jump;
     p.shotCooldown=Math.max(0,p.shotCooldown-dt);
     if(g.keys.shoot&&p.flame>0&&p.shotCooldown===0){
-      p.flame--;p.shotCooldown=.28;
+      p.flame--;p.shotCooldown=.28;audio.current?.play('fire');
       g.shots.push({x:p.x+p.w/2+p.facing*24,y:p.y+25,vx:p.facing*650,life:.85});
       for(let i=0;i<6;i++)g.particles.push({x:p.x+p.w/2+p.facing*26,y:p.y+25,vx:p.facing*(80+Math.random()*160),vy:(Math.random()-.5)*100,life:.28});
     }
@@ -170,19 +174,19 @@ export default function ForestAdventure(){
     if(g.level===3&&p.x>7270)g.checkpoint=7310;
     for(const power of g.powerups){
       if(!power.taken&&overlap(p,{x:power.x-18,y:power.y-18,w:36,h:36})){
-        power.taken=true;p.doubleJump=Math.min(3,p.doubleJump+3);g.score+=100;
+        power.taken=true;audio.current?.play('power');p.doubleJump=Math.min(3,p.doubleJump+3);g.score+=100;
         for(let i=0;i<24;i++)g.particles.push({x:power.x,y:power.y,vx:(Math.random()-.5)*320,vy:(Math.random()-.5)*240,life:1});
       }
     }
     for(const flame of g.flames){
       if(!flame.taken&&overlap(p,{x:flame.x-16,y:flame.y-17,w:32,h:34})){
-        flame.taken=true;p.flame=Math.min(12,p.flame+5);g.score+=50;
+        flame.taken=true;audio.current?.play('power');p.flame=Math.min(12,p.flame+5);g.score+=50;
         g.notice='FLAME POWER! +5 FIREBALLS';g.noticeUntil=g.elapsed+2;
       }
     }
     for(const c of g.coins){
       if(!c.taken&&overlap(p,{x:c.x-12,y:c.y-12,w:24,h:24})){
-       c.taken=true;g.score+=25;
+       c.taken=true;g.score+=25;audio.current?.play('coin');
        for(let i=0;i<7;i++)g.particles.push({x:c.x,y:c.y,vx:(Math.random()-.5)*130,vy:-Math.random()*170,life:.5});
       }
     }
@@ -211,8 +215,8 @@ export default function ForestAdventure(){
       for(const shot of g.enemyShots){
         shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;
         if(shot.life>0&&p.invuln===0&&overlap({x:shot.x-9,y:shot.y-9,w:18,h:18},p)){
-          shot.life=0;g.lives--;p.invuln=1.5;
-          if(g.lives<=0){g.ended=true;setMode('over');}
+          shot.life=0;audio.current?.play('hit');g.lives--;p.invuln=1.5;
+          if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
           else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;g.enemyShots=[];}
         }
       }
@@ -223,7 +227,7 @@ export default function ForestAdventure(){
       shot.x+=shot.vx*dt;shot.life-=dt;
       for(const enemy of g.enemies){
         if(enemy.alive&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},enemy)){
-          enemy.alive=false;shot.life=0;g.score+=75;
+          enemy.alive=false;shot.life=0;g.score+=75;audio.current?.play('enemy');
           for(let i=0;i<14;i++)g.particles.push({x:enemy.x+18,y:enemy.y+17,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*210,life:.65});
           break;
         }
@@ -231,13 +235,13 @@ export default function ForestAdventure(){
       if(g.level===3&&shot.life>0){
         for(const soldier of g.shadows){
           if(soldier.hp>0&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},{x:soldier.x,y:FLOOR-55,w:43,h:55})){
-            soldier.hp--;shot.life=0;if(!soldier.hp)g.score+=150;break;
+            soldier.hp--;shot.life=0;if(!soldier.hp){g.score+=150;audio.current?.play('enemy');}break;
           }
         }
         const b=g.boss;
         if(shot.life>0&&b?.alive&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},b)){
           b.hp--;shot.life=0;g.score+=35;
-          if(b.hp<=0){b.alive=false;g.bossCleared=true;g.score+=1000;g.notice='SHADOW WOODY KING DEFEATED!';g.noticeUntil=g.elapsed+4;}
+          if(b.hp<=0){audio.current?.play('boss');b.alive=false;g.bossCleared=true;g.score+=1000;g.notice='SHADOW WOODY KING DEFEATED!';g.noticeUntil=g.elapsed+4;}
         }
       }
       if(solids.some(v=>overlap({x:shot.x-5,y:shot.y-5,w:10,h:10},v)))shot.life=0;
@@ -252,10 +256,10 @@ export default function ForestAdventure(){
      if(!e.alive)continue;
      e.x=e.origin+Math.sin(g.elapsed*1.4+e.phase)*50;
      if(overlap(p,e)&&p.invuln===0){
-      if(p.vy>120&&oldBottom<=e.y+14){e.alive=false;p.vy=-390;g.score+=75;}
+      if(p.vy>120&&oldBottom<=e.y+14){e.alive=false;p.vy=-390;g.score+=75;audio.current?.play('enemy');}
       else{
-       g.lives--;p.invuln=1.4;
-       if(g.lives<=0){g.ended=true;setMode('over');}
+       audio.current?.play('hit');g.lives--;p.invuln=1.4;
+       if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
        else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
       }
      }
@@ -263,15 +267,15 @@ export default function ForestAdventure(){
     if(g.level===3&&!g.ended&&p.invuln===0){
       for(const soldier of g.shadows){
         if(soldier.hp>0&&overlap(p,{x:soldier.x,y:FLOOR-55,w:43,h:55})){
-          g.lives--;p.invuln=1.5;
-          if(g.lives<=0){g.ended=true;setMode('over');}
+          audio.current?.play('hit');g.lives--;p.invuln=1.5;
+          if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
           else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
           break;
         }
       }
       if(g.boss?.alive&&p.invuln===0&&overlap(p,g.boss)){
-        g.lives--;p.invuln=1.5;
-        if(g.lives<=0){g.ended=true;setMode('over');}
+        audio.current?.play('hit');g.lives--;p.invuln=1.5;
+        if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
         else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
       }
     }
@@ -280,16 +284,16 @@ export default function ForestAdventure(){
       for(const obstacle of g.logs){
         // Tight hitbox allows the bird's feet to visually clear the wood.
         if(overlap({x:p.x+7,y:p.y+9,w:p.w-14,h:p.h-15},{x:obstacle.x+5,y:obstacle.y+4,w:obstacle.w-10,h:obstacle.h-5})){
-          g.lives--;p.invuln=1.5;
-          if(g.lives<=0){g.ended=true;setMode('over');}
+          audio.current?.play('hit');g.lives--;p.invuln=1.5;
+          if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
           else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vx=0;p.vy=0;p.jumps=0;p.ground=false;}
           break;
         }
       }
     }
-    if(p.y>H+150&&!g.ended){g.lives--;if(g.lives<=0){g.ended=true;setMode('over');}else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}}
+    if(p.y>H+150&&!g.ended){audio.current?.play('hit');g.lives--;if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}}
     if(!g.ended&&p.x>=g.config.end-155&&(g.level!==3||g.bossCleared)){
-      g.ended=true;g.won=true;g.score+=500;
+      g.ended=true;g.won=true;g.score+=500;audio.current?.play('win');audio.current?.stop();
       if(g.level<3){const next=g.level+1;setUnlocked(old=>Math.max(old,next));try{localStorage.setItem('woody-adventure-unlocked-v1',String(next));}catch{}setSelectedLevel(next);}
       setMode('won');
     }
@@ -495,6 +499,7 @@ export default function ForestAdventure(){
    </section>
    <section ref={arcade} className="woody-arcade overflow-hidden rounded-2xl border border-emerald-400/30 bg-slate-950 p-1.5 shadow-[0_0_50px_rgba(16,185,129,.12)] md:rounded-3xl md:p-4">
     <div className="woody-hud mb-1.5 flex flex-wrap items-center gap-1 text-[10px] font-bold text-white/90 sm:mb-3 sm:gap-3 sm:text-sm">
+      <button type="button" onClick={toggleSound} aria-label={soundOn?'Mute game sounds':'Enable game sounds'} className="woody-sound rounded-lg border border-cyan-300/50 bg-cyan-900/70 px-2 py-1.5 text-white">{soundOn?'🔊 SOUND':'🔇 MUTED'}</button>
       <button type="button" onClick={enterFullscreen} className="woody-fullscreen rounded-lg border border-orange-300/60 bg-orange-600/70 px-2 py-1.5 text-white">{fullScreen?'⤢ EXIT FULLSCREEN':'⛶ FULLSCREEN'}</button>
       <span className="rounded-full bg-violet-500/30 px-2 py-1">LEVEL {game.current?.level||selectedLevel} / 3</span>
       <span className="rounded-full bg-amber-500/20 px-2 py-1">✦ {hud.score} POINTS</span>
@@ -561,6 +566,7 @@ export default function ForestAdventure(){
          overflow: hidden !important; font-size: 10px !important;
        }
        .woody-arcade .woody-hud > span { padding: 3px 6px !important; white-space: nowrap !important; }
+       .woody-arcade .woody-sound { flex-shrink:0 !important; padding:3px 6px !important; font-size:10px !important; }
        .woody-arcade .woody-fullscreen { flex-shrink: 0 !important; padding: 3px 6px !important; font-size: 10px !important; }
        .woody-arcade .woody-stage {
          flex: 1 1 0 !important; min-height: 0 !important;
