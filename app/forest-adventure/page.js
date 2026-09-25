@@ -53,8 +53,8 @@ function createGame(){
 }
 export default function ForestAdventure(){
  const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null);
- const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,remaining:ROUND_SECONDS,notice:'',remaining:ROUND_SECONDS,notice:''});
- const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0,boost:0});setMode('playing');},[]);
+ const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,remaining:ROUND_SECONDS,notice:''});
+ const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0,boost:0,remaining:ROUND_SECONDS,notice:''});setMode('playing');},[]);
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
