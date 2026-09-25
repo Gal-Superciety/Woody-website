@@ -20,18 +20,21 @@ const coinPositions = [
   [3330,277],[3410,277],[3660,410]
 ];
 const enemyPositions = [960,1630,2380,3070,3500];
-const START = {x:65,y:FLOOR-58,vx:0,vy:0,w:43,h:58,ground:false,facing:1,invuln:0};
+const powerups = [[1120,265],[2570,267]];
+const movingPlatforms = [{x:1280,y:348,w:106,h:17,range:65,phase:0},{x:2740,y:335,w:115,h:17,range:70,phase:2}];
+const START = {x:65,y:FLOOR-58,vx:0,vy:0,w:43,h:58,ground:false,facing:1,invuln:0,jumps:0,doubleJump:0,jumpHeld:false};
 const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 function createGame(){
  return {player:{...START},coins:coinPositions.map(([x,y])=>({x,y,taken:false})),
  enemies:enemyPositions.map((x,i)=>({x,y:FLOOR-38,w:36,h:38,origin:x,phase:i*1.8,alive:true})),
  keys:{left:false,right:false,jump:false},camera:0,score:0,lives:3,checkpoint:65,
+ powerups:powerups.map(([x,y])=>({x,y,taken:false})),moving:movingPlatforms.map(v=>({...v,currentY:v.y})),
  elapsed:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
  const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null);
- const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0});
- const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0});setMode('playing');},[]);
+ const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0});
+ const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0,boost:0});setMode('playing');},[]);
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
@@ -62,15 +65,27 @@ export default function ForestAdventure(){
     g.elapsed+=dt;p.invuln=Math.max(0,p.invuln-dt);
     p.vx=(Number(g.keys.right)-Number(g.keys.left))*280;
     if(p.vx)p.facing=Math.sign(p.vx);
-    if(g.keys.jump&&p.ground){p.vy=-620;p.ground=false;}
+    if(g.keys.jump&&!p.jumpHeld){
+      if(p.ground){p.vy=-620;p.ground=false;p.jumps=1;}
+      else if(p.doubleJump>0&&p.jumps===1){p.vy=-570;p.jumps=2;p.doubleJump--;g.score+=15;
+       for(let i=0;i<16;i++)g.particles.push({x:p.x+p.w/2,y:p.y+p.h,vx:(Math.random()-.5)*250,vy:(Math.random()-.5)*140,life:.65});}
+    }
+    p.jumpHeld=g.keys.jump;
     p.x=Math.max(0,Math.min(WORLD-p.w,p.x+p.vx*dt));
     p.vy=Math.min(1000,p.vy+1750*dt);p.y+=p.vy*dt;p.ground=false;
-    for(const s of solids){
+    for(const platform of g.moving){platform.currentY=platform.y+Math.sin(g.elapsed*1.4+platform.phase)*platform.range;}
+    for(const s of [...solids,...g.moving.map(v=>({...v,y:v.currentY}))]){
      if(p.x+p.w>s.x+5&&p.x<s.x+s.w-5&&oldBottom<=s.y+9&&p.y+p.h>=s.y&&p.vy>=0){
-       p.y=s.y-p.h;p.vy=0;p.ground=true;
+       p.y=s.y-p.h;p.vy=0;p.ground=true;p.jumps=0;
      }
     }
     if(p.x>2050)g.checkpoint=2170;
+    for(const power of g.powerups){
+      if(!power.taken&&overlap(p,{x:power.x-18,y:power.y-18,w:36,h:36})){
+        power.taken=true;p.doubleJump=Math.min(3,p.doubleJump+3);g.score+=100;
+        for(let i=0;i<24;i++)g.particles.push({x:power.x,y:power.y,vx:(Math.random()-.5)*320,vy:(Math.random()-.5)*240,life:1});
+      }
+    }
     for(const c of g.coins){
       if(!c.taken&&overlap(p,{x:c.x-12,y:c.y-12,w:24,h:24})){
        c.taken=true;g.score+=25;
@@ -85,7 +100,7 @@ export default function ForestAdventure(){
       else{
        g.lives--;p.invuln=1.4;
        if(g.lives<=0){g.ended=true;setMode('over');}
-       else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;}
+       else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.jumps=0;}
       }
      }
     }
@@ -96,7 +111,7 @@ export default function ForestAdventure(){
     for(const v of g.particles){v.x+=v.vx*dt;v.y+=v.vy*dt;v.vy+=250*dt;v.life-=dt;}
     uiClock+=dt;
     if(g.ended){setBest(previous=>{const next=Math.max(previous,g.score);try{localStorage.setItem('woody-adventure-best-v1',String(next));}catch{}return next;});}
-    if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor(p.x/WORLD*100))});uiClock=0;}
+    if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor(p.x/WORLD*100)),boost:p.doubleJump});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
    // Layered fantasy forest: distant sky, mountains, canopies, trunks and foreground.
@@ -116,6 +131,14 @@ export default function ForestAdventure(){
      }
     }
    }
+   // Distant cascading falls, shafts of light and luminous forest atmosphere.
+   for(const wx of [455,1510,2480,3500]){
+    const x=wx-cam*.3;
+    if(x<-150||x>W+150)continue;
+    const fall=ctx.createLinearGradient(x,140,x+110,140);fall.addColorStop(0,'rgba(91,222,230,0)');fall.addColorStop(.5,'rgba(164,250,245,.44)');fall.addColorStop(1,'rgba(91,222,230,0)');
+    ctx.fillStyle=fall;ctx.beginPath();ctx.moveTo(x,162);ctx.lineTo(x+92,162);ctx.lineTo(x+108,393);ctx.lineTo(x-10,393);ctx.fill();
+    ctx.fillStyle='rgba(190,251,233,.27)';for(let n=0;n<9;n++){ctx.beginPath();ctx.ellipse(x+Math.sin(clock*2+n)*40+45,390+n%3*4,14,3,0,0,Math.PI*2);ctx.fill();}
+   }
    ctx.save();ctx.translate(-cam,0);
    // Floating spores and collectible fireflies.
    for(let x=0;x<WORLD;x+=115){
@@ -132,12 +155,34 @@ export default function ForestAdventure(){
       ctx.fillStyle='#a9ce64';ctx.beginPath();ctx.ellipse(x,s.y-4,12,7,0,0,Math.PI*2);ctx.fill();
     }
    }
+   // Suspended rune stones move vertically and require timed jumps.
+   for(const platform of g?.moving||[]){
+    const y=platform.currentY;ctx.shadowColor='#7fffe0';ctx.shadowBlur=18;
+    ctx.fillStyle='#426f71';ctx.fillRect(platform.x,y,platform.w,platform.h);
+    ctx.fillStyle='#b6fbd3';ctx.fillRect(platform.x,y,platform.w,4);ctx.shadowBlur=0;
+    for(let j=16;j<platform.w;j+=29){ctx.strokeStyle='#a3f7d9';ctx.beginPath();ctx.arc(platform.x+j,y+10,5,0,Math.PI);ctx.stroke();}
+   }
+   // Giant mushrooms, dangling vines and stone ruins define the forest's silhouette.
+   for(let x=175;x<WORLD;x+=390){
+    const y=FLOOR-4;
+    ctx.strokeStyle='#275a4b';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x+110,0);ctx.bezierCurveTo(x+98,70,x+146,114,x+125,171+Math.sin(clock+x)*8);ctx.stroke();
+    if(solids.some(v=>v.y===FLOOR&&x>=v.x&&x<v.x+v.w)){
+      ctx.fillStyle='#d5bda1';ctx.fillRect(x,y-28,12,27);ctx.fillStyle='#b84f69';ctx.beginPath();ctx.ellipse(x+6,y-27,27,14,0,Math.PI,0);ctx.fill();
+      ctx.fillStyle='#f4d9a3';for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(x-8+k*13,y-35+(k%2)*5,3,0,Math.PI*2);ctx.fill();}
+    }
+   }
    // Waterfalls and ravines are hazards, not invisible ground.
    for(const [a,b] of [[620,760],[1330,1440],[2030,2140],[2760,2890]]){
     const water=ctx.createLinearGradient(0,FLOOR,0,H);water.addColorStop(0,'#64dfdc');water.addColorStop(1,'#0a6487');
     ctx.fillStyle=water;ctx.fillRect(a,FLOOR+24,b-a,H-FLOOR);
     ctx.strokeStyle='rgba(204,255,245,.7)';ctx.lineWidth=2;
     for(let i=0;i<4;i++){const yy=FLOOR+34+i*19;ctx.beginPath();ctx.moveTo(a,yy);ctx.quadraticCurveTo((a+b)/2,yy+Math.sin(clock*3+i)*7,b,yy);ctx.stroke();}
+   }
+   for(const power of g?.powerups||[]){
+    if(power.taken)continue;const bob=Math.sin(clock*3+power.x)*7;
+    ctx.save();ctx.translate(power.x,power.y+bob);ctx.rotate(clock*.65);ctx.shadowBlur=26;ctx.shadowColor='#63f8ff';
+    ctx.fillStyle='#67e8f9';ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(16,0);ctx.lineTo(0,20);ctx.lineTo(-16,0);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#0b5774';ctx.font='bold 19px sans-serif';ctx.fillText('✦',-9,7);ctx.restore();
    }
    for(const c of g?.coins||[]){
     if(c.taken)continue;
@@ -196,6 +241,7 @@ export default function ForestAdventure(){
       <span className="rounded-full bg-amber-500/20 px-3 py-2">✦ {hud.score} POINTS</span>
       <span className="rounded-full bg-rose-500/20 px-3 py-2">♥ {hud.lives} LIVES</span>
       <span className="rounded-full bg-orange-500/20 px-3 py-2">★ {best} BEST</span>
+      <span className="rounded-full bg-cyan-500/20 px-3 py-2">✦ {hud.boost||0} DOUBLE JUMPS</span>
       <span className="rounded-full bg-sky-500/20 px-3 py-2">◷ {hud.time}s</span>
       <span className="rounded-full bg-emerald-500/20 px-3 py-2">MAP {hud.progress}%</span>
     </div>
@@ -203,7 +249,7 @@ export default function ForestAdventure(){
       <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="block aspect-[16/9] w-full"/>
       {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 px-4 text-center">
         <h2 className="text-2xl font-black text-orange-200 md:text-4xl">{mode==='won'?'FOREST CONQUERED!':mode==='over'?'GAME OVER':'THE FOREST AWAITS'}</h2>
-        <p className="mt-3 max-w-md text-sm text-white/80">{mode==='won'?'You reached the portal! Can you improve your score?':'Jump across gaps, avoid enemies and explore the entire level.'}</p>
+        <p className="mt-3 max-w-md text-sm text-white/80">{mode==='won'?'You reached the portal! Can you improve your score?':'Find the glowing blue crystals to unlock double jumps. Time your moves across shifting platforms.'}</p>
         <button onClick={start} className="mt-5 rounded-xl bg-orange-500 px-8 py-3 font-black text-white hover:bg-orange-400">{mode==='ready'?'START ADVENTURE':'PLAY AGAIN'}</button>
       </div>}
     </div>
@@ -211,8 +257,8 @@ export default function ForestAdventure(){
       <div className="flex gap-2">{button('left','◀ LEFT')}{button('right','RIGHT ▶')}</div>
       {button('jump','▲ JUMP')}
     </div>
-    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Coins are in-game points only.</p>
+    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Blue crystals grant three mid-air double jumps. Coins are in-game points only.</p>
    </section>
-   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 prototype: custom illustrated WOODY-inspired sprite with procedural run and jump motion. Full frame-by-frame character art and hand-painted scenery remain in development.</p>
+   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 preview: moving rune platforms, glowing double-jump crystals and enhanced enchanted-forest scenery. Hand-painted production art is still in progress.</p>
  </main>;
 }
