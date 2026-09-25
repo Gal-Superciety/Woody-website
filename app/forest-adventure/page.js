@@ -429,6 +429,55 @@ export default function ForestAdventure(){
        .woody-control { padding: 6px 8px; font-size: 14px; }
        body:has(.woody-page) { overflow: hidden; }
      }
+     /* Mobile browsers may report >900 CSS px in landscape, so do not gate
+        the playable layout on max-width. Pin the arcade to the VISUAL viewport:
+        the site's navigation and browser chrome no longer push controls away. */
+     @media (orientation: landscape) and (pointer: coarse) {
+       .woody-arcade {
+         position: fixed !important; inset: 0 !important; z-index: 99999 !important;
+         box-sizing: border-box !important; display: flex !important;
+         flex-direction: column !important; align-items: center !important;
+         width: 100vw !important; height: 100dvh !important;
+         max-width: none !important; margin: 0 !important;
+         padding: 2px max(8px,env(safe-area-inset-right)) max(3px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left)) !important;
+         border-radius: 0 !important; overflow: hidden !important;
+         background: #020617 !important;
+       }
+       .woody-arcade .woody-help, .woody-arcade .woody-secondary { display:none !important; }
+       .woody-arcade .woody-hud {
+         align-self: stretch !important; display: flex !important;
+         flex-wrap: nowrap !important; justify-content: center !important;
+         flex: 0 0 29px !important; min-height: 0 !important;
+         margin: 0 0 2px !important; gap: 4px !important;
+         overflow: hidden !important; font-size: 10px !important;
+       }
+       .woody-arcade .woody-hud > span { padding: 3px 6px !important; white-space: nowrap !important; }
+       .woody-arcade .woody-fullscreen { flex-shrink: 0 !important; padding: 3px 6px !important; font-size: 10px !important; }
+       .woody-arcade .woody-stage {
+         flex: 1 1 0 !important; min-height: 0 !important;
+         width: min(100%, calc((100dvh - 91px) * 16 / 9)) !important;
+         max-width: 100% !important; aspect-ratio: auto !important;
+         margin: 0 auto !important; overflow: hidden !important;
+       }
+       .woody-arcade .woody-canvas {
+         display: block !important; width: 100% !important;
+         height: 100% !important; aspect-ratio: auto !important;
+         object-fit: contain !important;
+       }
+       .woody-arcade .woody-controls {
+         align-self: stretch !important; width: 100% !important;
+         flex: 0 0 54px !important; min-height: 0 !important;
+         display: grid !important; grid-template-columns: 1fr 1fr !important;
+         margin: 3px 0 0 !important; gap: 12px !important;
+       }
+       .woody-arcade .woody-controls > div { min-width: 0 !important; gap: 8px !important; }
+       .woody-arcade .woody-control {
+         min-width: 0 !important; height: 100% !important;
+         padding: 4px 5px !important; font-size: 14px !important;
+         line-height: 1 !important; border-radius: 12px !important;
+       }
+       .woody-arcade:fullscreen { inset: 0 !important; }
+     }
      @media (max-width: 600px) and (orientation: portrait) {
        .woody-intro { padding: 10px; margin-bottom: 6px; }
        .woody-intro h1 { font-size: 20px; margin-top: 2px; }
