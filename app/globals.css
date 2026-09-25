@@ -189,3 +189,30 @@ h3 {
   70% { box-shadow: 0 0 0 8px rgba(110, 231, 183, 0), 0 0 12px rgba(110, 231, 183, 0.9); }
   100% { box-shadow: 0 0 0 0 rgba(110, 231, 183, 0), 0 0 12px rgba(110, 231, 183, 0.9); }
 }
+
+/* WOODY Website 2.0 — homepage-only design layer. Existing app and game remain untouched. */
+.woody-home-hero {
+  border-color: rgba(251, 146, 60, .25);
+  background: radial-gradient(circle at 80% 40%, rgba(249,115,22,.19), transparent 43%),
+    radial-gradient(circle at 14% 90%, rgba(14,165,233,.12), transparent 47%),
+    linear-gradient(125deg, #0b1426, #070b16 64%, #15101c);
+  box-shadow: 0 22px 85px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.08);
+}
+.woody-home-hero::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 76% 49%, rgba(251,146,60,.14), transparent 37%);
+}
+.woody-home-title { letter-spacing: -.065em; text-shadow: 0 0 42px rgba(251,146,60,.16); }
+.woody-home-mascot { filter: drop-shadow(0 22px 38px rgba(249,115,22,.13)); animation: woody-home-float 7s ease-in-out infinite; }
+.woody-home-metrics .live-stat-card { background: linear-gradient(150deg,rgba(20,31,51,.94),rgba(7,13,27,.91)); border-color: rgba(148,163,184,.16); }
+.woody-home-tile {
+  display:flex; flex-direction:column; align-items:flex-start; gap:12px; min-height:225px; padding:26px;
+  border:1px solid rgba(148,163,184,.16); border-radius:24px;
+  background:linear-gradient(145deg,rgba(19,31,51,.85),rgba(8,13,27,.91));
+  transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease;
+}
+.woody-home-tile:hover,.woody-home-tile:focus-visible { transform:translateY(-4px); border-color:rgba(251,146,60,.48); box-shadow:0 14px 38px rgba(0,0,0,.25); }
+.woody-home-tile-icon { display:grid;place-items:center;width:46px;height:46px;border-radius:14px;font-size:26px;color:#fdba74;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.22); }
+.woody-home-feature { border-color:rgba(56,189,248,.19); }
+@keyframes woody-home-float { 0%,100% {transform:translateY(0)} 50% {transform:translateY(-9px)} }
+@media (prefers-reduced-motion:reduce) { .woody-home-mascot {animation:none} .woody-home-tile {transition:none} }
