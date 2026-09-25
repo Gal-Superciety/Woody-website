@@ -14,13 +14,13 @@ const venues = [
   },
   {
     name: 'OneDex',
-    href: 'https://swap.onedex.app/',
+    href: 'https://swap.onedex.app/swap?firstToken=EGLD&secondToken=WOODY-5f9d9c',
     detail: 'WOODY/EGLD liquidity is tracked by WOODY Monitor',
     status: 'Verified venue',
   },
   {
     name: 'JEX',
-    href: 'https://app.jexchange.io/',
+    href: 'https://app.jexchange.io/?buyToken=WOODY-5f9d9c&paymentToken=EGLD',
     detail: 'WOODY/JEX, WOODY/BOBER and WOODY/OLV pools are tracked',
     status: 'Verified venue',
   },
