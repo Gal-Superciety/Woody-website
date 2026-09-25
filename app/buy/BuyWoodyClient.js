@@ -14,7 +14,7 @@ const venues = [
   },
   {
     name: 'OneDex',
-    href: 'https://onedex.app/',
+    href: 'https://swap.onedex.app/',
     detail: 'WOODY/EGLD liquidity is tracked by WOODY Monitor',
     status: 'Verified venue',
   },
