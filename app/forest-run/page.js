@@ -110,7 +110,7 @@ export default function ForestRun() {
       for (const y of [GROUND + 18, GROUND + 53]) {
         ctx.beginPath(); ctx.moveTo(0, y + bend * 0.25); ctx.bezierCurveTo(300, y - bend * 0.3, 600, y + bend * 0.3, WIDTH, y - bend * 0.2); ctx.stroke();
       }
-      ctx.setLineDash([];
+      ctx.setLineDash([]);
       ctx.fillStyle = '#7ba846'; ctx.fillRect(0, GROUND, WIDTH, 11);
       ctx.fillStyle = '#2a472d';
       for (let x = -(distance % 75); x < WIDTH; x += 75) ctx.fillRect(x, 380, 30, 4);
