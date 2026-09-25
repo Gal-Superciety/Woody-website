@@ -6,6 +6,7 @@ const WIDTH = 900;
 const HEIGHT = 430;
 const GROUND = 342;
 const BIRD_X = 158;
+const LANES = [86, 158, 230];
 const BIRD_SIZE = 65;
 const GRAVITY = 1550;
 const JUMP = -635;
@@ -17,6 +18,7 @@ export default function ForestRun() {
   const frameRef = useRef(null);
   const mascotRef = useRef(null);
   const [status, setStatus] = useState('ready');
+  const [lane, setLane] = useState(1);
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(0);
 
@@ -29,10 +31,11 @@ export default function ForestRun() {
 
   const start = useCallback(() => {
     gameRef.current = {
-      birdY: GROUND - BIRD_SIZE, velocity: 0, objects: [], elapsed: 0,
+      birdY: GROUND - BIRD_SIZE, velocity: 0, lane: 1, objects: [], elapsed: 0,
       spawnIn: 1, distance: 0, coins: 0, lastTime: null, ended: false
     };
     setScore(0);
+    setLane(1);
     setStatus('playing');
   }, []);
 
@@ -42,8 +45,17 @@ export default function ForestRun() {
     if (game.birdY >= GROUND - BIRD_SIZE - 3) game.velocity = JUMP;
   }, [start]);
 
+  const move = useCallback((direction) => {
+    const game = gameRef.current;
+    if (!game || game.ended) return;
+    game.lane = Math.max(0, Math.min(2, game.lane + direction));
+    setLane(game.lane);
+  }, []);
+
   useEffect(() => {
     const onKey = (event) => {
+      if (['ArrowLeft', 'KeyA'].includes(event.code)) { event.preventDefault(); if (!event.repeat) move(-1); return; }
+      if (['ArrowRight', 'KeyD'].includes(event.code)) { event.preventDefault(); if (!event.repeat) move(1); return; }
       if (['Space', 'ArrowUp', 'KeyW'].includes(event.code)) {
         event.preventDefault();
         if (!event.repeat) jump();
@@ -51,7 +63,7 @@ export default function ForestRun() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [jump]);
+  }, [jump, move]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -88,7 +100,17 @@ export default function ForestRun() {
           }
         }
       }
-      ctx.fillStyle = '#385b2f'; ctx.fillRect(0, GROUND, WIDTH, HEIGHT - GROUND);
+      // Winding forest trail: three clearly marked running lanes, scenery scrolls horizontally.
+      const bend = Math.sin(distance / 510) * 24;
+      ctx.fillStyle = '#385b2f'; ctx.fillRect(0, GROUND - 4, WIDTH, HEIGHT - GROUND + 4);
+      ctx.fillStyle = '#80603c';
+      ctx.beginPath(); ctx.moveTo(0, GROUND - 16 + bend); ctx.bezierCurveTo(240, GROUND - 35 - bend, 600, GROUND - 7 + bend, WIDTH, GROUND - 26 - bend);
+      ctx.lineTo(WIDTH, HEIGHT); ctx.lineTo(0, HEIGHT); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#d8bd77'; ctx.lineWidth = 3; ctx.setLineDash([26, 24]);
+      for (const y of [GROUND + 18, GROUND + 53]) {
+        ctx.beginPath(); ctx.moveTo(0, y + bend * 0.25); ctx.bezierCurveTo(300, y - bend * 0.3, 600, y + bend * 0.3, WIDTH, y - bend * 0.2); ctx.stroke();
+      }
+      ctx.setLineDash([];
       ctx.fillStyle = '#7ba846'; ctx.fillRect(0, GROUND, WIDTH, 11);
       ctx.fillStyle = '#2a472d';
       for (let x = -(distance % 75); x < WIDTH; x += 75) ctx.fillRect(x, 380, 30, 4);
@@ -103,17 +125,22 @@ export default function ForestRun() {
         game.spawnIn -= dt;
         if (game.spawnIn <= 0) {
           const coin = Math.random() < 0.42;
-          game.objects.push({ type: coin ? 'coin' : 'log', x: WIDTH + 25, y: coin ? GROUND - 108 - Math.random() * 48 : GROUND - 36, hit: false });
+          game.objects.push({ type: coin ? 'coin' : 'log', x: WIDTH + 25, lane: Math.floor(Math.random() * 3), hit: false });
+          // Occasionally spawn a second obstacle to require both jumping and lane changes.
+          if (game.elapsed > 12 && Math.random() < 0.28) {
+            const first = game.objects[game.objects.length - 1];
+            game.objects.push({ type: 'log', x: WIDTH + 25, lane: (first.lane + 1 + Math.floor(Math.random() * 2)) % 3, hit: false });
+          }
           game.spawnIn = 0.95 + Math.random() * 0.62 - Math.min(0.28, game.elapsed / 180);
         }
         for (const object of game.objects) {
           object.x -= speed * dt;
           const birdLeft = BIRD_X + 14, birdRight = BIRD_X + BIRD_SIZE - 13;
           const birdTop = game.birdY + 12, birdBottom = game.birdY + BIRD_SIZE - 7;
-          if (!object.hit && birdRight > object.x + 7 && birdLeft < object.x + 39) {
-            if (object.type === 'coin' && birdTop < object.y + 31 && birdBottom > object.y - 3) {
+          if (!object.hit && object.lane === game.lane && birdRight > object.x + 7 && birdLeft < object.x + 39) {
+            if (object.type === 'coin' && birdTop < GROUND - 45 && birdBottom > GROUND - 122) {
               object.hit = true; game.coins++;
-            } else if (object.type === 'log' && birdBottom > object.y + 5 && birdTop < object.y + 34) {
+            } else if (object.type === 'log' && birdBottom > GROUND - 36) {
               game.ended = true;
               const total = Math.floor(game.distance / 18) + game.coins * 25;
               setScore(total);
@@ -130,17 +157,18 @@ export default function ForestRun() {
         if (Math.floor(game.distance / 18) !== Math.floor((game.distance - speed * dt) / 18)) setScore(Math.floor(game.distance / 18) + game.coins * 25);
       }
       for (const object of game?.objects || []) {
+        const objectY = object.lane === 0 ? GROUND - 145 : object.lane === 1 ? GROUND - 83 : GROUND - 23;
         if (object.type === 'coin') {
           ctx.fillStyle = '#ffcf4c'; ctx.strokeStyle = '#fff2a4'; ctx.lineWidth = 4;
-          ctx.beginPath(); ctx.arc(object.x + 18, object.y + 14, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-          ctx.fillStyle = '#986319'; ctx.font = 'bold 18px sans-serif'; ctx.fillText('W', object.x + 10, object.y + 20);
+          ctx.beginPath(); ctx.arc(object.x + 18, objectY + 14, 16, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#986319'; ctx.font = 'bold 18px sans-serif'; ctx.fillText('W', object.x + 10, objectY + 20);
         } else {
-          ctx.fillStyle = '#78432c'; ctx.fillRect(object.x, object.y, 43, 36);
-          ctx.fillStyle = '#aa7042'; ctx.beginPath(); ctx.ellipse(object.x + 21, object.y + 5, 23, 9, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = '#e0a76a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(object.x + 21, object.y + 5, 11, 5, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = '#78432c'; ctx.fillRect(object.x, objectY, 43, 36);
+          ctx.fillStyle = '#aa7042'; ctx.beginPath(); ctx.ellipse(object.x + 21, objectY + 5, 23, 9, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#e0a76a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(object.x + 21, objectY + 5, 11, 5, 0, 0, Math.PI * 2); ctx.stroke();
         }
       }
-      const birdY = game?.birdY ?? GROUND - BIRD_SIZE;
+      const birdY = (game?.birdY ?? GROUND - BIRD_SIZE) + ((game?.lane ?? 1) - 1) * 58;
       const mascot = mascotRef.current;
       if (mascot) {
         ctx.save();
@@ -164,7 +192,7 @@ export default function ForestRun() {
       <section className="card mb-5 p-5 md:p-8">
         <span className="badge">WOODY ARCADE</span>
         <h1 className="mt-3 text-3xl font-black text-orange-300 md:text-5xl">WOODY Forest Run</h1>
-        <p className="mt-3 text-white/70">Run with the WOODY mascot. Jump over logs, collect coins and beat your personal best!</p>
+        <p className="mt-3 text-white/70">Guide WOODY through a winding three-lane forest trail. Dodge logs, switch lanes, jump and collect coins!</p>
         <p className="mt-2 text-xs text-sky-200">Free arcade game. Coins and scores are in-game points only — no token payouts.</p>
       </section>
       <section className="card overflow-hidden p-3 md:p-5">
@@ -183,8 +211,8 @@ export default function ForestRun() {
           )}
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-white/70">Desktop: SPACE / ↑ / W · Mobile: tap the game or JUMP.</p>
-          <button type="button" onClick={jump} className="cta cta-orange min-w-36 text-lg" aria-label="Jump or start game">⬆ JUMP</button>
+          <p className="text-sm text-white/70">Desktop: ← / → or A / D to steer; SPACE / ↑ to jump. Mobile: use the buttons.</p>
+          <div className="flex flex-wrap gap-2"><button type="button" onClick={() => move(-1)} className="cta cta-blue text-lg" aria-label="Move left">← LEFT</button><button type="button" onClick={jump} className="cta cta-orange text-lg" aria-label="Jump">↑ JUMP</button><button type="button" onClick={() => move(1)} className="cta cta-blue text-lg" aria-label="Move right">RIGHT →</button></div>
         </div>
       </section>
       <p className="mt-4 text-center text-xs text-white/50">Your best score is saved on this device. Online leaderboards and wallet integration are not enabled yet.</p>
