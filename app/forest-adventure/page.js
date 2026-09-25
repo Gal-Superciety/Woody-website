@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const W = 960, H = 540, WORLD = 3900, FLOOR = 456;
+const W = 960, H = 540, WORLD = 7900, FLOOR = 456;
 const solids = [
   {x:0,y:FLOOR,w:620,h:120},{x:760,y:FLOOR,w:570,h:120},
   {x:1440,y:FLOOR,w:590,h:120},{x:2140,y:FLOOR,w:620,h:120},
@@ -11,17 +11,35 @@ const solids = [
   {x:1500,y:355,w:155,h:20},{x:1740,y:292,w:150,h:20},
   {x:2020,y:338,w:130,h:20},{x:2310,y:354,w:165,h:20},
   {x:2610,y:305,w:160,h:20},{x:2960,y:365,w:160,h:20},
-  {x:3280,y:320,w:180,h:20}
+  {x:3280,y:320,w:180,h:20},
+  {x:4020,y:FLOOR,w:460,h:120},{x:4620,y:FLOOR,w:510,h:120},
+  {x:5280,y:FLOOR,w:410,h:120},{x:5910,y:FLOOR,w:470,h:120},
+  {x:6550,y:FLOOR,w:530,h:120},{x:7220,y:FLOOR,w:680,h:120},
+  {x:4200,y:326,w:125,h:20},{x:4790,y:342,w:120,h:20},
+  {x:5400,y:335,w:120,h:20},{x:6100,y:328,w:125,h:20},
+  {x:6750,y:345,w:135,h:20},{x:7370,y:310,w:145,h:20}
 ];
 const coinPositions = [
   [350,323],[410,323],[585,254],[642,254],[825,405],[900,310],
   [1150,264],[1210,264],[1515,312],[1580,312],[1770,249],[1850,249],
   [2080,290],[2350,312],[2410,312],[2660,262],[3020,320],
-  [3330,277],[3410,277],[3660,410]
+  [3330,277],[3410,277],[3660,410],
+  [4050,407],[4240,285],[4470,375],[4680,408],[4830,300],
+  [5090,402],[5320,402],[5430,295],[5720,365],[5970,406],
+  [6130,285],[6380,380],[6600,400],[6800,300],[7080,380],
+  [7270,405],[7420,265],[7580,375],[7750,404]
 ];
-const enemyPositions = [960,1630,2380,3070,3500];
-const powerups = [[1120,265],[2570,267]];
-const movingPlatforms = [{x:1280,y:348,w:106,h:17,range:65,phase:0},{x:2740,y:335,w:115,h:17,range:70,phase:2}];
+const enemyPositions = [960,1630,2380,3070,3500,4180,4800,5440,6080,6690,7410];
+const crumblePositions = [
+ {x:3870,y:360,w:95,h:18},{x:4480,y:370,w:98,h:18},
+ {x:5140,y:351,w:95,h:18},{x:5700,y:350,w:104,h:18},
+ {x:6385,y:352,w:98,h:18},{x:7100,y:345,w:100,h:18}
+];
+const powerups = [[1120,265],[2570,267],[4140,285],[5580,295],[6950,292]];
+const movingPlatforms = [{x:1280,y:348,w:106,h:17,range:65,phase:0},{x:2740,y:335,w:115,h:17,range:70,phase:2},
+ {x:4560,y:324,w:108,h:17,range:48,phase:1},
+ {x:5800,y:332,w:108,h:17,range:52,phase:3},
+ {x:7100,y:310,w:110,h:17,range:46,phase:4}];
 const START = {x:65,y:FLOOR-58,vx:0,vy:0,w:43,h:58,ground:false,facing:1,invuln:0,jumps:0,doubleJump:0,jumpHeld:false};
 const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 function createGame(){
@@ -29,6 +47,7 @@ function createGame(){
  enemies:enemyPositions.map((x,i)=>({x,y:FLOOR-38,w:36,h:38,origin:x,phase:i*1.8,alive:true})),
  keys:{left:false,right:false,jump:false},camera:0,score:0,lives:3,checkpoint:65,
  powerups:powerups.map(([x,y])=>({x,y,taken:false})),moving:movingPlatforms.map(v=>({...v,currentY:v.y})),
+ crumble:crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false})),
  elapsed:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
@@ -74,12 +93,19 @@ export default function ForestAdventure(){
     p.x=Math.max(0,Math.min(WORLD-p.w,p.x+p.vx*dt));
     p.vy=Math.min(1000,p.vy+1750*dt);p.y+=p.vy*dt;p.ground=false;
     for(const platform of g.moving){platform.currentY=platform.y+Math.sin(g.elapsed*1.4+platform.phase)*platform.range;}
-    for(const s of [...solids,...g.moving.map(v=>({...v,y:v.currentY}))]){
+    for(const platform of g.crumble){
+      if(platform.triggered&&!platform.fallen){platform.timer+=dt;if(platform.timer>=0.85)platform.fallen=true;}
+    }
+    for(const s of [...solids,...g.moving.map(v=>({...v,y:v.currentY})),...g.crumble.filter(v=>!v.fallen)]){
      if(p.x+p.w>s.x+5&&p.x<s.x+s.w-5&&oldBottom<=s.y+9&&p.y+p.h>=s.y&&p.vy>=0){
        p.y=s.y-p.h;p.vy=0;p.ground=true;p.jumps=0;
+       if('triggered' in s&&!s.triggered){s.triggered=true;s.timer=0;}
      }
     }
     if(p.x>2050)g.checkpoint=2170;
+    if(p.x>4650)g.checkpoint=4700;
+    if(p.x>5960)g.checkpoint=5980;
+    if(p.x>7280)g.checkpoint=7310;
     for(const power of g.powerups){
       if(!power.taken&&overlap(p,{x:power.x-18,y:power.y-18,w:36,h:36})){
         power.taken=true;p.doubleJump=Math.min(3,p.doubleJump+3);g.score+=100;
@@ -100,11 +126,11 @@ export default function ForestAdventure(){
       else{
        g.lives--;p.invuln=1.4;
        if(g.lives<=0){g.ended=true;setMode('over');}
-       else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.jumps=0;}
+       else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
       }
      }
     }
-    if(p.y>H+150){g.lives--;if(g.lives<=0){g.ended=true;setMode('over');}else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;}}
+    if(p.y>H+150){g.lives--;if(g.lives<=0){g.ended=true;setMode('over');}else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}}
     if(p.x>WORLD-155){g.ended=true;g.won=true;g.score+=500;setMode('won');}
     g.camera+=(Math.max(0,Math.min(WORLD-W,p.x-W*.34))-g.camera)*Math.min(1,dt*5);
     g.particles=g.particles.filter(v=>v.life>0);
@@ -171,8 +197,20 @@ export default function ForestAdventure(){
       ctx.fillStyle='#f4d9a3';for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(x-8+k*13,y-35+(k%2)*5,3,0,Math.PI*2);ctx.fill();}
     }
    }
+   // Crumbling stone bridges shake as soon as WOODY lands on them.
+   for(const platform of g?.crumble||[]){
+     if(platform.fallen)continue;
+     const shake=platform.triggered?Math.sin(clock*58)*Math.min(5,platform.timer*7):0;
+     ctx.save();ctx.translate(shake,platform.triggered?Math.sin(clock*43)*2:0);
+     ctx.fillStyle=platform.triggered?'#bb7660':'#78908c';ctx.fillRect(platform.x,platform.y,platform.w,platform.h);
+     ctx.fillStyle=platform.triggered?'#ffd49d':'#b9f5d3';ctx.fillRect(platform.x,platform.y,platform.w,4);
+     ctx.strokeStyle='#253e45';ctx.lineWidth=2;
+     for(let j=20;j<platform.w;j+=26){ctx.beginPath();ctx.moveTo(platform.x+j,platform.y+5);ctx.lineTo(platform.x+j-5,platform.y+13);ctx.stroke();}
+     if(platform.triggered){ctx.fillStyle='#fff2b5';ctx.font='bold 12px sans-serif';ctx.fillText('!',platform.x+platform.w/2,platform.y-9);}
+     ctx.restore();
+   }
    // Waterfalls and ravines are hazards, not invisible ground.
-   for(const [a,b] of [[620,760],[1330,1440],[2030,2140],[2760,2890]]){
+   for(const [a,b] of [[620,760],[1330,1440],[2030,2140],[2760,2890],[3900,4020],[4480,4620],[5130,5280],[5690,5910],[6380,6550],[7080,7220]]){
     const water=ctx.createLinearGradient(0,FLOOR,0,H);water.addColorStop(0,'#64dfdc');water.addColorStop(1,'#0a6487');
     ctx.fillStyle=water;ctx.fillRect(a,FLOOR+24,b-a,H-FLOOR);
     ctx.strokeStyle='rgba(204,255,245,.7)';ctx.lineWidth=2;
@@ -199,6 +237,9 @@ export default function ForestAdventure(){
    }
    // Checkpoint and portal.
    ctx.fillStyle='#9c7949';ctx.fillRect(2160,355,7,101);ctx.fillStyle='#8df4be';ctx.beginPath();ctx.moveTo(2167,358);ctx.lineTo(2222,371);ctx.lineTo(2167,389);ctx.fill();
+   for(const cp of [4700,5980,7310]){
+    ctx.fillStyle='#9c7949';ctx.fillRect(cp,355,7,101);ctx.fillStyle='#8df4be';ctx.beginPath();ctx.moveTo(cp+7,358);ctx.lineTo(cp+58,371);ctx.lineTo(cp+7,389);ctx.fill();
+   }
    ctx.shadowBlur=25;ctx.shadowColor='#9ce6ff';ctx.strokeStyle='#a5eaff';ctx.lineWidth=11;ctx.beginPath();ctx.ellipse(WORLD-90,FLOOR-61,31,65,0,0,Math.PI*2);ctx.stroke();
    ctx.fillStyle='rgba(125,225,248,.3)';ctx.fill();ctx.shadowBlur=0;
    for(const v of g?.particles||[]){ctx.fillStyle='rgba(255,219,112,'+Math.max(0,v.life*2)+')';ctx.beginPath();ctx.arc(v.x,v.y,4,0,Math.PI*2);ctx.fill();}
@@ -257,8 +298,8 @@ export default function ForestAdventure(){
       <div className="flex gap-2">{button('left','◀ LEFT')}{button('right','RIGHT ▶')}</div>
       {button('jump','▲ JUMP')}
     </div>
-    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Blue crystals grant three mid-air double jumps. Coins are in-game points only.</p>
+    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Blue crystals grant three mid-air double jumps. Cracked platforms collapse 0.85 seconds after you land: keep moving! Coins are in-game points only.</p>
    </section>
-   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 preview: moving rune platforms, glowing double-jump crystals and enhanced enchanted-forest scenery. Hand-painted production art is still in progress.</p>
+   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 extended: twice the map length, collapsing platforms, more enemies, extra checkpoints and moving rune platforms. Hand-painted production art is still in progress.</p>
  </main>;
 }
