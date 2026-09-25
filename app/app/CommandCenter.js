@@ -49,7 +49,7 @@ export default function CommandCenter() {
 
   const metrics = useMemo(() => [
     ['Price', usd(data?.price?.usd)],
-    ['Liquidity', 'See verified pools below'],
+    ['Reported liquidity', usd(data?.liquidity?.totalUsd)],
     ['Holders', plain(data?.holders?.count ?? data?.holders)],
     ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
   ], [data]);
@@ -57,7 +57,9 @@ export default function CommandCenter() {
   const signals = useMemo(() => [
     ['Market Pulse', data?.marketPulse?.mood ?? data?.marketPulse?.activity, data?.marketPulse?.score != null ? `Score ${data.marketPulse.score}/100` : 'No published score'],
     ['Risk Radar', data?.riskRadar?.level, data?.riskRadar?.score != null ? `Risk score ${data.riskRadar.score}` : 'No published score'],
-    ['Accumulation', data?.accumulation?.level, data?.accumulation?.confidence != null ? `${data.accumulation.confidence} confidence` : 'No published confidence'],
+    ['Accumulation', data?.accumulation?.level, data?.accumulation?.confidence != null ? `Confidence ${data.accumulation.confidence}` : 'No published confidence'],
+    ['Wallet Intelligence', data?.walletIntelligence?.signal, data?.walletIntelligence?.reason || 'No published signal'],
+    ['Fake Pump Check', data?.fakePump?.status, data?.fakePump?.confidence != null ? `Confidence ${data.fakePump.confidence}` : 'No published confidence'],
   ].map(([title, value, detail]) => [title, value ?? 'Unavailable', value == null ? 'Monitor has not published this signal' : detail]), [data]);
 
   // Only render individual pools when the monitor explicitly supplies them.
@@ -83,7 +85,7 @@ export default function CommandCenter() {
           <div>
             <p className="badge mb-3">WOODY Monitor</p>
             <h1 className="section-title">Command Center</h1>
-            <p className="mt-2 max-w-2xl text-sm text-white/60">Live WOODY market data and intelligence from the same monitor that powers Telegram.</p>
+            <p className="mt-2 max-w-2xl text-sm text-white/60">WOODY market data and monitor signals. Reported liquidity is a source estimate, not independently verified pool TVL.</p>
           </div>
           <span className={live ? 'status-badge status-active' : 'status-badge status-soon'}>{live ? 'LIVE' : 'OFFLINE'}</span>
         </div>
@@ -115,10 +117,11 @@ export default function CommandCenter() {
           </div>
         </div>
       </section>
-      <section className="card glow-card p-5 md:p-8" aria-label="Verified pool liquidity">
-        <p className="badge mb-3">DEX liquidity</p>
-        <h2 className="section-title">Liquidity by pool</h2>
+      <section className="card glow-card p-5 md:p-8" aria-label="Observed pool reserves">
+        <p className="badge mb-3">DEX reserves</p>
+        <h2 className="section-title">Liquidity and reserves by pool</h2>
         <p className="mt-2 max-w-2xl text-sm text-white/60">On-chain reserves reported by WOODY Monitor, separated by pool. These are token balances, not a verified USD TVL.</p>
+        {live && data?.liquidity?.totalUsd != null && <p className="mt-4 text-sm text-white/70">Reported USD liquidity: <strong className="text-white">{usd(data.liquidity.totalUsd)}</strong> · Source: {data.liquidity.source || 'WOODY Monitor'} · This aggregate is not the sum of the pool balances shown below.</p>}
         {live && pools.length ? (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {pools.map((p, i) => (
@@ -130,7 +133,7 @@ export default function CommandCenter() {
             ))}
           </div>
         ) : <p className="mt-5 rounded-xl border border-white/10 p-4 text-sm text-white/65">On-chain pool reserves are currently unavailable from the monitor. No unverified USD value will be displayed.</p>}
-        <p className="mt-4 text-xs text-white/40">Source: WOODY Monitor · Refresh every 30 seconds when connected.</p>
+        <p className="mt-4 text-xs text-white/40">Source: WOODY Monitor · Pools with readable on-chain reserves only. OneDex appears when its pool data is available. Refresh every 30 seconds.</p>
       </section>
       <section aria-labelledby="woody-arcade-title" className="card relative overflow-hidden border border-emerald-400/30 bg-gradient-to-br from-emerald-950/70 via-slate-950 to-orange-950/30 p-5 md:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
