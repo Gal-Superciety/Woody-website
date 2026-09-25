@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 const DEFAULT_STATUS_URL = 'https://worker-production-3838.up.railway.app/status.json';
 
-const num = (v) => Number.isFinite(Number(v)) ? Number(v) : null;
+const num = (v) => (v === null || v === undefined || v === '' || typeof v === 'boolean') ? null : Number.isFinite(Number(v)) ? Number(v) : null;
 const usd = (v) => {
   const n = num(v);
   if (n === null) return '—';
@@ -13,12 +13,7 @@ const usd = (v) => {
   if (n < 0.01) return `$${n.toFixed(8)}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 };
-const formatUpdatedAt = (value) => {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return '';
-  const millis = n < 1e12 ? n * 1000 : n;
-  return new Date(millis).toLocaleString();
-};
+const formatUpdatedAt = (value) => { if (!value) return ''; const n = Number(value); const date = Number.isFinite(n) ? new Date(n < 1e12 ? n * 1000 : n) : new Date(value); return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(); };
 const plain = (v) => {
   const n = num(v);
   return n === null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: 2 });
@@ -41,7 +36,7 @@ export default function CommandCenter() {
         const next = await response.json();
         if (!mounted || id !== requestRef.current) return;
         setData(next);
-        setUpdated(next.updatedAt || new Date().toISOString());
+        setUpdated(next.updatedAt || next.timestamp || null);
         setLive(true);
       } catch {
         if (mounted && id === requestRef.current) setLive(false);
@@ -54,17 +49,29 @@ export default function CommandCenter() {
 
   const metrics = useMemo(() => [
     ['Price', usd(data?.price?.usd)],
-    ['Liquidity', usd(data?.liquidity?.totalUsd)],
+    ['Liquidity', 'See verified pools below'],
     ['Holders', plain(data?.holders?.count ?? data?.holders)],
     ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
   ], [data]);
 
   const signals = useMemo(() => [
-    ['Market Pulse', data?.marketPulse?.mood || data?.marketPulse?.activity || (live ? 'Live' : 'Unavailable'), data?.marketPulse?.score != null ? `Score ${data.marketPulse.score}/100` : 'Market activity'],
-    ['Risk Radar', data?.riskRadar?.level || (live ? 'Live' : 'Unavailable'), data?.riskRadar?.score != null ? `Risk score ${data.riskRadar.score}` : 'Risk monitoring'],
-    ['Accumulation', data?.accumulation?.level || (live ? 'Live' : 'Unavailable'), data?.accumulation?.confidence ? `${data.accumulation.confidence} confidence` : 'Accumulation detection'],
-    ['Fake Pump', data?.fakePump?.status || (live ? 'Live' : 'Unavailable'), data?.fakePump?.confidence ? `${data.fakePump.confidence} confidence` : 'Pump detection'],
-  ], [data, live]);
+    ['Market Pulse', data?.marketPulse?.mood ?? data?.marketPulse?.activity, data?.marketPulse?.score != null ? `Score ${data.marketPulse.score}/100` : 'No published score'],
+    ['Risk Radar', data?.riskRadar?.level, data?.riskRadar?.score != null ? `Risk score ${data.riskRadar.score}` : 'No published score'],
+    ['Accumulation', data?.accumulation?.level, data?.accumulation?.confidence != null ? `${data.accumulation.confidence} confidence` : 'No published confidence'],
+  ].map(([title, value, detail]) => [title, value ?? 'Unavailable', value == null ? 'Monitor has not published this signal' : detail]), [data]);
+
+  // Only render individual pools when the monitor explicitly supplies them.
+  // Never reconstruct DEX liquidity from a token price or screenshot.
+  const pools = useMemo(() => {
+    const raw = data?.liquidity?.pools;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(p => p && typeof p === 'object' && /WOODY/i.test(String(p.pair ?? p.name ?? p.pool ?? '')) && num(p.tvlUsd ?? p.liquidityUsd) !== null)
+      .map(p => ({
+        venue: String(p.dex ?? p.exchange ?? p.venue ?? 'DEX'),
+        pair: String(p.pair ?? p.name ?? p.pool),
+        tvl: num(p.tvlUsd ?? p.liquidityUsd),
+      }));
+  }, [data]);
 
   return (
     <>
@@ -104,6 +111,23 @@ export default function CommandCenter() {
             <Link href="/" className="cta cta-blue text-center">Home</Link>
           </div>
         </div>
+      </section>
+      <section className="card glow-card p-5 md:p-8" aria-label="Verified pool liquidity">
+        <p className="badge mb-3">DEX liquidity</p>
+        <h2 className="section-title">Liquidity by pool</h2>
+        <p className="mt-2 max-w-2xl text-sm text-white/60">Only individual WOODY pools explicitly reported by WOODY Monitor are shown. No estimated or screenshot-based totals.</p>
+        {live && pools.length ? (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {pools.map((p, i) => (
+              <article className="live-stat-card" key={`${p.venue}-${p.pair}-${i}`}>
+                <p className="text-xs font-semibold text-sky-300">{p.venue}</p>
+                <p className="mt-2 text-sm text-white/70">{p.pair}</p>
+                <p className="mt-2 text-xl font-black text-white">{usd(p.tvl)}</p>
+              </article>
+            ))}
+          </div>
+        ) : <p className="mt-5 rounded-xl border border-white/10 p-4 text-sm text-white/65">Verified pool-level liquidity is currently unavailable from the monitor. We will not show an unverified aggregate.</p>}
+        <p className="mt-4 text-xs text-white/40">Source: WOODY Monitor · Refresh every 30 seconds when connected.</p>
       </section>
       <section aria-labelledby="woody-arcade-title" className="card relative overflow-hidden border border-emerald-400/30 bg-gradient-to-br from-emerald-950/70 via-slate-950 to-orange-950/30 p-5 md:p-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
