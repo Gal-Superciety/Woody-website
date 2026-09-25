@@ -78,6 +78,8 @@ export default function CommandCenter() {
       }));
   }, [data]);
 
+  const unavailablePools = useMemo(() => Array.isArray(data?.liquidity?.pools) ? data.liquidity.pools.filter(p => p?.status === 'unavailable') : [], [data]);
+
   return (
     <>
       <section className="card glow-card p-5 md:p-8">
@@ -133,6 +135,7 @@ export default function CommandCenter() {
             ))}
           </div>
         ) : <p className="mt-5 rounded-xl border border-white/10 p-4 text-sm text-white/65">On-chain pool reserves are currently unavailable from the monitor. No unverified USD value will be displayed.</p>}
+        {live && unavailablePools.length > 0 && <div className="mt-4 rounded-xl border border-amber-400/20 p-4"><p className="text-sm font-bold text-amber-200">Pools awaiting verified data</p>{unavailablePools.map((p,i) => <p className="mt-2 text-xs text-white/60" key={p.address || i}>{p.dex} · {p.pair}: {p.reason || 'Unavailable'}</p>)}</div>}
         <p className="mt-4 text-xs text-white/40">Source: WOODY Monitor · Pools with readable on-chain reserves only. OneDex appears when its pool data is available. Refresh every 30 seconds.</p>
       </section>
       <section aria-labelledby="woody-arcade-title" className="card relative overflow-hidden border border-emerald-400/30 bg-gradient-to-br from-emerald-950/70 via-slate-950 to-orange-950/30 p-5 md:p-8">
