@@ -48,25 +48,28 @@ const crumblePositions = [
  {x:6385,y:352,w:98,h:18},{x:7100,y:345,w:100,h:18}
 ];
 const powerups = [[1120,265],[2570,267],[4140,285],[5580,295],[6950,292]];
+// Amber flame orbs grant limited ranged attacks against forest creatures.
+const flamePickups = [[850,403],[2220,407],[3370,279],[4750,405],[6030,403],[7310,405]];
 const movingPlatforms = [{x:1280,y:348,w:106,h:17,range:65,phase:0},{x:2740,y:335,w:115,h:17,range:70,phase:2},
  {x:4560,y:324,w:108,h:17,range:48,phase:1},
  {x:5800,y:332,w:108,h:17,range:52,phase:3},
  {x:7100,y:310,w:110,h:17,range:46,phase:4}];
-const START = {x:65,y:FLOOR-58,vx:0,vy:0,w:43,h:58,ground:false,facing:1,invuln:0,jumps:0,doubleJump:0,jumpHeld:false};
+const START = {x:65,y:FLOOR-58,vx:0,vy:0,w:43,h:58,ground:false,facing:1,invuln:0,jumps:0,doubleJump:0,flame:0,shotCooldown:0,jumpHeld:false};
 const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 function createGame(){
  return {player:{...START},coins:coinPositions.map(([x,y])=>({x,y,taken:false})),
  enemies:enemyPositions.map((x,i)=>({x,y:FLOOR-38,w:36,h:38,origin:x,phase:i*1.8,alive:true})),
- keys:{left:false,right:false,jump:false},camera:0,score:0,lives:3,checkpoint:65,
+ keys:{left:false,right:false,jump:false,shoot:false},camera:0,score:0,lives:3,checkpoint:65,
  powerups:powerups.map(([x,y])=>({x,y,taken:false})),moving:movingPlatforms.map(v=>({...v,currentY:v.y})),
  crumble:crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false})),
  logs:logPositions.map(v=>({...v,y:FLOOR-v.h})),
+ flames:flamePickups.map(([x,y])=>({x,y,taken:false})),shots:[],
  elapsed:0,remaining:ROUND_SECONDS,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
  const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null);
- const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,remaining:ROUND_SECONDS,notice:''});
- const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0,boost:0,remaining:ROUND_SECONDS,notice:''});setMode('playing');},[]);
+ const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});
+ const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});setMode('playing');},[]);
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
@@ -74,14 +77,15 @@ export default function ForestAdventure(){
  useEffect(()=>{
   const key=(e,down)=>{
    const g=game.current;if(!g)return;
-   if(['ArrowLeft','ArrowRight','ArrowUp','Space','KeyA','KeyD','KeyW'].includes(e.code))e.preventDefault();
+   if(['ArrowLeft','ArrowRight','ArrowUp','Space','KeyA','KeyD','KeyW','KeyF'].includes(e.code))e.preventDefault();
    if(['ArrowLeft','KeyA'].includes(e.code))g.keys.left=down;
    if(['ArrowRight','KeyD'].includes(e.code))g.keys.right=down;
    if(['ArrowUp','Space','KeyW'].includes(e.code))g.keys.jump=down;
+   if(e.code==='KeyF')g.keys.shoot=down;
   };
   const kd=e=>key(e,true),ku=e=>key(e,false);
   window.addEventListener('keydown',kd);window.addEventListener('keyup',ku);
-  const blur=()=>{if(game.current)game.current.keys={left:false,right:false,jump:false};};
+  const blur=()=>{if(game.current)game.current.keys={left:false,right:false,jump:false,shoot:false};};
   window.addEventListener('blur',blur);
   return ()=>{window.removeEventListener('keydown',kd);window.removeEventListener('keyup',ku);window.removeEventListener('blur',blur);};
  },[]);
@@ -101,7 +105,7 @@ export default function ForestAdventure(){
       g.lives--;g.timeouts++;g.checkpoint=65;g.remaining=ROUND_SECONDS;
       g.crumble=crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false}));
       p.x=START.x;p.y=START.y;p.vx=0;p.vy=0;p.ground=false;p.jumps=0;p.jumpHeld=false;
-      p.invuln=1.5;g.camera=0;g.keys.jump=false;
+      p.invuln=1.5;g.camera=0;g.keys.jump=false;g.keys.shoot=false;g.shots=[];
       g.notice=g.lives>0?'TIME UP! ONE LIFE LOST — BACK TO START':'TIME UP! GAME OVER';
       g.noticeUntil=g.elapsed+3;
       if(g.lives<=0){g.ended=true;setMode('over');}
@@ -114,6 +118,12 @@ export default function ForestAdventure(){
        for(let i=0;i<16;i++)g.particles.push({x:p.x+p.w/2,y:p.y+p.h,vx:(Math.random()-.5)*250,vy:(Math.random()-.5)*140,life:.65});}
     }
     p.jumpHeld=g.keys.jump;
+    p.shotCooldown=Math.max(0,p.shotCooldown-dt);
+    if(g.keys.shoot&&p.flame>0&&p.shotCooldown===0){
+      p.flame--;p.shotCooldown=.28;
+      g.shots.push({x:p.x+p.w/2+p.facing*24,y:p.y+25,vx:p.facing*650,life:.85});
+      for(let i=0;i<6;i++)g.particles.push({x:p.x+p.w/2+p.facing*26,y:p.y+25,vx:p.facing*(80+Math.random()*160),vy:(Math.random()-.5)*100,life:.28});
+    }
     p.x=Math.max(0,Math.min(WORLD-p.w,p.x+p.vx*dt));
     p.vy=Math.min(1000,p.vy+1750*dt);p.y+=p.vy*dt;p.ground=false;
     for(const platform of g.moving){platform.currentY=platform.y+Math.sin(g.elapsed*1.4+platform.phase)*platform.range;}
@@ -136,12 +146,31 @@ export default function ForestAdventure(){
         for(let i=0;i<24;i++)g.particles.push({x:power.x,y:power.y,vx:(Math.random()-.5)*320,vy:(Math.random()-.5)*240,life:1});
       }
     }
+    for(const flame of g.flames){
+      if(!flame.taken&&overlap(p,{x:flame.x-16,y:flame.y-17,w:32,h:34})){
+        flame.taken=true;p.flame=Math.min(12,p.flame+5);g.score+=50;
+        g.notice='FLAME POWER! +5 FIREBALLS';g.noticeUntil=g.elapsed+2;
+      }
+    }
     for(const c of g.coins){
       if(!c.taken&&overlap(p,{x:c.x-12,y:c.y-12,w:24,h:24})){
        c.taken=true;g.score+=25;
        for(let i=0;i<7;i++)g.particles.push({x:c.x,y:c.y,vx:(Math.random()-.5)*130,vy:-Math.random()*170,life:.5});
       }
     }
+    // Fireballs hit the first living enemy they reach and cannot pass through terrain.
+    for(const shot of g.shots){
+      shot.x+=shot.vx*dt;shot.life-=dt;
+      for(const enemy of g.enemies){
+        if(enemy.alive&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},enemy)){
+          enemy.alive=false;shot.life=0;g.score+=75;
+          for(let i=0;i<14;i++)g.particles.push({x:enemy.x+18,y:enemy.y+17,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*210,life:.65});
+          break;
+        }
+      }
+      if(solids.some(v=>overlap({x:shot.x-5,y:shot.y-5,w:10,h:10},v)))shot.life=0;
+    }
+    g.shots=g.shots.filter(v=>v.life>0);
     for(const e of g.enemies){
      if(!e.alive)continue;
      e.x=e.origin+Math.sin(g.elapsed*1.4+e.phase)*50;
@@ -173,7 +202,7 @@ export default function ForestAdventure(){
     for(const v of g.particles){v.x+=v.vx*dt;v.y+=v.vy*dt;v.vy+=250*dt;v.life-=dt;}
     uiClock+=dt;
     if(g.ended){setBest(previous=>{const next=Math.max(previous,g.score);try{localStorage.setItem('woody-adventure-best-v1',String(next));}catch{}return next;});}
-    if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor(p.x/WORLD*100)),boost:p.doubleJump,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
+    if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor(p.x/WORLD*100)),boost:p.doubleJump,ammo:p.flame,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
    // Layered fantasy forest: distant sky, mountains, canopies, trunks and foreground.
@@ -277,6 +306,19 @@ export default function ForestAdventure(){
     ctx.fillStyle='#67e8f9';ctx.beginPath();ctx.moveTo(0,-20);ctx.lineTo(16,0);ctx.lineTo(0,20);ctx.lineTo(-16,0);ctx.closePath();ctx.fill();
     ctx.fillStyle='#0b5774';ctx.font='bold 19px sans-serif';ctx.fillText('✦',-9,7);ctx.restore();
    }
+   // Glowing amber orbs are the separate ranged-attack power-up.
+   for(const flame of g?.flames||[]){
+     if(flame.taken)continue;
+     const bob=Math.sin(clock*3+flame.x)*6;
+     ctx.save();ctx.translate(flame.x,flame.y+bob);ctx.shadowBlur=22;ctx.shadowColor='#ff8b29';
+     ctx.fillStyle='#ffb02e';ctx.beginPath();ctx.arc(0,0,15,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#f45c1e';ctx.beginPath();ctx.moveTo(-5,7);ctx.quadraticCurveTo(-14,-3,2,-19);ctx.quadraticCurveTo(1,-5,10,-7);ctx.quadraticCurveTo(13,10,-1,10);ctx.fill();
+     ctx.fillStyle='#fff3b1';ctx.beginPath();ctx.ellipse(1,3,4,6,0,0,Math.PI*2);ctx.fill();ctx.restore();
+   }
+   for(const shot of g?.shots||[]){
+     ctx.save();ctx.shadowBlur=22;ctx.shadowColor='#ff6a16';ctx.fillStyle='#ffc447';ctx.beginPath();ctx.arc(shot.x,shot.y,9,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#ff6320';ctx.beginPath();ctx.ellipse(shot.x-Math.sign(shot.vx)*8,shot.y,10,5,0,0,Math.PI*2);ctx.fill();ctx.restore();
+   }
    for(const c of g?.coins||[]){
     if(c.taken)continue;
     const bob=Math.sin(clock*4+c.x)*5;
@@ -338,6 +380,7 @@ export default function ForestAdventure(){
       <span className="rounded-full bg-rose-500/20 px-3 py-2">♥ {hud.lives} LIVES</span>
       <span className="rounded-full bg-orange-500/20 px-3 py-2">★ {best} BEST</span>
       <span className="rounded-full bg-cyan-500/20 px-3 py-2">✦ {hud.boost||0} DOUBLE JUMPS</span>
+      <span className="rounded-full bg-orange-500/20 px-3 py-2">🔥 {hud.ammo||0} FIREBALLS</span>
       <span className="rounded-full bg-sky-500/20 px-3 py-2">◷ {hud.time}s</span>
       <span aria-live="polite" className={hud.remaining<=20?"rounded-full bg-red-600 px-3 py-2 text-white animate-pulse":"rounded-full bg-emerald-500/20 px-3 py-2"}>⏳ {Math.floor(hud.remaining/60)}:{String(hud.remaining%60).padStart(2,"0")} LEFT</span>
       <span className="rounded-full bg-emerald-500/20 px-3 py-2">MAP {hud.progress}%</span>
@@ -354,9 +397,9 @@ export default function ForestAdventure(){
     </div>
     <div className="mt-4 flex items-center justify-between gap-3">
       <div className="flex gap-2">{button('left','◀ LEFT')}{button('right','RIGHT ▶')}</div>
-      {button('jump','▲ JUMP')}
+      <div className="flex gap-2">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
     </div>
-    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
+    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
    </section>
    <p className="mt-4 text-center text-xs text-white/50">Chapter 1 time trial: reach the portal before the 1:50 timer expires. Time-outs restart the entire map; other hazards use checkpoints. Hand-painted production art is still in progress.</p>
  </main>;
