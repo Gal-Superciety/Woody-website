@@ -138,9 +138,9 @@ export default function ForestRun() {
           const birdLeft = BIRD_X + 14, birdRight = BIRD_X + BIRD_SIZE - 13;
           const birdTop = game.birdY + 12, birdBottom = game.birdY + BIRD_SIZE - 7;
           if (!object.hit && object.lane === game.lane && birdRight > object.x + 7 && birdLeft < object.x + 39) {
-            if (object.type === 'coin' && birdTop < GROUND - 45 && birdBottom > GROUND - 122) {
+            if (object.type === 'coin' && true) {
               object.hit = true; game.coins++;
-            } else if (object.type === 'log' && birdBottom > GROUND - 36) {
+            } else if (object.type === 'log' && game.birdY > GROUND - BIRD_SIZE - 36) {
               game.ended = true;
               const total = Math.floor(game.distance / 18) + game.coins * 25;
               setScore(total);
