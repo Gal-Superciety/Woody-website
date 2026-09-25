@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 188">
+<defs><linearGradient id="navy" x2=".9" y2="1"><stop stop-color="#34517b"/><stop offset="1" stop-color="#102341"/></linearGradient><linearGradient id="fire" x2=".8" y2="1"><stop stop-color="#ffd14a"/><stop offset=".52" stop-color="#ff8524"/><stop offset="1" stop-color="#e54c19"/></linearGradient></defs>
+<!-- simplified game sprite based on the chosen navy/orange WOODY bird, headphones and green eyes -->
+<g stroke="#091b30" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+<path fill="url(#navy)" d="M59 95Q17 108 23 146L38 158 53 136 56 164Q75 177 110 158L113 134 131 150Q151 131 126 104L105 92Z"/>
+<path fill="#f4e3b7" d="M68 106Q76 130 63 151L88 162 108 142 98 109Z"/>
+<path fill="#e88525" d="M56 151L47 178 68 177 76 151M99 151L97 178 119 176 113 149"/>
+<path fill="url(#navy)" d="M39 59Q35 24 78 20Q122 18 129 64L124 107Q99 129 64 109L41 91Z"/>
+<path fill="url(#fire)" d="M56 47L42 19 72 34 70 5 91 30 100 9 106 41 123 24 117 57 91 51 75 58Z"/>
+<path fill="none" stroke="#0b1729" stroke-width="12" d="M36 76Q26 21 79 19Q132 16 138 77"/>
+<rect x="22" y="59" width="20" height="44" rx="9" fill="#26374a"/><rect x="122" y="56" width="24" height="48" rx="10" fill="#26374a"/>
+<rect x="126" y="64" width="15" height="31" rx="7" fill="#10465c" stroke="#28c5e2" stroke-width="2"/>
+<path fill="#fff8e8" d="M49 66Q59 51 75 67L73 88Q58 94 51 81ZM87 65Q103 50 116 64L114 85Q99 93 90 81Z"/>
+<ellipse cx="65" cy="75" rx="6" ry="10" fill="#36bf70"/><ellipse cx="102" cy="74" rx="6" ry="10" fill="#36bf70"/>
+<circle cx="67" cy="74" r="3.3" fill="#091b30"/><circle cx="104" cy="73" r="3.3" fill="#091b30"/>
+<path fill="none" stroke="#102139" stroke-width="7" d="M49 61L76 56M87 57L116 59"/>
+<path fill="url(#fire)" d="M77 82Q92 78 108 86L95 99 65 105 56 97Z"/>
+<path fill="#f6e3bc" d="M65 106Q81 116 99 103L105 113Q91 131 77 121Z"/>
+<path fill="url(#navy)" d="M42 110Q16 115 14 141L33 147 52 128M113 112Q146 110 151 140L133 150 110 131Z"/>
+</g></svg>
