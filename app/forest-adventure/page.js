@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const W = 960, H = 540, WORLD = 7900, FLOOR = 456;
+const ROUND_SECONDS = 110; // Full-map countdown; checkpoints do not reset the clock.
 const solids = [
   {x:0,y:FLOOR,w:620,h:120},{x:760,y:FLOOR,w:570,h:120},
   {x:1440,y:FLOOR,w:590,h:120},{x:2140,y:FLOOR,w:620,h:120},
@@ -48,11 +49,11 @@ function createGame(){
  keys:{left:false,right:false,jump:false},camera:0,score:0,lives:3,checkpoint:65,
  powerups:powerups.map(([x,y])=>({x,y,taken:false})),moving:movingPlatforms.map(v=>({...v,currentY:v.y})),
  crumble:crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false})),
- elapsed:0,ended:false,won:false,particles:[],last:0};
+ elapsed:0,remaining:ROUND_SECONDS,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
  const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null);
- const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0});
+ const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,remaining:ROUND_SECONDS,notice:'',remaining:ROUND_SECONDS,notice:''});
  const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0,boost:0});setMode('playing');},[]);
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0); } catch {}
@@ -81,7 +82,18 @@ export default function ForestAdventure(){
    const g=game.current;
    if(g&&!g.ended){
     const p=g.player,oldBottom=p.y+p.h;
-    g.elapsed+=dt;p.invuln=Math.max(0,p.invuln-dt);
+    g.elapsed+=dt;g.remaining=Math.max(0,g.remaining-dt);p.invuln=Math.max(0,p.invuln-dt);
+    if(g.remaining<=0){
+      // Time-out is the only hazard that ignores checkpoints. Keep earned score,
+      // collected coins, crystals and defeated enemies, but restart the map.
+      g.lives--;g.timeouts++;g.checkpoint=65;g.remaining=ROUND_SECONDS;
+      g.crumble=crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false}));
+      p.x=START.x;p.y=START.y;p.vx=0;p.vy=0;p.ground=false;p.jumps=0;p.jumpHeld=false;
+      p.invuln=1.5;g.camera=0;g.keys.jump=false;
+      g.notice=g.lives>0?'TIME UP! ONE LIFE LOST — BACK TO START':'TIME UP! GAME OVER';
+      g.noticeUntil=g.elapsed+3;
+      if(g.lives<=0){g.ended=true;setMode('over');}
+    }
     p.vx=(Number(g.keys.right)-Number(g.keys.left))*280;
     if(p.vx)p.facing=Math.sign(p.vx);
     if(g.keys.jump&&!p.jumpHeld){
@@ -137,7 +149,7 @@ export default function ForestAdventure(){
     for(const v of g.particles){v.x+=v.vx*dt;v.y+=v.vy*dt;v.vy+=250*dt;v.life-=dt;}
     uiClock+=dt;
     if(g.ended){setBest(previous=>{const next=Math.max(previous,g.score);try{localStorage.setItem('woody-adventure-best-v1',String(next));}catch{}return next;});}
-    if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor(p.x/WORLD*100)),boost:p.doubleJump});uiClock=0;}
+    if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor(p.x/WORLD*100)),boost:p.doubleJump,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
    // Layered fantasy forest: distant sky, mountains, canopies, trunks and foreground.
@@ -284,9 +296,12 @@ export default function ForestAdventure(){
       <span className="rounded-full bg-orange-500/20 px-3 py-2">★ {best} BEST</span>
       <span className="rounded-full bg-cyan-500/20 px-3 py-2">✦ {hud.boost||0} DOUBLE JUMPS</span>
       <span className="rounded-full bg-sky-500/20 px-3 py-2">◷ {hud.time}s</span>
+      <span aria-live="polite" className={hud.remaining<=20?"rounded-full bg-red-600 px-3 py-2 text-white animate-pulse":"rounded-full bg-emerald-500/20 px-3 py-2"}>⏳ {Math.floor(hud.remaining/60)}:{String(hud.remaining%60).padStart(2,"0")} LEFT</span>
       <span className="rounded-full bg-emerald-500/20 px-3 py-2">MAP {hud.progress}%</span>
     </div>
     <div className="relative overflow-hidden rounded-2xl">
+      {mode==="playing"&&hud.notice&&<div role="status" className="pointer-events-none absolute left-1/2 top-6 z-10 w-max max-w-[90%] -translate-x-1/2 rounded-xl border-2 border-orange-300 bg-red-950/95 px-5 py-3 text-center text-sm font-black text-white shadow-xl md:text-xl">{hud.notice}</div>}
+      {mode==="playing"&&hud.remaining<=20&&<div className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-red-700/95 px-3 py-2 text-sm font-black text-white animate-pulse">HURRY UP!</div>}
       <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="block aspect-[16/9] w-full"/>
       {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 px-4 text-center">
         <h2 className="text-2xl font-black text-orange-200 md:text-4xl">{mode==='won'?'FOREST CONQUERED!':mode==='over'?'GAME OVER':'THE FOREST AWAITS'}</h2>
@@ -298,8 +313,8 @@ export default function ForestAdventure(){
       <div className="flex gap-2">{button('left','◀ LEFT')}{button('right','RIGHT ▶')}</div>
       {button('jump','▲ JUMP')}
     </div>
-    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Blue crystals grant three mid-air double jumps. Cracked platforms collapse 0.85 seconds after you land: keep moving! Coins are in-game points only.</p>
+    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Blue crystals grant three mid-air double jumps. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
    </section>
-   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 extended: twice the map length, collapsing platforms, more enemies, extra checkpoints and moving rune platforms. Hand-painted production art is still in progress.</p>
+   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 time trial: reach the portal before the 1:50 timer expires. Time-outs restart the entire map; other hazards use checkpoints. Hand-painted production art is still in progress.</p>
  </main>;
 }
