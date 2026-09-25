@@ -24,7 +24,7 @@ export default function CommandCenter() {
   const [live, setLive] = useState(false);
   const [updated, setUpdated] = useState(null);
   const requestRef = useRef(0);
-  const statusUrl = process.env.NEXT_PUBLIC_WOODY_MONITOR_STATUS_URL || DEFAULT_STATUS_URL;
+  const statusUrl = '/api/woody-status';
 
   useEffect(() => {
     let mounted = true;
