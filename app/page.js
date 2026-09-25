@@ -7,13 +7,13 @@ import Link from 'next/link';
 const STATUS_URL = process.env.NEXT_PUBLIC_WOODY_MONITOR_STATUS_URL || 'https://worker-production-3838.up.railway.app/status.json';
 
 const usd = (value) => {
-  const n = Number(value);
+  const n = value === null || value === undefined || value === '' ? NaN : Number(value);
   if (!Number.isFinite(n)) return '—';
   if (n === 0) return '$0';
   if (n < 0.01) return `$${n.toFixed(8)}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 };
-const number = (value) => Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
+const number = (value) => value != null && value !== '' && Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
 
 export default function Home() {
   const [data, setData] = useState(null);
@@ -42,7 +42,7 @@ export default function Home() {
 
   const stats = [
     ['Price', usd(data?.price?.usd)],
-    ['Liquidity', usd(data?.liquidity?.totalUsd)],
+    ['Liquidity', 'VIEW BY POOL ↗'],
     ['Holders', number(data?.holders?.count ?? data?.holders)],
     ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
   ];
