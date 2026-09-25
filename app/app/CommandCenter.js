@@ -65,11 +65,14 @@ export default function CommandCenter() {
   const pools = useMemo(() => {
     const raw = data?.liquidity?.pools;
     if (!Array.isArray(raw)) return [];
-    return raw.filter(p => p && typeof p === 'object' && /WOODY/i.test(String(p.pair ?? p.name ?? p.pool ?? '')) && num(p.tvlUsd ?? p.liquidityUsd) !== null)
+    return raw.filter(p => p && typeof p === 'object' && /WOODY/i.test(String(p.pair ?? '')) && num(p.woodyReserve) > 0 && num(p.quoteReserve) > 0)
       .map(p => ({
-        venue: String(p.dex ?? p.exchange ?? p.venue ?? 'DEX'),
-        pair: String(p.pair ?? p.name ?? p.pool),
-        tvl: num(p.tvlUsd ?? p.liquidityUsd),
+        venue: String(p.dex ?? 'DEX'),
+        pair: String(p.pair),
+        woody: num(p.woodyReserve),
+        quote: num(p.quoteReserve),
+        quoteSymbol: String(p.quoteSymbol ?? ''),
+        address: String(p.address ?? ''),
       }));
   }, [data]);
 
@@ -115,18 +118,18 @@ export default function CommandCenter() {
       <section className="card glow-card p-5 md:p-8" aria-label="Verified pool liquidity">
         <p className="badge mb-3">DEX liquidity</p>
         <h2 className="section-title">Liquidity by pool</h2>
-        <p className="mt-2 max-w-2xl text-sm text-white/60">Only individual WOODY pools explicitly reported by WOODY Monitor are shown. No estimated or screenshot-based totals.</p>
+        <p className="mt-2 max-w-2xl text-sm text-white/60">On-chain reserves reported by WOODY Monitor, separated by pool. These are token balances, not a verified USD TVL.</p>
         {live && pools.length ? (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {pools.map((p, i) => (
               <article className="live-stat-card" key={`${p.venue}-${p.pair}-${i}`}>
                 <p className="text-xs font-semibold text-sky-300">{p.venue}</p>
                 <p className="mt-2 text-sm text-white/70">{p.pair}</p>
-                <p className="mt-2 text-xl font-black text-white">{usd(p.tvl)}</p>
+                <p className="mt-2 text-lg font-black text-white">{plain(p.woody)} WOODY</p><p className="mt-1 text-sm text-white/70">+ {plain(p.quote)} {p.quoteSymbol}</p>
               </article>
             ))}
           </div>
-        ) : <p className="mt-5 rounded-xl border border-white/10 p-4 text-sm text-white/65">Verified pool-level liquidity is currently unavailable from the monitor. We will not show an unverified aggregate.</p>}
+        ) : <p className="mt-5 rounded-xl border border-white/10 p-4 text-sm text-white/65">On-chain pool reserves are currently unavailable from the monitor. No unverified USD value will be displayed.</p>}
         <p className="mt-4 text-xs text-white/40">Source: WOODY Monitor · Refresh every 30 seconds when connected.</p>
       </section>
       <section aria-labelledby="woody-arcade-title" className="card relative overflow-hidden border border-emerald-400/30 bg-gradient-to-br from-emerald-950/70 via-slate-950 to-orange-950/30 p-5 md:p-8">
