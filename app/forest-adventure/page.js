@@ -31,6 +31,17 @@ const coinPositions = [
   [7270,405],[7420,265],[7580,375],[7750,404]
 ];
 const enemyPositions = [960,1630,2380,3070,3500,4180,4800,5440,6080,6690,7410];
+// Low fallen trunks and thorny stumps are ground hazards: jump OVER them.
+// Positions avoid the start, checkpoints and landing zones beside water gaps.
+const logPositions = [
+ {x:235,w:62,h:33,type:'log'},{x:1040,w:42,h:42,type:'stump'},
+ {x:1540,w:66,h:32,type:'log'},{x:1850,w:42,h:43,type:'stump'},
+ {x:2460,w:64,h:35,type:'log'},{x:3150,w:46,h:46,type:'stump'},
+ {x:3650,w:65,h:32,type:'log'},{x:4310,w:43,h:44,type:'stump'},
+ {x:4890,w:64,h:33,type:'log'},{x:5530,w:43,h:45,type:'stump'},
+ {x:6190,w:70,h:34,type:'log'},{x:6850,w:44,h:43,type:'stump'},
+ {x:7520,w:65,h:35,type:'log'}
+];
 const crumblePositions = [
  {x:3870,y:360,w:95,h:18},{x:4480,y:370,w:98,h:18},
  {x:5140,y:351,w:95,h:18},{x:5700,y:350,w:104,h:18},
@@ -49,6 +60,7 @@ function createGame(){
  keys:{left:false,right:false,jump:false},camera:0,score:0,lives:3,checkpoint:65,
  powerups:powerups.map(([x,y])=>({x,y,taken:false})),moving:movingPlatforms.map(v=>({...v,currentY:v.y})),
  crumble:crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false})),
+ logs:logPositions.map(v=>({...v,y:FLOOR-v.h})),
  elapsed:0,remaining:ROUND_SECONDS,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
@@ -142,7 +154,19 @@ export default function ForestAdventure(){
       }
      }
     }
-    if(p.y>H+150){g.lives--;if(g.lives<=0){g.ended=true;setMode('over');}else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}}
+    // Logs and stumps cannot be defeated by stomping: clear them with a jump.
+    if(p.invuln===0&&!g.ended){
+      for(const obstacle of g.logs){
+        // Tight hitbox allows the bird's feet to visually clear the wood.
+        if(overlap({x:p.x+7,y:p.y+9,w:p.w-14,h:p.h-15},{x:obstacle.x+5,y:obstacle.y+4,w:obstacle.w-10,h:obstacle.h-5})){
+          g.lives--;p.invuln=1.5;
+          if(g.lives<=0){g.ended=true;setMode('over');}
+          else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vx=0;p.vy=0;p.jumps=0;p.ground=false;}
+          break;
+        }
+      }
+    }
+    if(p.y>H+150&&!g.ended){g.lives--;if(g.lives<=0){g.ended=true;setMode('over');}else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}}
     if(p.x>WORLD-155){g.ended=true;g.won=true;g.score+=500;setMode('won');}
     g.camera+=(Math.max(0,Math.min(WORLD-W,p.x-W*.34))-g.camera)*Math.min(1,dt*5);
     g.particles=g.particles.filter(v=>v.life>0);
@@ -208,6 +232,25 @@ export default function ForestAdventure(){
       ctx.fillStyle='#d5bda1';ctx.fillRect(x,y-28,12,27);ctx.fillStyle='#b84f69';ctx.beginPath();ctx.ellipse(x+6,y-27,27,14,0,Math.PI,0);ctx.fill();
       ctx.fillStyle='#f4d9a3';for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(x-8+k*13,y-35+(k%2)*5,3,0,Math.PI*2);ctx.fill();}
     }
+   }
+   // Fallen trunks and jagged stumps introduce a different ground-level hazard.
+   for(const obstacle of g?.logs||[]){
+     const {x,y,w,h,type}=obstacle;
+     ctx.save();
+     if(type==='log'){
+       ctx.fillStyle='#593622';ctx.beginPath();ctx.roundRect(x,y+4,w,h-4,9);ctx.fill();
+       ctx.strokeStyle='#b17d47';ctx.lineWidth=3;
+       for(let n=9;n<w-6;n+=16){ctx.beginPath();ctx.moveTo(x+n,y+9);ctx.quadraticCurveTo(x+n+5,y+h*.5,x+n,y+h-6);ctx.stroke();}
+       ctx.fillStyle='#ba925d';ctx.beginPath();ctx.ellipse(x+w-7,y+h/2+2,8,h*.43,0,0,Math.PI*2);ctx.fill();
+       ctx.strokeStyle='#674024';ctx.beginPath();ctx.ellipse(x+w-7,y+h/2+2,4,h*.25,0,0,Math.PI*2);ctx.stroke();
+       ctx.fillStyle='#71a24b';ctx.beginPath();ctx.ellipse(x+16,y+4,15,5,0,0,Math.PI*2);ctx.fill();
+     }else{
+       ctx.fillStyle='#583a29';ctx.beginPath();ctx.moveTo(x,y+h);ctx.lineTo(x+4,y+9);ctx.lineTo(x+12,y+4);ctx.lineTo(x+22,y+12);ctx.lineTo(x+w-5,y+3);ctx.lineTo(x+w,y+h);ctx.closePath();ctx.fill();
+       ctx.fillStyle='#c69b68';ctx.beginPath();ctx.ellipse(x+w/2,y+8,w*.45,7,-.1,0,Math.PI*2);ctx.fill();
+       ctx.strokeStyle='#805334';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x+w/2,y+8,w*.27,4,-.1,0,Math.PI*2);ctx.stroke();
+       ctx.strokeStyle='#9b7146';for(let n=0;n<3;n++){ctx.beginPath();ctx.moveTo(x+8+n*11,y+17);ctx.lineTo(x+5+n*11,y+h-3);ctx.stroke();}
+     }
+     ctx.restore();
    }
    // Crumbling stone bridges shake as soon as WOODY lands on them.
    for(const platform of g?.crumble||[]){
@@ -287,7 +330,7 @@ export default function ForestAdventure(){
    <section className="mb-5 rounded-3xl border border-emerald-300/20 bg-gradient-to-r from-emerald-950/90 to-sky-950/80 p-6">
     <span className="text-xs font-bold uppercase tracking-[.3em] text-emerald-300">WOODY ARCADE · CHAPTER ONE</span>
     <h1 className="mt-2 text-3xl font-black text-orange-300 md:text-5xl">The Enchanted Forest</h1>
-    <p className="mt-2 text-sm text-white/75">Explore the forest, collect golden WOODY coins, defeat creatures and reach the portal.</p>
+    <p className="mt-2 text-sm text-white/75">Explore the forest, leap over fallen trees and sharp stumps, collect golden WOODY coins and reach the portal before time runs out.</p>
    </section>
    <section className="overflow-hidden rounded-3xl border border-emerald-400/30 bg-slate-950 p-2 shadow-[0_0_50px_rgba(16,185,129,.12)] md:p-4">
     <div className="mb-3 flex flex-wrap gap-3 text-xs font-bold text-white/90 md:text-sm">
@@ -313,7 +356,7 @@ export default function ForestAdventure(){
       <div className="flex gap-2">{button('left','◀ LEFT')}{button('right','RIGHT ▶')}</div>
       {button('jump','▲ JUMP')}
     </div>
-    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Blue crystals grant three mid-air double jumps. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
+    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump. Mobile: hold the buttons. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
    </section>
    <p className="mt-4 text-center text-xs text-white/50">Chapter 1 time trial: reach the portal before the 1:50 timer expires. Time-outs restart the entire map; other hazards use checkpoints. Hand-painted production art is still in progress.</p>
  </main>;
