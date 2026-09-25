@@ -54,7 +54,7 @@ const crumblePositions = [
 ];
 const powerups = [[1120,265],[2570,267],[4140,285],[5580,295],[6950,292]];
 // Amber flame orbs grant limited ranged attacks against forest creatures.
-const flamePickups = [[850,403],[2220,407],[3370,279],[4750,405],[6030,403],[7310,405]];
+const flamePickups = [[850,403],[2220,407],[3370,279],[4750,405],[6030,403],[6620,403],[7040,403],[7310,405],[7590,403]];
 const movingPlatforms = [{x:1280,y:348,w:106,h:17,range:65,phase:0},{x:2740,y:335,w:115,h:17,range:70,phase:2},
  {x:4560,y:324,w:108,h:17,range:48,phase:1},
  {x:5800,y:332,w:108,h:17,range:52,phase:3},
@@ -237,6 +237,11 @@ export default function ForestAdventure(){
       if(solids.some(v=>overlap({x:shot.x-5,y:shot.y-5,w:10,h:10},v)))shot.life=0;
     }
     g.shots=g.shots.filter(v=>v.life>0);
+    // Boss arena never becomes impossible if earlier shots were spent.
+    if(g.level===3&&g.boss?.alive&&p.x>7480&&p.flame===0&&g.elapsed-(g.lastAmmoRefill||0)>7){
+      p.flame=5;g.lastAmmoRefill=g.elapsed;
+      g.notice='BOSS ARENA: +5 FIREBALLS';g.noticeUntil=g.elapsed+1.8;
+    }
     for(const e of g.enemies){
      if(!e.alive)continue;
      e.x=e.origin+Math.sin(g.elapsed*1.4+e.phase)*50;
