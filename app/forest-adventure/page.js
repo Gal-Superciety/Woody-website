@@ -94,10 +94,11 @@ export default function ForestAdventure(){
    return()=>document.removeEventListener('fullscreenchange',onChange);
  },[]);
  const [selectedLevel,setSelectedLevel]=useState(1),[unlocked,setUnlocked]=useState(1);
+ const [records,setRecords]=useState({times:{},bossWins:0});
  const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});
  const start=useCallback((level=selectedLevel)=>{audio.current?.setBoss(false);audio.current?.start(level);game.current=createGame(level);setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:LEVELS[level-1].seconds,notice:''});setMode('playing');},[selectedLevel]);
  useEffect(()=>{
-   try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1))); } catch {}
+   try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1)));const saved=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');setRecords({times:saved.times||{},bossWins:Number(saved.bossWins)||0}); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
  },[]);
  useEffect(()=>{
@@ -294,6 +295,7 @@ export default function ForestAdventure(){
     if(p.y>H+150&&!g.ended){audio.current?.play('hit');g.lives--;if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}}
     if(!g.ended&&p.x>=g.config.end-155&&(g.level!==3||g.bossCleared)){
       g.ended=true;g.won=true;g.score+=500;audio.current?.play('win');audio.current?.stop();
+      setRecords(old=>{const times={...old.times,[g.level]:Math.min(old.times[g.level]??Infinity,Math.ceil(g.elapsed))};const next={times,bossWins:old.bossWins+(g.level===3?1:0)};try{localStorage.setItem('woody-adventure-records-v1',JSON.stringify(next));}catch{}return next;});
       if(g.level<3){const next=g.level+1;setUnlocked(old=>Math.max(old,next));try{localStorage.setItem('woody-adventure-unlocked-v1',String(next));}catch{}setSelectedLevel(next);}
       setMode('won');
     }
@@ -516,8 +518,11 @@ export default function ForestAdventure(){
       {mode==="playing"&&hud.remaining<=20&&<div className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-red-700/95 px-3 py-2 text-sm font-black text-white animate-pulse">HURRY UP!</div>}
       <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="woody-canvas block aspect-[16/9] w-full"/>
       {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 px-4 text-center">
+        {mode==='won'&&game.current?.level===3&&<div className="mb-1 text-4xl drop-shadow-[0_0_20px_rgba(251,191,36,.85)] animate-bounce" aria-label="Forest Conqueror trophy">🏆✨</div>}
         <h2 className="text-xl font-black text-orange-200 md:text-4xl">{mode==='won'?(game.current?.level===3?'FOREST CONQUEROR!':'LEVEL COMPLETE!'):mode==='over'?'GAME OVER':'CHOOSE YOUR LEVEL'}</h2>
-        <p className="mt-3 max-w-md text-sm text-white/80">{mode==='won'?'You reached the portal! Can you improve your score?':'Find the glowing blue crystals to unlock double jumps. Time your moves across shifting platforms.'}</p>
+        <p className="mt-1 max-w-md text-xs text-white/80 sm:mt-3 sm:text-sm">{mode==='won'?(game.current?.level===3?'🏆 You defeated Shadow WOODY King!':'Portal reached! Next challenge unlocked.'):mode==='over'?'Try again — your unlocked levels and records are saved.':'Find crystals, collect coins and conquer the forest.'}</p>
+        {mode==='won'&&<div className="mt-2 flex flex-wrap justify-center gap-2 text-xs font-bold text-white"><span className="rounded-lg bg-amber-700/80 px-2 py-1">✦ {game.current?.score} POINTS</span><span className="rounded-lg bg-sky-800/80 px-2 py-1">⏱ {Math.ceil(game.current?.elapsed||0)}s</span><span className="rounded-lg bg-emerald-800/80 px-2 py-1">★ BEST {records.times[game.current?.level]??'—'}s</span></div>}
+        {mode==='ready'&&<div className="mt-2 text-xs text-amber-200">{records.bossWins>0?'🏆 FOREST CONQUEROR · '+records.bossWins+' victories':'🏆 Forest Conqueror trophy awaits'} · Best times: {LEVELS.map((_,i)=>'L'+(i+1)+' '+(records.times[i+1]??'—')+'s').join(' · ')}</div>}
         {mode==='ready'&&<div className="mt-2 flex flex-wrap justify-center gap-2">{LEVELS.map((level,i)=><button key={level.name} type="button" disabled={i+1>unlocked} onClick={()=>setSelectedLevel(i+1)} className={'rounded-lg px-3 py-2 text-xs font-bold '+(selectedLevel===i+1?'bg-emerald-500 text-slate-950':'bg-slate-700 text-white')+' disabled:opacity-40'}>LEVEL {i+1} {i+1>unlocked?'🔒':''}</button>)}</div>}
         <button onClick={()=>start(mode==='won'&&game.current?.level<3?game.current.level+1:selectedLevel)} className="mt-3 rounded-xl bg-orange-500 px-6 py-2 font-black text-white hover:bg-orange-400">{mode==='won'&&game.current?.level<3?'NEXT LEVEL':mode==='ready'?'START ADVENTURE':'PLAY AGAIN'}</button>
       </div>}
