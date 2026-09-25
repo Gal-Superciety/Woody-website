@@ -95,7 +95,7 @@ export default function ForestAdventure(){
  },[]);
  const [selectedLevel,setSelectedLevel]=useState(1),[unlocked,setUnlocked]=useState(1);
  const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});
- const start=useCallback((level=selectedLevel)=>{audio.current?.start();game.current=createGame(level);setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:LEVELS[level-1].seconds,notice:''});setMode('playing');},[selectedLevel]);
+ const start=useCallback((level=selectedLevel)=>{audio.current?.setBoss(false);audio.current?.start(level);game.current=createGame(level);setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:LEVELS[level-1].seconds,notice:''});setMode('playing');},[selectedLevel]);
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1))); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
@@ -201,7 +201,7 @@ export default function ForestAdventure(){
         }
       }
       const b=g.boss;
-      if(b?.alive&&Math.abs(p.x-b.x)<650){
+      if(b?.alive&&Math.abs(p.x-b.x)<650){audio.current?.setBoss(true);
         const phase=b.hp<=3?3:b.hp<=5?2:1;
         const cadence=phase===3?.68:phase===2?1.05:1.6;
         if(g.elapsed-b.last>cadence){
@@ -241,7 +241,7 @@ export default function ForestAdventure(){
         const b=g.boss;
         if(shot.life>0&&b?.alive&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},b)){
           b.hp--;shot.life=0;g.score+=35;
-          if(b.hp<=0){audio.current?.play('boss');b.alive=false;g.bossCleared=true;g.score+=1000;g.notice='SHADOW WOODY KING DEFEATED!';g.noticeUntil=g.elapsed+4;}
+          if(b.hp<=0){audio.current?.setBoss(false);audio.current?.play('boss');b.alive=false;g.bossCleared=true;g.score+=1000;g.notice='SHADOW WOODY KING DEFEATED!';g.noticeUntil=g.elapsed+4;}
         }
       }
       if(solids.some(v=>overlap({x:shot.x-5,y:shot.y-5,w:10,h:10},v)))shot.life=0;
