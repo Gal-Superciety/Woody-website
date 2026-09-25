@@ -2,7 +2,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const W = 960, H = 540, WORLD = 7900, FLOOR = 456;
-const ROUND_SECONDS = 110; // Full-map countdown; checkpoints do not reset the clock.
+const LEVELS=[
+ {name:'The Enchanted Forest',difficulty:'EASY',start:65,end:2550,seconds:90},
+ {name:'The Dangerous Woods',difficulty:'MEDIUM',start:2950,end:5500,seconds:78},
+ {name:'Shadow WOODY Kingdom',difficulty:'HARD',start:5980,end:WORLD-90,seconds:95}
+];
+const ROUND_SECONDS=LEVELS[0].seconds;
 const solids = [
   {x:0,y:FLOOR,w:620,h:120},{x:760,y:FLOOR,w:570,h:120},
   {x:1440,y:FLOOR,w:590,h:120},{x:2140,y:FLOOR,w:620,h:120},
@@ -56,15 +61,19 @@ const movingPlatforms = [{x:1280,y:348,w:106,h:17,range:65,phase:0},{x:2740,y:33
  {x:7100,y:310,w:110,h:17,range:46,phase:4}];
 const START = {x:65,y:FLOOR-58,vx:0,vy:0,w:43,h:58,ground:false,facing:1,invuln:0,jumps:0,doubleJump:0,flame:0,shotCooldown:0,jumpHeld:false};
 const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
-function createGame(){
- return {player:{...START},coins:coinPositions.map(([x,y])=>({x,y,taken:false})),
+function createGame(level=1){
+ const config=LEVELS[level-1];
+ return {level,config,player:{...START,x:config.start},coins:coinPositions.map(([x,y])=>({x,y,taken:false})),
  enemies:enemyPositions.map((x,i)=>({x,y:FLOOR-38,w:36,h:38,origin:x,phase:i*1.8,alive:true})),
- keys:{left:false,right:false,jump:false,shoot:false},camera:0,score:0,lives:3,checkpoint:65,
+ keys:{left:false,right:false,jump:false,shoot:false},camera:Math.max(0,config.start-180),score:0,lives:3,checkpoint:config.start,
  powerups:powerups.map(([x,y])=>({x,y,taken:false})),moving:movingPlatforms.map(v=>({...v,currentY:v.y})),
  crumble:crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false})),
  logs:logPositions.map(v=>({...v,y:FLOOR-v.h})),
  flames:flamePickups.map(([x,y])=>({x,y,taken:false})),shots:[],
- elapsed:0,remaining:ROUND_SECONDS,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
+ shadows:level===3?[{x:6250,origin:6250,hp:2,last:0},{x:6790,origin:6790,hp:2,last:0},{x:7380,origin:7380,hp:2,last:0}]:[],
+ boss:level===3?{x:7680,y:FLOOR-75,w:65,h:75,hp:10,maxHp:10,last:0,alive:true}:null,
+ enemyShots:[],bossCleared:false,
+ elapsed:0,remaining:config.seconds,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
  const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null),arcade=useRef(null);
@@ -80,10 +89,11 @@ export default function ForestAdventure(){
    document.addEventListener('fullscreenchange',onChange);
    return()=>document.removeEventListener('fullscreenchange',onChange);
  },[]);
+ const [selectedLevel,setSelectedLevel]=useState(1),[unlocked,setUnlocked]=useState(1);
  const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});
- const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});setMode('playing');},[]);
+ const start=useCallback((level=selectedLevel)=>{game.current=createGame(level);setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:LEVELS[level-1].seconds,notice:''});setMode('playing');},[selectedLevel]);
  useEffect(()=>{
-   try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0); } catch {}
+   try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1))); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
  },[]);
  useEffect(()=>{
@@ -114,9 +124,9 @@ export default function ForestAdventure(){
     if(g.remaining<=0){
       // Time-out is the only hazard that ignores checkpoints. Keep earned score,
       // collected coins, crystals and defeated enemies, but restart the map.
-      g.lives--;g.timeouts++;g.checkpoint=65;g.remaining=ROUND_SECONDS;
+      g.lives--;g.timeouts++;g.checkpoint=g.config.start;g.remaining=g.config.seconds;
       g.crumble=crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false}));
-      p.x=START.x;p.y=START.y;p.vx=0;p.vy=0;p.ground=false;p.jumps=0;p.jumpHeld=false;
+      p.x=g.config.start;p.y=START.y;p.vx=0;p.vy=0;p.ground=false;p.jumps=0;p.jumpHeld=false;
       p.invuln=1.5;g.camera=0;g.keys.jump=false;g.keys.shoot=false;g.shots=[];
       g.notice=g.lives>0?'TIME UP! ONE LIFE LOST — BACK TO START':'TIME UP! GAME OVER';
       g.noticeUntil=g.elapsed+3;
@@ -136,7 +146,7 @@ export default function ForestAdventure(){
       g.shots.push({x:p.x+p.w/2+p.facing*24,y:p.y+25,vx:p.facing*650,life:.85});
       for(let i=0;i<6;i++)g.particles.push({x:p.x+p.w/2+p.facing*26,y:p.y+25,vx:p.facing*(80+Math.random()*160),vy:(Math.random()-.5)*100,life:.28});
     }
-    p.x=Math.max(0,Math.min(WORLD-p.w,p.x+p.vx*dt));
+    p.x=Math.max(g.config.start,Math.min(g.config.end-p.w/2,p.x+p.vx*dt));
     p.vy=Math.min(1000,p.vy+1750*dt);p.y+=p.vy*dt;p.ground=false;
     for(const platform of g.moving){platform.currentY=platform.y+Math.sin(g.elapsed*1.4+platform.phase)*platform.range;}
     for(const platform of g.crumble){
@@ -148,10 +158,10 @@ export default function ForestAdventure(){
        if('triggered' in s&&!s.triggered){s.triggered=true;s.timer=0;}
      }
     }
-    if(p.x>2050)g.checkpoint=2170;
-    if(p.x>4650)g.checkpoint=4700;
-    if(p.x>5960)g.checkpoint=5980;
-    if(p.x>7280)g.checkpoint=7310;
+    if(g.level===1&&p.x>2200)g.checkpoint=2200;
+    if(g.level===2&&p.x>4680)g.checkpoint=4700;
+    if(g.level===3&&p.x>6610)g.checkpoint=6610;
+    if(g.level===3&&p.x>7270)g.checkpoint=7310;
     for(const power of g.powerups){
       if(!power.taken&&overlap(p,{x:power.x-18,y:power.y-18,w:36,h:36})){
         power.taken=true;p.doubleJump=Math.min(3,p.doubleJump+3);g.score+=100;
@@ -170,6 +180,38 @@ export default function ForestAdventure(){
        for(let i=0;i<7;i++)g.particles.push({x:c.x,y:c.y,vx:(Math.random()-.5)*130,vy:-Math.random()*170,life:.5});
       }
     }
+    // Shadow soldiers and the king take fireball damage; the king has 3 attack phases.
+    if(g.level===3){
+      for(const soldier of g.shadows){
+        if(soldier.hp<=0)continue;
+        soldier.x=soldier.origin+Math.sin(g.elapsed*1.7+soldier.origin)*35;
+        if(g.elapsed-soldier.last>2.15&&Math.abs(p.x-soldier.x)<510){
+          soldier.last=g.elapsed;
+          g.enemyShots.push({x:soldier.x,y:FLOOR-36,vx:p.x<soldier.x?-230:230,vy:0,life:2.6});
+        }
+      }
+      const b=g.boss;
+      if(b?.alive&&Math.abs(p.x-b.x)<650){
+        const phase=b.hp<=3?3:b.hp<=5?2:1;
+        const cadence=phase===3?.68:phase===2?1.05:1.6;
+        if(g.elapsed-b.last>cadence){
+          b.last=g.elapsed;
+          const dir=p.x<b.x?-1:1;
+          for(const vy of (phase===1?[0]:phase===2?[-95,0,95]:[-155,-75,0,75,155])){
+            g.enemyShots.push({x:b.x+32,y:b.y+32,vx:dir*(phase===3?330:270),vy,life:2.4});
+          }
+        }
+      }
+      for(const shot of g.enemyShots){
+        shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;
+        if(shot.life>0&&p.invuln===0&&overlap({x:shot.x-9,y:shot.y-9,w:18,h:18},p)){
+          shot.life=0;g.lives--;p.invuln=1.5;
+          if(g.lives<=0){g.ended=true;setMode('over');}
+          else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;g.enemyShots=[];}
+        }
+      }
+      g.enemyShots=g.enemyShots.filter(v=>v.life>0);
+    }
     // Fireballs hit the first living enemy they reach and cannot pass through terrain.
     for(const shot of g.shots){
       shot.x+=shot.vx*dt;shot.life-=dt;
@@ -178,6 +220,18 @@ export default function ForestAdventure(){
           enemy.alive=false;shot.life=0;g.score+=75;
           for(let i=0;i<14;i++)g.particles.push({x:enemy.x+18,y:enemy.y+17,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*210,life:.65});
           break;
+        }
+      }
+      if(g.level===3&&shot.life>0){
+        for(const soldier of g.shadows){
+          if(soldier.hp>0&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},{x:soldier.x,y:FLOOR-55,w:43,h:55})){
+            soldier.hp--;shot.life=0;if(!soldier.hp)g.score+=150;break;
+          }
+        }
+        const b=g.boss;
+        if(shot.life>0&&b?.alive&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},b)){
+          b.hp--;shot.life=0;g.score+=35;
+          if(b.hp<=0){b.alive=false;g.bossCleared=true;g.score+=1000;g.notice='SHADOW WOODY KING DEFEATED!';g.noticeUntil=g.elapsed+4;}
         }
       }
       if(solids.some(v=>overlap({x:shot.x-5,y:shot.y-5,w:10,h:10},v)))shot.life=0;
@@ -195,6 +249,21 @@ export default function ForestAdventure(){
       }
      }
     }
+    if(g.level===3&&!g.ended&&p.invuln===0){
+      for(const soldier of g.shadows){
+        if(soldier.hp>0&&overlap(p,{x:soldier.x,y:FLOOR-55,w:43,h:55})){
+          g.lives--;p.invuln=1.5;
+          if(g.lives<=0){g.ended=true;setMode('over');}
+          else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
+          break;
+        }
+      }
+      if(g.boss?.alive&&p.invuln===0&&overlap(p,g.boss)){
+        g.lives--;p.invuln=1.5;
+        if(g.lives<=0){g.ended=true;setMode('over');}
+        else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
+      }
+    }
     // Logs and stumps cannot be defeated by stomping: clear them with a jump.
     if(p.invuln===0&&!g.ended){
       for(const obstacle of g.logs){
@@ -208,13 +277,17 @@ export default function ForestAdventure(){
       }
     }
     if(p.y>H+150&&!g.ended){g.lives--;if(g.lives<=0){g.ended=true;setMode('over');}else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}}
-    if(p.x>WORLD-155){g.ended=true;g.won=true;g.score+=500;setMode('won');}
+    if(!g.ended&&p.x>=g.config.end-155&&(g.level!==3||g.bossCleared)){
+      g.ended=true;g.won=true;g.score+=500;
+      if(g.level<3){const next=g.level+1;setUnlocked(old=>Math.max(old,next));try{localStorage.setItem('woody-adventure-unlocked-v1',String(next));}catch{}setSelectedLevel(next);}
+      setMode('won');
+    }
     g.camera+=(Math.max(0,Math.min(WORLD-W,p.x-W*.34))-g.camera)*Math.min(1,dt*5);
     g.particles=g.particles.filter(v=>v.life>0);
     for(const v of g.particles){v.x+=v.vx*dt;v.y+=v.vy*dt;v.vy+=250*dt;v.life-=dt;}
     uiClock+=dt;
     if(g.ended){setBest(previous=>{const next=Math.max(previous,g.score);try{localStorage.setItem('woody-adventure-best-v1',String(next));}catch{}return next;});}
-    if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor(p.x/WORLD*100)),boost:p.doubleJump,ammo:p.flame,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
+    if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor((p.x-g.config.start)/(g.config.end-g.config.start)*100)),boost:p.doubleJump,ammo:p.flame,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
    // Layered fantasy forest: distant sky, mountains, canopies, trunks and foreground.
@@ -344,12 +417,35 @@ export default function ForestAdventure(){
     ctx.fillStyle='#2d1640';ctx.fillRect(e.x+12,e.y+12,3,6);ctx.fillRect(e.x+25,e.y+12,3,6);
     ctx.strokeStyle='#f2a4e4';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x+7,e.y+32);ctx.lineTo(e.x-4,e.y+38);ctx.moveTo(e.x+29,e.y+32);ctx.lineTo(e.x+41,e.y+38);ctx.stroke();
    }
+   // Shadow WOODY soldiers and the stronger final king are unique to level three.
+   for(const soldier of g?.shadows||[]){
+     if(soldier.hp<=0)continue;
+     ctx.save();ctx.shadowColor='#c364ff';ctx.shadowBlur=13;
+     ctx.fillStyle='#392257';ctx.beginPath();ctx.ellipse(soldier.x+22,FLOOR-27,22,28,0,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#e950b5';ctx.beginPath();ctx.arc(soldier.x+13,FLOOR-38,5,0,Math.PI*2);ctx.arc(soldier.x+30,FLOOR-38,5,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#ff7b36';ctx.beginPath();ctx.moveTo(soldier.x+12,FLOOR-53);ctx.lineTo(soldier.x+19,FLOOR-71);ctx.lineTo(soldier.x+30,FLOOR-52);ctx.fill();
+     ctx.restore();
+     ctx.fillStyle='#fb98ed';ctx.fillRect(soldier.x,FLOOR-66,43*(soldier.hp/2),4);
+   }
+   if(g?.boss?.alive){
+     const b=g.boss;ctx.save();ctx.shadowColor='#bb39fa';ctx.shadowBlur=25;
+     ctx.fillStyle='#281238';ctx.beginPath();ctx.ellipse(b.x+33,b.y+38,33,39,0,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#e449ec';ctx.beginPath();ctx.arc(b.x+22,b.y+25,7,0,Math.PI*2);ctx.arc(b.x+46,b.y+25,7,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#ff8b3c';ctx.beginPath();ctx.moveTo(b.x+12,b.y+5);ctx.lineTo(b.x+25,b.y-22);ctx.lineTo(b.x+39,b.y+5);ctx.fill();
+     ctx.restore();ctx.fillStyle='#3c1648';ctx.fillRect(b.x-12,b.y-36,90,11);
+     ctx.fillStyle='#fa3d72';ctx.fillRect(b.x-12,b.y-36,90*b.hp/b.maxHp,11);
+     ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.fillText('SHADOW WOODY KING',b.x-32,b.y-43);
+   }
+   for(const shot of g?.enemyShots||[]){
+     ctx.save();ctx.shadowColor='#d355ff';ctx.shadowBlur=17;ctx.fillStyle='#d56dff';
+     ctx.beginPath();ctx.arc(shot.x,shot.y,9,0,Math.PI*2);ctx.fill();ctx.restore();
+   }
    // Checkpoint and portal.
    ctx.fillStyle='#9c7949';ctx.fillRect(2160,355,7,101);ctx.fillStyle='#8df4be';ctx.beginPath();ctx.moveTo(2167,358);ctx.lineTo(2222,371);ctx.lineTo(2167,389);ctx.fill();
    for(const cp of [4700,5980,7310]){
     ctx.fillStyle='#9c7949';ctx.fillRect(cp,355,7,101);ctx.fillStyle='#8df4be';ctx.beginPath();ctx.moveTo(cp+7,358);ctx.lineTo(cp+58,371);ctx.lineTo(cp+7,389);ctx.fill();
    }
-   ctx.shadowBlur=25;ctx.shadowColor='#9ce6ff';ctx.strokeStyle='#a5eaff';ctx.lineWidth=11;ctx.beginPath();ctx.ellipse(WORLD-90,FLOOR-61,31,65,0,0,Math.PI*2);ctx.stroke();
+   ctx.shadowBlur=25;ctx.shadowColor='#9ce6ff';ctx.strokeStyle='#a5eaff';ctx.lineWidth=11;ctx.beginPath();ctx.ellipse(g?.config.end-90||WORLD-90,FLOOR-61,31,65,0,0,Math.PI*2);ctx.stroke();
    ctx.fillStyle='rgba(125,225,248,.3)';ctx.fill();ctx.shadowBlur=0;
    for(const v of g?.particles||[]){ctx.fillStyle='rgba(255,219,112,'+Math.max(0,v.life*2)+')';ctx.beginPath();ctx.arc(v.x,v.y,4,0,Math.PI*2);ctx.fill();}
    const p=g?.player||START;
@@ -382,13 +478,14 @@ export default function ForestAdventure(){
  );
  return <main className="woody-page mx-auto max-w-6xl px-2 py-3 md:px-8 md:py-8">
    <section className="woody-intro mb-3 rounded-3xl border border-emerald-300/20 bg-gradient-to-r from-emerald-950/90 to-sky-950/80 p-6">
-    <span className="text-xs font-bold uppercase tracking-[.3em] text-emerald-300">WOODY ARCADE · CHAPTER ONE</span>
-    <h1 className="mt-2 text-3xl font-black text-orange-300 md:text-5xl">The Enchanted Forest</h1>
+    <span className="text-xs font-bold uppercase tracking-[.3em] text-emerald-300">WOODY ARCADE · THREE LEVELS</span>
+    <h1 className="mt-2 text-3xl font-black text-orange-300 md:text-5xl">{LEVELS[game.current?.level-1||selectedLevel-1].name}</h1>
     <p className="mt-2 text-sm text-white/75">Explore the forest, leap over fallen trees and sharp stumps, collect golden WOODY coins and reach the portal before time runs out.</p>
    </section>
    <section ref={arcade} className="woody-arcade overflow-hidden rounded-2xl border border-emerald-400/30 bg-slate-950 p-1.5 shadow-[0_0_50px_rgba(16,185,129,.12)] md:rounded-3xl md:p-4">
     <div className="woody-hud mb-1.5 flex flex-wrap items-center gap-1 text-[10px] font-bold text-white/90 sm:mb-3 sm:gap-3 sm:text-sm">
       <button type="button" onClick={enterFullscreen} className="woody-fullscreen rounded-lg border border-orange-300/60 bg-orange-600/70 px-2 py-1.5 text-white">{fullScreen?'⤢ EXIT FULLSCREEN':'⛶ FULLSCREEN'}</button>
+      <span className="rounded-full bg-violet-500/30 px-2 py-1">LEVEL {game.current?.level||selectedLevel} / 3</span>
       <span className="rounded-full bg-amber-500/20 px-2 py-1">✦ {hud.score} POINTS</span>
       <span className="rounded-full bg-rose-500/20 px-2 py-1">♥ {hud.lives} LIVES</span>
       <span className="woody-secondary rounded-full bg-orange-500/20 px-2 py-1">★ {best} BEST</span>
@@ -403,9 +500,10 @@ export default function ForestAdventure(){
       {mode==="playing"&&hud.remaining<=20&&<div className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-red-700/95 px-3 py-2 text-sm font-black text-white animate-pulse">HURRY UP!</div>}
       <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="woody-canvas block aspect-[16/9] w-full"/>
       {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 px-4 text-center">
-        <h2 className="text-2xl font-black text-orange-200 md:text-4xl">{mode==='won'?'FOREST CONQUERED!':mode==='over'?'GAME OVER':'THE FOREST AWAITS'}</h2>
+        <h2 className="text-xl font-black text-orange-200 md:text-4xl">{mode==='won'?(game.current?.level===3?'FOREST CONQUEROR!':'LEVEL COMPLETE!'):mode==='over'?'GAME OVER':'CHOOSE YOUR LEVEL'}</h2>
         <p className="mt-3 max-w-md text-sm text-white/80">{mode==='won'?'You reached the portal! Can you improve your score?':'Find the glowing blue crystals to unlock double jumps. Time your moves across shifting platforms.'}</p>
-        <button onClick={start} className="mt-5 rounded-xl bg-orange-500 px-8 py-3 font-black text-white hover:bg-orange-400">{mode==='ready'?'START ADVENTURE':'PLAY AGAIN'}</button>
+        {mode==='ready'&&<div className="mt-2 flex flex-wrap justify-center gap-2">{LEVELS.map((level,i)=><button key={level.name} type="button" disabled={i+1>unlocked} onClick={()=>setSelectedLevel(i+1)} className={'rounded-lg px-3 py-2 text-xs font-bold '+(selectedLevel===i+1?'bg-emerald-500 text-slate-950':'bg-slate-700 text-white')+' disabled:opacity-40'}>LEVEL {i+1} {i+1>unlocked?'🔒':''}</button>)}</div>}
+        <button onClick={()=>start(mode==='won'&&game.current?.level<3?game.current.level+1:selectedLevel)} className="mt-3 rounded-xl bg-orange-500 px-6 py-2 font-black text-white hover:bg-orange-400">{mode==='won'&&game.current?.level<3?'NEXT LEVEL':mode==='ready'?'START ADVENTURE':'PLAY AGAIN'}</button>
       </div>}
     </div>
     <div className="woody-controls mt-2 grid grid-cols-2 gap-2 sm:mt-4">
