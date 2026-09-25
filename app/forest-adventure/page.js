@@ -116,6 +116,12 @@ export default function ForestAdventure(){
   let alive=true,previous=0,uiClock=0;
   const draw=(now)=>{
    if(!alive)return;
+   // Expand the actual world viewport instead of stretching a 16:9 picture.
+   // Keep the original 540-unit vertical scale so WOODY stays proportional.
+   const stage=canvas.current?.parentElement;
+   const ratio=stage?.clientHeight?stage.clientWidth/stage.clientHeight:W/H;
+   const viewW=Math.max(W,Math.min(2400,Math.round(H*ratio)));
+   if(canvas.current&&canvas.current.width!==viewW)canvas.current.width=viewW;
    const dt=Math.min((now-previous)/1000||0,.035);previous=now;
    const g=game.current;
    if(g&&!g.ended){
@@ -287,7 +293,7 @@ export default function ForestAdventure(){
       if(g.level<3){const next=g.level+1;setUnlocked(old=>Math.max(old,next));try{localStorage.setItem('woody-adventure-unlocked-v1',String(next));}catch{}setSelectedLevel(next);}
       setMode('won');
     }
-    g.camera+=(Math.max(0,Math.min(WORLD-W,p.x-W*.34))-g.camera)*Math.min(1,dt*5);
+    g.camera+=(Math.max(0,Math.min(WORLD-viewW,p.x-viewW*.34))-g.camera)*Math.min(1,dt*5);
     g.particles=g.particles.filter(v=>v.life>0);
     for(const v of g.particles){v.x+=v.vx*dt;v.y+=v.vy*dt;v.vy+=250*dt;v.life-=dt;}
     uiClock+=dt;
@@ -296,12 +302,12 @@ export default function ForestAdventure(){
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
    // Layered fantasy forest: distant sky, mountains, canopies, trunks and foreground.
-   const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#071c37');sky.addColorStop(.6,'#1d6475');sky.addColorStop(1,'#b0c98c');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+   const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#071c37');sky.addColorStop(.6,'#1d6475');sky.addColorStop(1,'#b0c98c');ctx.fillStyle=sky;ctx.fillRect(0,0,viewW,H);
    ctx.fillStyle='#c8e8ba';ctx.shadowBlur=45;ctx.shadowColor='#b6f6c0';ctx.beginPath();ctx.arc(790,105,43,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
    for(let layer=0;layer<3;layer++){
     const step=layer===0?320:layer===1?230:155,shift=cam*(.1+layer*.17);
     ctx.fillStyle=['#225b69','#1d595c','#184e46'][layer];
-    for(let i=-2;i<Math.ceil(W/step)+3;i++){
+    for(let i=-2;i<Math.ceil(viewW/step)+3;i++){
      const x=i*step-shift%step;
      ctx.beginPath();ctx.moveTo(x-85,380);ctx.lineTo(x+step*.4,125+layer*37);ctx.lineTo(x+step+80,380);ctx.fill();
      if(layer>0){
@@ -315,7 +321,7 @@ export default function ForestAdventure(){
    // Distant cascading falls, shafts of light and luminous forest atmosphere.
    for(const wx of [455,1510,2480,3500]){
     const x=wx-cam*.3;
-    if(x<-150||x>W+150)continue;
+    if(x<-150||x>viewW+150)continue;
     const fall=ctx.createLinearGradient(x,140,x+110,140);fall.addColorStop(0,'rgba(91,222,230,0)');fall.addColorStop(.5,'rgba(164,250,245,.44)');fall.addColorStop(1,'rgba(91,222,230,0)');
     ctx.fillStyle=fall;ctx.beginPath();ctx.moveTo(x,162);ctx.lineTo(x+92,162);ctx.lineTo(x+108,393);ctx.lineTo(x-10,393);ctx.fill();
     ctx.fillStyle='rgba(190,251,233,.27)';for(let n=0;n<9;n++){ctx.beginPath();ctx.ellipse(x+Math.sin(clock*2+n)*40+45,390+n%3*4,14,3,0,0,Math.PI*2);ctx.fill();}
@@ -413,7 +419,7 @@ export default function ForestAdventure(){
     if(c.taken)continue;
     const bob=Math.sin(clock*4+c.x)*5;
     ctx.fillStyle='#ffda68';ctx.shadowBlur=14;ctx.shadowColor='#ffda68';ctx.beginPath();ctx.arc(c.x,c.y+bob,12,0,Math.PI*2);ctx.fill();
-    ctx.shadowBlur=0;ctx.strokeStyle='#fff1a8';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#855122';ctx.font='bold 13px sans-serif';ctx.fillText('W',c.x-6,c.y+5+bob);
+    ctx.shadowBlur=0;ctx.strokeStyle='#fff1a8';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#855122';ctx.font='bold 13px sans-serif';ctx.fillText('viewW',c.x-6,c.y+5+bob);
    }
    for(const e of g?.enemies||[]){
     if(!e.alive)continue;
@@ -503,7 +509,7 @@ export default function ForestAdventure(){
     <div className="woody-stage relative mx-auto w-full overflow-hidden rounded-xl">
       {mode==="playing"&&hud.notice&&<div role="status" className="pointer-events-none absolute left-1/2 top-6 z-10 w-max max-w-[90%] -translate-x-1/2 rounded-xl border-2 border-orange-300 bg-red-950/95 px-5 py-3 text-center text-sm font-black text-white shadow-xl md:text-xl">{hud.notice}</div>}
       {mode==="playing"&&hud.remaining<=20&&<div className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-red-700/95 px-3 py-2 text-sm font-black text-white animate-pulse">HURRY UP!</div>}
-      <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="woody-canvas block aspect-[16/9] w-full"/>
+      <canvas ref={canvas} width={viewW} height={H} aria-label="WOODY Forest Adventure playable level" className="woody-canvas block aspect-[16/9] w-full"/>
       {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 px-4 text-center">
         <h2 className="text-xl font-black text-orange-200 md:text-4xl">{mode==='won'?(game.current?.level===3?'FOREST CONQUEROR!':'LEVEL COMPLETE!'):mode==='over'?'GAME OVER':'CHOOSE YOUR LEVEL'}</h2>
         <p className="mt-3 max-w-md text-sm text-white/80">{mode==='won'?'You reached the portal! Can you improve your score?':'Find the glowing blue crystals to unlock double jumps. Time your moves across shifting platforms.'}</p>
@@ -515,7 +521,7 @@ export default function ForestAdventure(){
       <div className="flex min-w-0 gap-1.5">{button('left','◀')}{button('right','▶')}</div>
       <div className="flex min-w-0 gap-1.5">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
     </div>
-    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
+    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / viewW to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
    </section>
    <p className="woody-footer mt-4 text-center text-xs text-white/50">Chapter 1 time trial: reach the portal before the 1:50 timer expires. Time-outs restart the entire map; other hazards use checkpoints. Hand-painted production art is still in progress.</p>
    <style jsx global>{`
@@ -565,7 +571,7 @@ export default function ForestAdventure(){
        .woody-arcade .woody-canvas {
          display: block !important; width: 100% !important;
          height: 100% !important; aspect-ratio: auto !important;
-         object-fit: fill !important;
+         object-fit: contain !important;
        }
        .woody-arcade .woody-controls {
          align-self: stretch !important; width: 100% !important;
@@ -593,7 +599,7 @@ export default function ForestAdventure(){
      .woody-arcade:fullscreen .woody-help, .woody-arcade:fullscreen .woody-secondary { display:none; }
      .woody-arcade:fullscreen .woody-hud { flex:0 0 auto; gap:3px; margin-bottom:3px; }
      .woody-arcade:fullscreen .woody-stage { flex:1 1 auto; min-height:0; width:100%; aspect-ratio:auto; }
-     .woody-arcade:fullscreen .woody-canvas { width:100%; height:100%; aspect-ratio:auto; object-fit:fill; }
+     .woody-arcade:fullscreen .woody-canvas { width:100%; height:100%; aspect-ratio:auto; object-fit:contain; }
      .woody-arcade:fullscreen .woody-controls { flex:0 0 48px; margin-top:3px; }
    `}</style>
  </main>;
