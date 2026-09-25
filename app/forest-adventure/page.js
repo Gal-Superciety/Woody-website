@@ -531,9 +531,9 @@ export default function ForestAdventure(){
       <div className="flex min-w-0 gap-1.5">{button('left','◀')}{button('right','▶')}</div>
       <div className="flex min-w-0 gap-1.5">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
     </div>
-    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
+    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the clock: Level 1 has 1:30, Level 2 has 1:18, and Level 3 has 1:35. Time-out costs a life and restarts the current level; enemies and water return you to the last checkpoint. Coins are in-game points only. Progress and records are stored in this browser.</p>
    </section>
-   <p className="woody-footer mt-4 text-center text-xs text-white/50">Chapter 1 time trial: reach the portal before the 1:50 timer expires. Time-outs restart the entire map; other hazards use checkpoints. Hand-painted production art is still in progress.</p>
+   <p className="woody-footer mt-4 text-center text-xs text-white/50">WOODY Forest Adventure · Season 1. Three levels, one final boss. Your unlocked levels and personal records are saved on this device.</p>
    <style jsx global>{`
      /* Keep all four touch buttons and the stage visible together on a phone. */
      @media (max-width: 900px) and (orientation: landscape) and (max-height: 600px) {
