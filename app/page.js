@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const STATUS_URL = process.env.NEXT_PUBLIC_WOODY_MONITOR_STATUS_URL || 'https://worker-production-3838.up.railway.app/status.json';
+const STATUS_URL = '/api/woody-status';
 
 const usd = (value) => {
   const n = value === null || value === undefined || value === '' ? NaN : Number(value);
