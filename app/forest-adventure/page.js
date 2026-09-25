@@ -558,14 +558,14 @@ export default function ForestAdventure(){
        .woody-arcade .woody-fullscreen { flex-shrink: 0 !important; padding: 3px 6px !important; font-size: 10px !important; }
        .woody-arcade .woody-stage {
          flex: 1 1 0 !important; min-height: 0 !important;
-         width: min(100%, calc((100dvh - 91px) * 16 / 9)) !important;
+         width: 100% !important;
          max-width: 100% !important; aspect-ratio: auto !important;
          margin: 0 auto !important; overflow: hidden !important;
        }
        .woody-arcade .woody-canvas {
          display: block !important; width: 100% !important;
          height: 100% !important; aspect-ratio: auto !important;
-         object-fit: contain !important;
+         object-fit: fill !important;
        }
        .woody-arcade .woody-controls {
          align-self: stretch !important; width: 100% !important;
@@ -592,8 +592,8 @@ export default function ForestAdventure(){
      .woody-arcade:fullscreen { display:flex; flex-direction:column; width:100vw; height:100dvh; padding:4px 8px max(4px,env(safe-area-inset-bottom)); border-radius:0; }
      .woody-arcade:fullscreen .woody-help, .woody-arcade:fullscreen .woody-secondary { display:none; }
      .woody-arcade:fullscreen .woody-hud { flex:0 0 auto; gap:3px; margin-bottom:3px; }
-     .woody-arcade:fullscreen .woody-stage { flex:1 1 auto; min-height:0; width:min(100%,calc((100dvh - 98px) * 16 / 9)); aspect-ratio:16/9; }
-     .woody-arcade:fullscreen .woody-canvas { width:100%; height:100%; object-fit:contain; }
+     .woody-arcade:fullscreen .woody-stage { flex:1 1 auto; min-height:0; width:100%; aspect-ratio:auto; }
+     .woody-arcade:fullscreen .woody-canvas { width:100%; height:100%; aspect-ratio:auto; object-fit:fill; }
      .woody-arcade:fullscreen .woody-controls { flex:0 0 48px; margin-top:3px; }
    `}</style>
  </main>;
