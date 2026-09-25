@@ -67,7 +67,19 @@ function createGame(){
  elapsed:0,remaining:ROUND_SECONDS,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
- const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null);
+ const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null),arcade=useRef(null);
+ const [fullScreen,setFullScreen]=useState(false);
+ const enterFullscreen=async()=>{
+   try{
+     if(!document.fullscreenElement){await arcade.current?.requestFullscreen?.();try{await screen.orientation?.lock?.('landscape');}catch{}}
+     else await document.exitFullscreen?.();
+   }catch{ /* Browser may disallow orientation lock; responsive layout still works. */ }
+ };
+ useEffect(()=>{
+   const onChange=()=>setFullScreen(Boolean(document.fullscreenElement));
+   document.addEventListener('fullscreenchange',onChange);
+   return()=>document.removeEventListener('fullscreenchange',onChange);
+ },[]);
  const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});
  const start=useCallback(()=>{game.current=createGame();setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});setMode('playing');},[]);
  useEffect(()=>{
@@ -366,41 +378,71 @@ export default function ForestAdventure(){
  const button=(key,label)=>(
    <button type="button" aria-label={label} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);press(key,true);}}
     onPointerUp={()=>press(key,false)} onPointerCancel={()=>press(key,false)}
-    className="select-none rounded-2xl border border-emerald-300/50 bg-emerald-900/70 px-6 py-4 text-lg font-bold text-white active:bg-orange-500 touch-none">{label}</button>
+    className="woody-control min-w-0 flex-1 select-none rounded-xl border border-emerald-300/50 bg-emerald-900/80 px-2 py-3 text-sm font-bold text-white active:bg-orange-500 touch-none sm:px-5 sm:py-4 sm:text-lg">{label}</button>
  );
- return <main className="mx-auto max-w-6xl px-3 py-8 md:px-8">
-   <section className="mb-5 rounded-3xl border border-emerald-300/20 bg-gradient-to-r from-emerald-950/90 to-sky-950/80 p-6">
+ return <main className="woody-page mx-auto max-w-6xl px-2 py-3 md:px-8 md:py-8">
+   <section className="woody-intro mb-3 rounded-3xl border border-emerald-300/20 bg-gradient-to-r from-emerald-950/90 to-sky-950/80 p-6">
     <span className="text-xs font-bold uppercase tracking-[.3em] text-emerald-300">WOODY ARCADE · CHAPTER ONE</span>
     <h1 className="mt-2 text-3xl font-black text-orange-300 md:text-5xl">The Enchanted Forest</h1>
     <p className="mt-2 text-sm text-white/75">Explore the forest, leap over fallen trees and sharp stumps, collect golden WOODY coins and reach the portal before time runs out.</p>
    </section>
-   <section className="overflow-hidden rounded-3xl border border-emerald-400/30 bg-slate-950 p-2 shadow-[0_0_50px_rgba(16,185,129,.12)] md:p-4">
-    <div className="mb-3 flex flex-wrap gap-3 text-xs font-bold text-white/90 md:text-sm">
-      <span className="rounded-full bg-amber-500/20 px-3 py-2">✦ {hud.score} POINTS</span>
-      <span className="rounded-full bg-rose-500/20 px-3 py-2">♥ {hud.lives} LIVES</span>
-      <span className="rounded-full bg-orange-500/20 px-3 py-2">★ {best} BEST</span>
-      <span className="rounded-full bg-cyan-500/20 px-3 py-2">✦ {hud.boost||0} DOUBLE JUMPS</span>
-      <span className="rounded-full bg-orange-500/20 px-3 py-2">🔥 {hud.ammo||0} FIREBALLS</span>
-      <span className="rounded-full bg-sky-500/20 px-3 py-2">◷ {hud.time}s</span>
-      <span aria-live="polite" className={hud.remaining<=20?"rounded-full bg-red-600 px-3 py-2 text-white animate-pulse":"rounded-full bg-emerald-500/20 px-3 py-2"}>⏳ {Math.floor(hud.remaining/60)}:{String(hud.remaining%60).padStart(2,"0")} LEFT</span>
-      <span className="rounded-full bg-emerald-500/20 px-3 py-2">MAP {hud.progress}%</span>
+   <section ref={arcade} className="woody-arcade overflow-hidden rounded-2xl border border-emerald-400/30 bg-slate-950 p-1.5 shadow-[0_0_50px_rgba(16,185,129,.12)] md:rounded-3xl md:p-4">
+    <div className="woody-hud mb-1.5 flex flex-wrap items-center gap-1 text-[10px] font-bold text-white/90 sm:mb-3 sm:gap-3 sm:text-sm">
+      <button type="button" onClick={enterFullscreen} className="woody-fullscreen rounded-lg border border-orange-300/60 bg-orange-600/70 px-2 py-1.5 text-white">{fullScreen?'⤢ EXIT FULLSCREEN':'⛶ FULLSCREEN'}</button>
+      <span className="rounded-full bg-amber-500/20 px-2 py-1">✦ {hud.score} POINTS</span>
+      <span className="rounded-full bg-rose-500/20 px-2 py-1">♥ {hud.lives} LIVES</span>
+      <span className="woody-secondary rounded-full bg-orange-500/20 px-2 py-1">★ {best} BEST</span>
+      <span className="rounded-full bg-cyan-500/20 px-2 py-1">✦ {hud.boost||0} DOUBLE JUMPS</span>
+      <span className="rounded-full bg-orange-500/20 px-2 py-1">🔥 {hud.ammo||0} FIREBALLS</span>
+      <span className="woody-secondary rounded-full bg-sky-500/20 px-2 py-1">◷ {hud.time}s</span>
+      <span aria-live="polite" className={hud.remaining<=20?"rounded-full bg-red-600 px-2 py-1 text-white animate-pulse":"rounded-full bg-emerald-500/20 px-2 py-1"}>⏳ {Math.floor(hud.remaining/60)}:{String(hud.remaining%60).padStart(2,"0")} LEFT</span>
+      <span className="woody-secondary rounded-full bg-emerald-500/20 px-2 py-1">MAP {hud.progress}%</span>
     </div>
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className="woody-stage relative mx-auto w-full overflow-hidden rounded-xl">
       {mode==="playing"&&hud.notice&&<div role="status" className="pointer-events-none absolute left-1/2 top-6 z-10 w-max max-w-[90%] -translate-x-1/2 rounded-xl border-2 border-orange-300 bg-red-950/95 px-5 py-3 text-center text-sm font-black text-white shadow-xl md:text-xl">{hud.notice}</div>}
       {mode==="playing"&&hud.remaining<=20&&<div className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-red-700/95 px-3 py-2 text-sm font-black text-white animate-pulse">HURRY UP!</div>}
-      <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="block aspect-[16/9] w-full"/>
+      <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="woody-canvas block aspect-[16/9] w-full"/>
       {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 px-4 text-center">
         <h2 className="text-2xl font-black text-orange-200 md:text-4xl">{mode==='won'?'FOREST CONQUERED!':mode==='over'?'GAME OVER':'THE FOREST AWAITS'}</h2>
         <p className="mt-3 max-w-md text-sm text-white/80">{mode==='won'?'You reached the portal! Can you improve your score?':'Find the glowing blue crystals to unlock double jumps. Time your moves across shifting platforms.'}</p>
         <button onClick={start} className="mt-5 rounded-xl bg-orange-500 px-8 py-3 font-black text-white hover:bg-orange-400">{mode==='ready'?'START ADVENTURE':'PLAY AGAIN'}</button>
       </div>}
     </div>
-    <div className="mt-4 flex items-center justify-between gap-3">
-      <div className="flex gap-2">{button('left','◀ LEFT')}{button('right','RIGHT ▶')}</div>
-      <div className="flex gap-2">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
+    <div className="woody-controls mt-2 grid grid-cols-2 gap-2 sm:mt-4">
+      <div className="flex min-w-0 gap-1.5">{button('left','◀')}{button('right','▶')}</div>
+      <div className="flex min-w-0 gap-1.5">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
     </div>
-    <p className="mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
+    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the 1:50 countdown: time-out costs a life AND sends you to the beginning; enemies and water send you to the last checkpoint. Coins are in-game points only.</p>
    </section>
-   <p className="mt-4 text-center text-xs text-white/50">Chapter 1 time trial: reach the portal before the 1:50 timer expires. Time-outs restart the entire map; other hazards use checkpoints. Hand-painted production art is still in progress.</p>
+   <p className="woody-footer mt-4 text-center text-xs text-white/50">Chapter 1 time trial: reach the portal before the 1:50 timer expires. Time-outs restart the entire map; other hazards use checkpoints. Hand-painted production art is still in progress.</p>
+   <style jsx global>{`
+     /* Keep all four touch buttons and the stage visible together on a phone. */
+     @media (max-width: 900px) and (orientation: landscape) and (max-height: 600px) {
+       .woody-page { max-width: none !important; padding: 0 !important; }
+       .woody-intro, .woody-help, .woody-footer, .woody-secondary { display: none !important; }
+       .woody-arcade { display: flex; flex-direction: column; height: 100dvh; width: 100%; border-radius: 0; padding: 3px 8px max(3px,env(safe-area-inset-bottom)); }
+       .woody-hud { flex: 0 0 auto; margin-bottom: 2px; gap: 3px; font-size: 10px; }
+       .woody-hud > span { padding: 2px 6px; }
+       .woody-stage { width: min(100%, calc((100dvh - 95px) * 16 / 9)); flex: 1 1 auto; min-height: 0; aspect-ratio: 16 / 9; }
+       .woody-canvas { width: 100%; height: 100%; object-fit: contain; }
+       .woody-controls { flex: 0 0 45px; margin-top: 3px; gap: 14px; }
+       .woody-control { padding: 6px 8px; font-size: 14px; }
+       body:has(.woody-page) { overflow: hidden; }
+     }
+     @media (max-width: 600px) and (orientation: portrait) {
+       .woody-intro { padding: 10px; margin-bottom: 6px; }
+       .woody-intro h1 { font-size: 20px; margin-top: 2px; }
+       .woody-intro p { display: none; }
+       .woody-secondary, .woody-help, .woody-footer { display: none; }
+       .woody-arcade { padding: 4px; }
+       .woody-control { padding: 12px 4px; font-size: 13px; }
+     }
+     .woody-arcade:fullscreen { display:flex; flex-direction:column; width:100vw; height:100dvh; padding:4px 8px max(4px,env(safe-area-inset-bottom)); border-radius:0; }
+     .woody-arcade:fullscreen .woody-help, .woody-arcade:fullscreen .woody-secondary { display:none; }
+     .woody-arcade:fullscreen .woody-hud { flex:0 0 auto; gap:3px; margin-bottom:3px; }
+     .woody-arcade:fullscreen .woody-stage { flex:1 1 auto; min-height:0; width:min(100%,calc((100dvh - 98px) * 16 / 9)); aspect-ratio:16/9; }
+     .woody-arcade:fullscreen .woody-canvas { width:100%; height:100%; object-fit:contain; }
+     .woody-arcade:fullscreen .woody-controls { flex:0 0 48px; margin-top:3px; }
+   `}</style>
  </main>;
 }
