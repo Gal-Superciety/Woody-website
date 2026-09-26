@@ -23,14 +23,13 @@ export default function CommandCenter() {
   const [live, setLive] = useState(false);
   const [updated, setUpdated] = useState(null);
   const requestRef = useRef(0);
-  const statusUrl = '/api/woody-status';
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       const id = ++requestRef.current;
       try {
-        const response = await fetch(statusUrl, { cache: 'no-store' });
+        const response = await fetch('/api/woody-status', { cache: 'no-store' });
         if (!response.ok) throw new Error('Monitor unavailable');
         const next = await response.json();
         if (!mounted || id !== requestRef.current) return;
@@ -44,7 +43,7 @@ export default function CommandCenter() {
     load();
     const timer = window.setInterval(load, 30000);
     return () => { mounted = false; window.clearInterval(timer); };
-  }, [statusUrl]);
+  }, []);
 
   const metrics = useMemo(() => [
     ['Price', usd(data?.price?.usd)],
