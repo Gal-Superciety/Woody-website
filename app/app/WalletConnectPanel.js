@@ -275,7 +275,18 @@ export default function WalletConnectPanel() {
         onClientEvent: () => {},
       };
 
-      walletConnectProvider = new WalletConnectProvider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID);
+      // The wallet can use this URL to return to the dApp after mobile approval.
+      // Keep QR-initiated desktop sessions free of a mobile redirect.
+      const mobileOptions = isMobileDevice() ? {
+        metadata: {
+          name: 'WOODY Meme',
+          description: 'WOODY Command Center on MultiversX',
+          url: window.location.origin,
+          icons: [`${window.location.origin}/woody-logo.png`],
+          redirect: { universal: `${window.location.origin}/app` },
+        },
+      } : undefined;
+      walletConnectProvider = new WalletConnectProvider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID, mobileOptions);
       await walletConnectProvider.init?.();
       const { uri, approval } = await walletConnectProvider.connect();
       if (uri) {
