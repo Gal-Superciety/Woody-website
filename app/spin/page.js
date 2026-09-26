@@ -92,7 +92,7 @@ export default function SpinPage() {
 
       <section className="mt-10 grid gap-6 md:grid-cols-2">
         <div className="rounded-2xl border border-orange-400/20 bg-card/80 p-5">
-          <h2 className="text-xl font-semibold text-orange-200">Weekly Leaderboard</h2>
+          <h2 className="text-xl font-semibold text-orange-200">Demo Weekly Leaderboard</h2>
           <ul className="mt-4 space-y-2 text-sm">
             {weeklyLeaderboard.map((entry, index) => (
               <li key={entry.name} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/85">
@@ -104,7 +104,7 @@ export default function SpinPage() {
         </div>
 
         <div className="rounded-2xl border border-sky-400/20 bg-card/80 p-5">
-          <h2 className="text-xl font-semibold text-sky-200">Monthly Leaderboard</h2>
+          <h2 className="text-xl font-semibold text-sky-200">Demo Monthly Leaderboard</h2>
           <ul className="mt-4 space-y-2 text-sm">
             {monthlyLeaderboard.map((entry, index) => (
               <li key={entry.name} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white/85">
