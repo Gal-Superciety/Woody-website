@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { QRCodeSVG } from 'qrcode.react';
 
 const STORAGE_KEY = 'woody:multiversx-wallet-session';
 const WEB_WALLET_URL = 'https://wallet.multiversx.com';
@@ -23,6 +24,9 @@ const walletErrorMessage = (error) => {
   return message && message.length < 180 ? `WalletConnect error: ${message}` : FRIENDLY_FAILURE;
 };
 const isBrowser = () => typeof window !== 'undefined';
+const isMobileDevice = () => isBrowser() && (
+  navigator.userAgentData?.mobile || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+);
 
 function shortenAddress(address) {
   if (!address) return 'Not connected';
@@ -276,10 +280,11 @@ export default function WalletConnectPanel() {
       const { uri, approval } = await walletConnectProvider.connect();
       if (uri) {
         setXPortalUri(uri);
-        // Open the same WalletConnect URI as the previously working manual link.
-        // Keep the link visible as a fallback if the in-app browser blocks automatic navigation.
-        try { window.location.assign(uri); } catch (navigationError) {
-          console.warn('Automatic xPortal navigation blocked; use the visible link', navigationError);
+        // Desktop keeps the pairing URI on screen for the xPortal QR scanner.
+        if (isMobileDevice()) {
+          try { window.location.assign(uri); } catch (navigationError) {
+            console.warn('Automatic xPortal navigation blocked; use the visible link', navigationError);
+          }
         }
       }
       await walletConnectProvider.login({ approval });
@@ -336,11 +341,15 @@ export default function WalletConnectPanel() {
             <div className="grid w-full gap-2 sm:w-80">
               {restoringSession ? <p className="text-center text-xs text-white/60">Checking saved xPortal session...</p> : null}
               {xPortalUri ? (
-                <a href={xPortalUri} target="_self" className="cta cta-orange w-full text-center" aria-label="Open wallet chooser to approve xPortal connection">Choose xPortal and connect ↗</a>
+                <div className="flex flex-col items-center gap-3 rounded-2xl border border-sky-400/30 bg-slate-950/70 p-4 text-center">
+                  <p className="hidden text-sm font-bold text-white md:block">Scan with xPortal</p>
+                  <div className="hidden rounded-xl bg-white p-3 md:block"><QRCodeSVG value={xPortalUri} size={224} level="M" marginSize={0} title="Scan to connect xPortal" /></div>
+                  <p className="hidden text-xs leading-relaxed text-white/70 md:block">On your phone, open xPortal and scan this QR code. Approve the connection in xPortal.</p>
+                  <a href={xPortalUri} target="_self" className="cta cta-orange w-full text-center" aria-label="Open xPortal on this device">Open xPortal on this device ↗</a>
+                </div>
               ) : (
                 <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Opening xPortal...' : 'Connect xPortal'}</button>
               )}
-              {xPortalUri ? <p className="text-center text-xs leading-relaxed text-white/70">xPortal should open automatically. If your browser blocks it, tap the orange button once to continue.</p> : null}
               <button type="button" onClick={connectExtension} disabled={disabled} className="cta cta-blue w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'extension' ? 'Connecting Extension...' : 'Connect MultiversX DeFi Wallet'}</button>
               <button type="button" onClick={connectWebWallet} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'web' ? 'Connecting Web Wallet...' : 'Connect Web Wallet'}</button>
             </div>
