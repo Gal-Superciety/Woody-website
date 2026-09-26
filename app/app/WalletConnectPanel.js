@@ -125,13 +125,7 @@ export default function WalletConnectPanel() {
     let mounted = true;
     const restore = async () => {
       try {
-        const saved = storage?.getItem(STORAGE_KEY);
-        if (!saved) return;
-        const parsed = JSON.parse(saved);
-        if (parsed?.providerType !== 'xPortal' || !WALLETCONNECT_PROJECT_ID) {
-          storage.removeItem(STORAGE_KEY);
-          return;
-        }
+        if (!WALLETCONNECT_PROJECT_ID) return;
         const walletConnectModule = await import('@multiversx/sdk-wallet-connect-provider');
         const Provider = walletConnectModule.WalletConnectV2Provider || walletConnectModule.WalletConnectProvider;
         if (!Provider || !mounted) return;
@@ -139,7 +133,7 @@ export default function WalletConnectPanel() {
         const callbacks = {
           onClientLogin: () => {},
           onClientLogout: () => {
-            storage.removeItem(STORAGE_KEY);
+            storage?.removeItem(STORAGE_KEY);
             if (mounted) {
               providerRef.current = null;
               balanceRequestRef.current += 1;
@@ -155,13 +149,13 @@ export default function WalletConnectPanel() {
         const verifiedAddress = provider.isConnected?.() ? await provider.getAddress?.() : '';
         if (!mounted) return;
         if (!isValidAddress(verifiedAddress)) {
-          storage.removeItem(STORAGE_KEY);
+          storage?.removeItem(STORAGE_KEY);
           return;
         }
         providerRef.current = provider;
         setAddress(verifiedAddress);
         setProviderType('xPortal');
-        storage.setItem(STORAGE_KEY, JSON.stringify({ address: verifiedAddress, providerType: 'xPortal' }));
+        storage?.setItem(STORAGE_KEY, JSON.stringify({ address: verifiedAddress, providerType: 'xPortal' }));
         refreshBalances(verifiedAddress);
       } catch {
         storage?.removeItem(STORAGE_KEY);
