@@ -10,7 +10,8 @@ const usd = (value) => {
   const n = value === null || value === undefined || value === '' ? NaN : Number(value);
   if (!Number.isFinite(n)) return '—';
   if (n === 0) return '$0';
-  if (n < 0.01) return `$${n.toFixed(8)}`;
+  if (n > 0 && n < 0.00000001) return `${n.toExponential(2)}`;
+  if (n < 0.01) return `${n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '')}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 };
 const number = (value) => value != null && value !== '' && Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
@@ -32,7 +33,7 @@ export default function Home() {
         setData(next);
         setLive(true);
       } catch {
-        if (mounted && id === requestRef.current) setLive(false);
+        if (mounted && id === requestRef.current) { setLive(false); setData(null); }
       }
     };
     load();
@@ -77,8 +78,8 @@ export default function Home() {
       <section className="v2-market" aria-label="Live market snapshot">
         <div className="v2-container">
           <div className="v2-section-heading"><div><span className="v2-section-index">01 / MARKET PULSE</span><h2>THE NUMBERS<span>.</span></h2></div><span className="v2-market-source"><span className={live ? 'v2-status-dot' : 'v2-status-dot v2-offline'} /> {live ? 'WOODY MONITOR CONNECTED' : 'LIVE FEED UNAVAILABLE'}</span></div>
-          <div className="v2-market-grid">{stats.map(([label,value],i)=><div className="v2-metric" key={label}><span className="v2-metric-index">0{i+1}</span><span className="v2-metric-label">{label}</span><strong>{value}</strong><span className="v2-metric-foot">WOODY / MULTIVERSX</span></div>)}</div>
-          <p className="v2-data-note">Live values are sourced from WOODY Monitor. Unavailable data is displayed as —, never estimated.</p>
+          <div className="v2-market-grid">{stats.map(([label,value],i)=><div className="v2-metric" key={label}><span className="v2-metric-index">0{i+1}</span><span className="v2-metric-label">{label}</span><strong>{label === 'Liquidity' ? <Link href="/app" className="underline decoration-orange-300/50 underline-offset-4 hover:text-orange-300">{value}</Link> : value}</strong><span className="v2-metric-foot">WOODY / MULTIVERSX</span></div>)}</div>
+          <p className="v2-data-note">Live values are sourced from WOODY Monitor. Unavailable data is displayed as —. Pool reserves are shown separately in Command Center.</p>
         </div>
       </section>
 
