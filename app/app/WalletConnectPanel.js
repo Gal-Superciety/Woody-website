@@ -94,6 +94,7 @@ export default function WalletConnectPanel() {
   const [walletData, setWalletData] = useState({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
   const [isLoadingBalances, setIsLoadingBalances] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [restoringSession, setRestoringSession] = useState(true);
 
   const refreshBalances = useCallback(async (walletAddress) => {
     if (!isValidAddress(walletAddress)) return;
@@ -121,21 +122,55 @@ export default function WalletConnectPanel() {
 
   useEffect(() => {
     const storage = safeSessionStorage();
-    if (!storage) return;
-    try {
-      const storedSession = storage.getItem(STORAGE_KEY);
-      if (!storedSession) return;
-      const parsedSession = JSON.parse(storedSession);
-      if (!isValidAddress(parsedSession?.address)) {
-        storage.removeItem(STORAGE_KEY);
-        return;
+    let mounted = true;
+    const restore = async () => {
+      try {
+        const saved = storage?.getItem(STORAGE_KEY);
+        if (!saved) return;
+        const parsed = JSON.parse(saved);
+        if (parsed?.providerType !== 'xPortal' || !WALLETCONNECT_PROJECT_ID) {
+          storage.removeItem(STORAGE_KEY);
+          return;
+        }
+        const walletConnectModule = await import('@multiversx/sdk-wallet-connect-provider');
+        const Provider = walletConnectModule.WalletConnectV2Provider || walletConnectModule.WalletConnectProvider;
+        if (!Provider || !mounted) return;
+        let provider;
+        const callbacks = {
+          onClientLogin: () => {},
+          onClientLogout: () => {
+            storage.removeItem(STORAGE_KEY);
+            if (mounted) {
+              providerRef.current = null;
+              balanceRequestRef.current += 1;
+              setAddress('');
+              setProviderType('');
+              setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
+            }
+          },
+          onClientEvent: () => {},
+        };
+        provider = new Provider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID);
+        await provider.init();
+        const verifiedAddress = provider.isConnected?.() ? await provider.getAddress?.() : '';
+        if (!mounted) return;
+        if (!isValidAddress(verifiedAddress)) {
+          storage.removeItem(STORAGE_KEY);
+          return;
+        }
+        providerRef.current = provider;
+        setAddress(verifiedAddress);
+        setProviderType('xPortal');
+        storage.setItem(STORAGE_KEY, JSON.stringify({ address: verifiedAddress, providerType: 'xPortal' }));
+        refreshBalances(verifiedAddress);
+      } catch {
+        storage?.removeItem(STORAGE_KEY);
+      } finally {
+        if (mounted) setRestoringSession(false);
       }
-      // A stored address is not proof of an authenticated wallet connection.
-      // Require a fresh provider login rather than restoring a misleading session.
-      storage.removeItem(STORAGE_KEY);
-    } catch {
-      storage.removeItem(STORAGE_KEY);
-    }
+    };
+    restore();
+    return () => { mounted = false; };
   }, [refreshBalances]);
 
   const clearSession = () => {
@@ -232,7 +267,13 @@ export default function WalletConnectPanel() {
           const connectedAddress = await walletConnectProvider?.getAddress?.();
           if (isValidAddress(connectedAddress)) saveSession(connectedAddress, 'xPortal', walletConnectProvider);
         },
-        onClientLogout: () => clearSession(),
+        onClientLogout: () => {
+          providerRef.current = null;
+          setAddress('');
+          setProviderType('');
+          setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
+          clearSession();
+        },
         onClientEvent: () => {},
       };
 
@@ -281,7 +322,7 @@ export default function WalletConnectPanel() {
     window.setTimeout(() => setCopied(false), 1600);
   };
 
-  const disabled = isConnecting || Boolean(address);
+  const disabled = isConnecting || restoringSession || Boolean(address);
 
   return (
     <>
@@ -299,6 +340,7 @@ export default function WalletConnectPanel() {
             </div>
           ) : (
             <div className="grid w-full gap-2 sm:w-80">
+              {restoringSession ? <p className="text-center text-xs text-white/60">Checking saved xPortal session...</p> : null}
               {xPortalUri ? (
                 <a href={xPortalUri} target="_self" className="cta cta-orange w-full text-center" aria-label="Open wallet chooser to approve xPortal connection">Choose xPortal and connect ↗</a>
               ) : (
