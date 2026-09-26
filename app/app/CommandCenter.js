@@ -10,7 +10,7 @@ const usd = (v) => {
   if (n === 0) return '$0';
   if (n > 0 && n < 0.00000001) return '$' + n.toExponential(2);
   if (n > 0 && n < 0.01) return '$' + n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
-  return '
+  return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
 };
 const formatUpdatedAt = (value) => { if (!value) return ''; const n = Number(value); const date = Number.isFinite(n) ? new Date(n < 1e12 ? n * 1000 : n) : new Date(value); return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(); };
 const plain = (v) => {
