@@ -4,16 +4,17 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-const STATUS_URL = process.env.NEXT_PUBLIC_WOODY_MONITOR_STATUS_URL || 'https://worker-production-3838.up.railway.app/status.json';
+const STATUS_URL = '/api/woody-status';
 
 const usd = (value) => {
-  const n = Number(value);
+  const n = value === null || value === undefined || value === '' ? NaN : Number(value);
   if (!Number.isFinite(n)) return '—';
   if (n === 0) return '$0';
-  if (n < 0.01) return `$${n.toFixed(8)}`;
+  if (n > 0 && n < 0.00000001) return `$${n.toExponential(2)}`;
+  if (n < 0.01) return `$${n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '')}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 };
-const number = (value) => Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
+const number = (value) => value != null && value !== '' && Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
 
 export default function Home() {
   const [data, setData] = useState(null);
@@ -32,7 +33,7 @@ export default function Home() {
         setData(next);
         setLive(true);
       } catch {
-        if (mounted && id === requestRef.current) setLive(false);
+        if (mounted && id === requestRef.current) { setLive(false); setData(null); }
       }
     };
     load();
@@ -42,52 +43,59 @@ export default function Home() {
 
   const stats = [
     ['Price', usd(data?.price?.usd)],
-    ['Liquidity', usd(data?.liquidity?.totalUsd)],
+    ['Liquidity', 'VIEW BY POOL ↗'],
     ['Holders', number(data?.holders?.count ?? data?.holders)],
     ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
   ];
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 md:px-8 md:py-10">
-      <section className="card cyber-grid relative overflow-hidden p-5 md:p-10">
-        <div className="relative z-10 grid items-center gap-4 md:grid-cols-[1.05fr_0.95fr] md:gap-8">
-          <div className="order-2 md:order-1">
-            <span className={live ? 'live-ecosystem-badge' : 'status-badge status-soon'}>
-              {live ? <span className="live-pulse-dot" /> : null}{live ? ' WOODY Monitor LIVE' : 'Monitor connecting'}
-            </span>
-            <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-orange-300">MultiversX · WOODY-5f9d9c</p>
-            <h1 className="mt-2 text-5xl font-black leading-none text-white md:text-7xl">WOODY</h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-white/65 md:text-lg">Live WOODY market intelligence, wallet access and trading links in one place.</p>
-            <div className="mt-6 grid gap-3 sm:flex">
-              <Link href="/app" className="cta cta-orange text-center">Open Command Center</Link>
-              <Link href="/buy" className="cta cta-blue text-center">Buy WOODY</Link>
+    <main className="v2-home">
+      <section className="v2-hero">
+        <div className="v2-hero-noise" aria-hidden="true" />
+        <div className="v2-container v2-hero-layout">
+          <div className="v2-hero-copy">
+            <div className="v2-eyebrow"><span className={live ? 'v2-status-dot' : 'v2-status-dot v2-offline'} /> {live ? 'LIVE ECOSYSTEM DATA' : 'CONNECTING TO MONITOR'} <span className="v2-eyebrow-divider" /> MULTIVERSX</div>
+            <p className="v2-hero-kicker">THE WOODY UNIVERSE</p>
+            <h1>NOT JUST<br /><em>A MEME.</em><br />A MOVEMENT<span className="v2-period">.</span></h1>
+            <p className="v2-hero-description">Meet WOODY. One home for market intelligence, the community and a growing world of experiences on MultiversX.</p>
+            <div className="v2-actions">
+              <Link href="/app" className="v2-primary">OPEN COMMAND CENTER <span aria-hidden="true">↗</span></Link>
+              <Link href="/buy" className="v2-secondary">BUY WOODY <span aria-hidden="true">↗</span></Link>
             </div>
+            <div className="v2-contract"><span>OFFICIAL TOKEN</span><code>WOODY-5f9d9c</code></div>
           </div>
-          <div className="order-1 mx-auto w-full max-w-[260px] md:order-2 md:max-w-md">
-            <Image src="/woody-hero.png" alt="WOODY" width={900} height={900} priority className="h-auto w-full drop-shadow-[0_0_45px_rgba(249,115,22,0.18)]" />
+          <div className="v2-art">
+            <div className="v2-orbit v2-orbit-one" /><div className="v2-orbit v2-orbit-two" />
+            <span className="v2-art-coordinate v2-coordinate-top">01 / THE WOODY UNIVERSE</span>
+            <Image src="/woody-hero.png" alt="WOODY mascot" width={900} height={900} priority className="v2-mascot" />
+            <span className="v2-art-coordinate v2-coordinate-bottom">BUILT ON MULTIVERSX ↗</span>
+            <span className="v2-art-word" aria-hidden="true">WOODY</span>
+          </div>
+        </div>
+        <div className="v2-hero-bottom v2-container"><span>SCROLL TO EXPLORE ↓</span><span>MARKET INTELLIGENCE / COMMUNITY / ARCADE</span></div>
+      </section>
+
+      <section className="v2-market" aria-label="Live market snapshot">
+        <div className="v2-container">
+          <div className="v2-section-heading"><div><span className="v2-section-index">01 / MARKET PULSE</span><h2>THE NUMBERS<span>.</span></h2></div><span className="v2-market-source"><span className={live ? 'v2-status-dot' : 'v2-status-dot v2-offline'} /> {live ? 'WOODY MONITOR CONNECTED' : 'LIVE FEED UNAVAILABLE'}</span></div>
+          <div className="v2-market-grid">{stats.map(([label,value],i)=><div className="v2-metric" key={label}><span className="v2-metric-index">0{i+1}</span><span className="v2-metric-label">{label}</span><strong>{label === 'Liquidity' ? <Link href="/app" className="underline decoration-orange-300/50 underline-offset-4 hover:text-orange-300">{value}</Link> : value}</strong><span className="v2-metric-foot">WOODY / MULTIVERSX</span></div>)}</div>
+          <p className="v2-data-note">Live values are sourced from WOODY Monitor. Unavailable data is displayed as —. Pool reserves are shown separately in Command Center.</p>
+        </div>
+      </section>
+
+      <section className="v2-explore v2-container" aria-label="Explore WOODY">
+        <div className="v2-section-heading"><div><span className="v2-section-index">02 / DISCOVER THE ECOSYSTEM</span><h2>YOUR WORLD<span>.</span></h2></div><p>Everything WOODY, without the noise. Choose where you want to go.</p></div>
+        <div className="v2-explore-grid">
+          <Link href="/app" className="v2-feature v2-feature-main"><span className="v2-feature-top">01 — INTELLIGENCE <span>↗</span></span><div className="v2-feature-graphic" aria-hidden="true"><span className="v2-graphic-ring"/><span className="v2-graphic-core">W</span><span className="v2-graphic-line"/></div><div><span className="v2-feature-tag">THE CONTROL ROOM</span><h3>COMMAND<br/>CENTER</h3><p>Market data, signals and wallet access. Your WOODY dashboard.</p><span className="v2-feature-link">EXPLORE THE DASHBOARD ↗</span></div></Link>
+          <div className="v2-feature-stack">
+            <Link href="/buy" className="v2-feature v2-feature-buy"><span className="v2-feature-top">02 — TRADING <span>↗</span></span><div><span className="v2-feature-tag">GET STARTED</span><h3>BUY WOODY</h3><p>Explore the available trading routes for the official token.</p><span className="v2-feature-link">FIND TRADING OPTIONS ↗</span></div><span className="v2-feature-symbol" aria-hidden="true">↗</span></Link>
+            <Link href="/forest-adventure" className="v2-feature v2-feature-game"><span className="v2-feature-top">03 — THE ARCADE <span>↗</span></span><div><span className="v2-feature-tag">SEASON 01 / PLAY FREE</span><h3>FOREST<br/>ADVENTURE</h3><p>Step into the WOODY universe. Three levels, one final boss.</p><span className="v2-feature-link">ENTER THE FOREST ↗</span></div><span className="v2-feature-symbol" aria-hidden="true">✳</span></Link>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map(([label, value]) => (
-          <article key={label} className="live-stat-card">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">{label}</p>
-            <p className="mt-2 break-words text-xl font-black text-white md:text-2xl">{value}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="card glow-card p-5 md:p-7">
-        <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">One WOODY system</p>
-            <h2 className="mt-2 text-2xl font-black text-white">Telegram Monitor + Website Command Center</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/60">The website reads the same WOODY Monitor feed used by the bot, so market status and intelligence stay connected across both interfaces.</p>
-          </div>
-          <Link href="/app" className="cta cta-blue text-center">View Live Signals</Link>
-        </div>
-      </section>
+      <section className="v2-end"><div className="v2-container v2-end-inner"><div><span className="v2-section-index">03 / ONE CONNECTED ECOSYSTEM</span><h2>GO BEYOND<br/><em>THE CHART.</em></h2><p>Explore real WOODY Monitor insights in the Command Center. Built around the official WOODY token on MultiversX.</p></div><Link href="/app" className="v2-end-button">ENTER COMMAND CENTER <span>↗</span></Link></div></section>
+      <footer className="v2-footer v2-container"><span>© WOODY ECOSYSTEM</span><span>WOODY-5f9d9c · MULTIVERSX</span><Link href="/forest-adventure">WOODY ARCADE ↗</Link></footer>
     </main>
   );
 }

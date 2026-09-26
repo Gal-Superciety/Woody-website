@@ -13,8 +13,16 @@ const API_URL = process.env.NEXT_PUBLIC_MULTIVERSX_API_URL || 'https://api.multi
 const WOODY_TOKEN_ID = 'WOODY-5f9d9c';
 const EXPLORER_URL = process.env.NEXT_PUBLIC_MULTIVERSX_EXPLORER_URL || 'https://explorer.multiversx.com';
 const FRIENDLY_FAILURE = 'Wallet connection failed or cancelled. Please try again.';
+const walletErrorMessage = (error) => {
+  const message = String(error?.message || error || '');
+  if (/project id is not configured/i.test(message)) return 'xPortal is not configured on this deployment (missing WalletConnect Project ID).';
+  if (/cancel|reject|declin/i.test(message)) return 'Connection was cancelled or declined in your wallet.';
+  if (/timeout|timed out/i.test(message)) return 'Wallet connection timed out. Reopen xPortal and try again.';
+  if (/invalid project|unauthorized|403|relay/i.test(message)) return 'WalletConnect relay rejected the connection. Check the Reown project configuration.';
+  if (/failed to fetch|network|websocket/i.test(message)) return 'WalletConnect network connection failed. Try opening the preview in Chrome and check your connection.';
+  return message && message.length < 180 ? `WalletConnect error: ${message}` : FRIENDLY_FAILURE;
+};
 const isBrowser = () => typeof window !== 'undefined';
-const runtimeImport = (specifier) => new Function('specifier', 'return import(specifier)')(specifier);
 
 function shortenAddress(address) {
   if (!address) return 'Not connected';
@@ -54,7 +62,7 @@ function formatToken(raw, decimals = 18) {
 
 async function readWalletData(address) {
   const [balanceResponse, tokenResponse] = await Promise.all([
-    fetch(`${API_URL}/address/${address}/balance`, { cache: 'no-store' }),
+    fetch(`${API_URL}/accounts/${address}`, { cache: 'no-store' }),
     fetch(`${API_URL}/accounts/${address}/tokens?identifier=${encodeURIComponent(WOODY_TOKEN_ID)}`, { cache: 'no-store' }),
   ]);
 
@@ -63,10 +71,10 @@ async function readWalletData(address) {
 
   const egldRaw = await balanceResponse.json();
   const tokens = await tokenResponse.json();
-  const woody = Array.isArray(tokens) ? tokens.find((item) => item.identifier === WOODY_TOKEN_ID) || tokens[0] : null;
+  const woody = Array.isArray(tokens) ? tokens.find((item) => item.identifier === WOODY_TOKEN_ID) : null;
 
   return {
-    egld: formatEgld(egldRaw),
+    egld: formatEgld(egldRaw?.balance),
     woody: woody ? formatToken(woody.balance, woody.numDecimals ?? woody.decimals ?? 18) : '0',
     woodyRaw: woody?.balance || '0',
     woodyDecimals: woody?.numDecimals ?? woody?.decimals ?? 18,
@@ -122,9 +130,9 @@ export default function WalletConnectPanel() {
         storage.removeItem(STORAGE_KEY);
         return;
       }
-      setAddress(parsedSession.address);
-      setProviderType(parsedSession.providerType || 'Saved session');
-      refreshBalances(parsedSession.address);
+      // A stored address is not proof of an authenticated wallet connection.
+      // Require a fresh provider login rather than restoring a misleading session.
+      storage.removeItem(STORAGE_KEY);
     } catch {
       storage.removeItem(STORAGE_KEY);
     }
@@ -177,7 +185,7 @@ export default function WalletConnectPanel() {
   const connectExtension = async () => {
     startConnection('extension');
     try {
-      const { ExtensionProvider } = await runtimeImport('@multiversx/sdk-extension-provider');
+      const { ExtensionProvider } = await import('@multiversx/sdk-extension-provider');
       const extensionProvider = ExtensionProvider?.getInstance?.();
       if (!extensionProvider?.init || !extensionProvider?.login) throw new Error('MultiversX DeFi Wallet provider is unavailable.');
       const initialized = await extensionProvider.init();
@@ -195,7 +203,7 @@ export default function WalletConnectPanel() {
   const connectWebWallet = async () => {
     startConnection('web');
     try {
-      const { CrossWindowProvider } = await runtimeImport('@multiversx/sdk-web-wallet-cross-window-provider');
+      const { CrossWindowProvider } = await import('@multiversx/sdk-web-wallet-cross-window-provider');
       const webWalletProvider = CrossWindowProvider?.getInstance?.();
       if (!webWalletProvider?.init || !webWalletProvider?.login) throw new Error('MultiversX Web Wallet provider is unavailable.');
       await webWalletProvider.init();
@@ -214,7 +222,7 @@ export default function WalletConnectPanel() {
     startConnection('xportal');
     try {
       if (!WALLETCONNECT_PROJECT_ID) throw new Error('WalletConnect Project ID is not configured.');
-      const walletConnectModule = await runtimeImport('@multiversx/sdk-wallet-connect-provider');
+      const walletConnectModule = await import('@multiversx/sdk-wallet-connect-provider');
       const WalletConnectProvider = walletConnectModule.WalletConnectV2Provider || walletConnectModule.WalletConnectProvider;
       if (!WalletConnectProvider) throw new Error('xPortal WalletConnect provider is unavailable.');
 
@@ -231,12 +239,20 @@ export default function WalletConnectPanel() {
       walletConnectProvider = new WalletConnectProvider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID);
       await walletConnectProvider.init?.();
       const { uri, approval } = await walletConnectProvider.connect();
-      if (uri) setXPortalUri(uri);
+      if (uri) {
+        setXPortalUri(uri);
+        // Open the same WalletConnect URI as the previously working manual link.
+        // Keep the link visible as a fallback if the in-app browser blocks automatic navigation.
+        try { window.location.assign(uri); } catch (navigationError) {
+          console.warn('Automatic xPortal navigation blocked; use the visible link', navigationError);
+        }
+      }
       await walletConnectProvider.login({ approval });
       saveSession(await walletConnectProvider.getAddress?.(), 'xPortal', walletConnectProvider);
     } catch (connectionError) {
       console.error('WOODY xPortal wallet connection failed', connectionError);
-      failConnection(FRIENDLY_FAILURE);
+      const message = walletErrorMessage(connectionError);
+      failConnection(message);
     } finally {
       finishConnection();
     }
@@ -283,7 +299,12 @@ export default function WalletConnectPanel() {
             </div>
           ) : (
             <div className="grid w-full gap-2 sm:w-80">
-              <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Connecting xPortal...' : 'Connect xPortal'}</button>
+              {xPortalUri ? (
+                <a href={xPortalUri} target="_self" className="cta cta-orange w-full text-center" aria-label="Open wallet chooser to approve xPortal connection">Choose xPortal and connect ↗</a>
+              ) : (
+                <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Opening xPortal...' : 'Connect xPortal'}</button>
+              )}
+              {xPortalUri ? <p className="text-center text-xs leading-relaxed text-white/70">xPortal should open automatically. If your browser blocks it, tap the orange button once to continue.</p> : null}
               <button type="button" onClick={connectExtension} disabled={disabled} className="cta cta-blue w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'extension' ? 'Connecting Extension...' : 'Connect MultiversX DeFi Wallet'}</button>
               <button type="button" onClick={connectWebWallet} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'web' ? 'Connecting Web Wallet...' : 'Connect Web Wallet'}</button>
             </div>
@@ -296,7 +317,7 @@ export default function WalletConnectPanel() {
               <a href={`${EXPLORER_URL}/accounts/${address}`} target="_blank" rel="noopener noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">Explorer</a>
             </div>
           ) : null}
-          {xPortalUri ? <a className="max-w-xs break-words text-xs text-sky-200 underline" href={xPortalUri}>Open xPortal on this device</a> : null}
+          {xPortalUri ? <p className="max-w-xs text-xs leading-relaxed text-sky-200">If your phone asks which wallet to use, select xPortal and approve the connection there.</p> : null}
           {error ? <p className="max-w-xs text-xs leading-relaxed text-orange-200">{error}</p> : null}
         </div>
       </div>
