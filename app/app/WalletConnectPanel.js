@@ -292,7 +292,12 @@ export default function WalletConnectPanel() {
             </div>
           ) : (
             <div className="grid w-full gap-2 sm:w-80">
-              <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Connecting xPortal...' : 'Connect xPortal'}</button>
+              {xPortalUri ? (
+                <a href={xPortalUri} className="cta cta-orange w-full text-center" aria-label="Open xPortal to approve wallet connection">Open xPortal to connect ↗</a>
+              ) : (
+                <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Preparing xPortal...' : 'Connect xPortal'}</button>
+              )}
+              {xPortalUri ? <p className="text-center text-xs leading-relaxed text-white/70">Tap the orange button, approve in xPortal, then return to this browser tab.</p> : null}
               <button type="button" onClick={connectExtension} disabled={disabled} className="cta cta-blue w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'extension' ? 'Connecting Extension...' : 'Connect MultiversX DeFi Wallet'}</button>
               <button type="button" onClick={connectWebWallet} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'web' ? 'Connecting Web Wallet...' : 'Connect Web Wallet'}</button>
             </div>
@@ -305,7 +310,7 @@ export default function WalletConnectPanel() {
               <a href={`${EXPLORER_URL}/accounts/${address}`} target="_blank" rel="noopener noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">Explorer</a>
             </div>
           ) : null}
-          {xPortalUri ? <a className="max-w-xs break-words text-xs text-sky-200 underline" href={xPortalUri}>Open xPortal on this device</a> : null}
+          {xPortalUri ? <a className="max-w-xs break-words text-xs text-sky-200 underline" href={xPortalUri}>Alternative: open xPortal on this device</a> : null}
           {error ? <p className="max-w-xs text-xs leading-relaxed text-orange-200">{error}</p> : null}
         </div>
       </div>
