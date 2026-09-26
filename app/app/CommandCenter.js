@@ -10,7 +10,7 @@ const usd = (v) => {
   const n = num(v);
   if (n === null) return '—';
   if (n === 0) return '$0';
-  if (n < 0.01) return `$${n.toFixed(8)}`;
+  if (n < 0.01) return `${n.toFixed(8).replace(/0+$/, '').replace(/\\.$/, '')}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 };
 const formatUpdatedAt = (value) => { if (!value) return ''; const n = Number(value); const date = Number.isFinite(n) ? new Date(n < 1e12 ? n * 1000 : n) : new Date(value); return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(); };
@@ -96,7 +96,7 @@ export default function CommandCenter() {
           {metrics.map(([label, value]) => (
             <article key={label} className="live-stat-card">
               <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">{label}</p>
-              <p className="mt-2 break-words text-xl font-black text-white md:text-2xl">{value}</p>
+              <p className="mt-2 break-all text-lg font-black tracking-tight text-white sm:break-normal sm:text-xl md:text-2xl">{value}</p>
             </article>
           ))}
         </div>
