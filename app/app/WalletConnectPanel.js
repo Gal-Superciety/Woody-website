@@ -13,6 +13,13 @@ const API_URL = process.env.NEXT_PUBLIC_MULTIVERSX_API_URL || 'https://api.multi
 const WOODY_TOKEN_ID = 'WOODY-5f9d9c';
 const EXPLORER_URL = process.env.NEXT_PUBLIC_MULTIVERSX_EXPLORER_URL || 'https://explorer.multiversx.com';
 const FRIENDLY_FAILURE = 'Wallet connection failed or cancelled. Please try again.';
+const walletErrorMessage = (error) => {
+  const message = String(error?.message || error || '');
+  if (/project id is not configured/i.test(message)) return 'xPortal is not configured on this deployment (missing WalletConnect Project ID).';
+  if (/cancel|reject|declin/i.test(message)) return 'Connection was cancelled or declined in your wallet.';
+  if (/timeout|timed out/i.test(message)) return 'Wallet connection timed out. Reopen xPortal and try again.';
+  return FRIENDLY_FAILURE;
+};
 const isBrowser = () => typeof window !== 'undefined';
 const runtimeImport = (specifier) => new Function('specifier', 'return import(specifier)')(specifier);
 
@@ -236,7 +243,7 @@ export default function WalletConnectPanel() {
       saveSession(await walletConnectProvider.getAddress?.(), 'xPortal', walletConnectProvider);
     } catch (connectionError) {
       console.error('WOODY xPortal wallet connection failed', connectionError);
-      failConnection(FRIENDLY_FAILURE);
+      failConnection(walletErrorMessage(connectionError));
     } finally {
       finishConnection();
     }
