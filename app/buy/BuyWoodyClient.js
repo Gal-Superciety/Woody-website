@@ -10,19 +10,19 @@ const venues = [
     name: 'xExchange',
     href: 'https://xexchange.com/trade?firstToken=EGLD&secondToken=WOODY-5f9d9c',
     detail: 'WOODY/EGLD and other monitored WOODY pools',
-    status: 'Verified venue',
+    status: 'Trading venue',
   },
   {
     name: 'OneDex',
     href: 'https://swap.onedex.app/swap?firstToken=EGLD&secondToken=WOODY-5f9d9c',
-    detail: 'WOODY/EGLD liquidity is tracked by WOODY Monitor',
-    status: 'Verified venue',
+    detail: 'WOODY/EGLD route available; current pool reserves are not readable by WOODY Monitor',
+    status: 'Trading venue',
   },
   {
     name: 'JEX',
     href: 'https://app.jexchange.io/?buyToken=WOODY-5f9d9c&paymentToken=EGLD',
     detail: 'WOODY/JEX, WOODY/BOBER and WOODY/OLV pools are tracked',
-    status: 'Verified venue',
+    status: 'Trading venue',
   },
 ];
 
@@ -46,7 +46,7 @@ export default function BuyWoodyPage() {
           <p className="badge mb-4">WOODY Buy Hub</p>
           <h1 className="text-4xl font-black leading-tight text-white md:text-6xl">Buy WOODY</h1>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/70 md:text-lg">
-            Verify the official token identifier first, then choose a confirmed MultiversX trading venue.
+            Verify the official token identifier first, then choose a listed MultiversX trading venue.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link href="/app" className="cta cta-orange text-center">Open Command Center</Link>
@@ -81,10 +81,10 @@ export default function BuyWoodyPage() {
 
       <section className="card glow-card p-5 md:p-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">Confirmed MultiversX access</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">MultiversX trading access</p>
           <h2 className="mt-2 text-2xl font-black text-white">Choose a trading venue</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
-            These venues are included because WOODY Monitor tracks WOODY liquidity associated with them. Availability and routing can change, so always verify the token ID in the venue before signing.
+            These venues provide WOODY trading routes. WOODY Monitor currently reads reserves for supported xExchange and JEX pools; OneDex reserve data may be unavailable. Always verify the token ID and route before signing.
           </p>
         </div>
 
