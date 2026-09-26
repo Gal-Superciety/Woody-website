@@ -45,13 +45,6 @@ export default function CommandCenter() {
     return () => { mounted = false; window.clearInterval(timer); };
   }, []);
 
-  const metrics = useMemo(() => [
-    ['Price', usd(data?.price?.usd)],
-    ['Reported liquidity', usd(data?.liquidity?.totalUsd)],
-    ['Holders', plain(data?.holders?.count ?? data?.holders)],
-    ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
-  ], [data]);
-
   const signals = useMemo(() => [
     ['Market Pulse', data?.marketPulse?.mood ?? data?.marketPulse?.activity, data?.marketPulse?.score != null ? `Score ${data.marketPulse.score}/100` : 'No published score'],
     ['Risk Radar', data?.riskRadar?.level, data?.riskRadar?.score != null ? `Risk score ${data.riskRadar.score}` : 'No published score'],
@@ -65,7 +58,14 @@ export default function CommandCenter() {
   const pools = useMemo(() => {
     const raw = data?.liquidity?.pools;
     if (!Array.isArray(raw)) return [];
-    return raw.filter(p => p && typeof p === 'object' && /WOODY/i.test(String(p.pair ?? '')) && num(p.woodyReserve) > 0 && num(p.quoteReserve) > 0)
+    const seen = new Set();
+    return raw.filter(p => {
+      if (!p || typeof p !== 'object' || !/WOODY/i.test(String(p.pair ?? '')) || !(num(p.woodyReserve) > 0) || !(num(p.quoteReserve) > 0)) return false;
+      const key = p.address ? String(p.address).toLowerCase() : `${p.dex}:${p.pair}`.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
       .map(p => ({
         venue: String(p.dex ?? 'DEX'),
         pair: String(p.pair),
@@ -76,6 +76,19 @@ export default function CommandCenter() {
       }));
   }, [data]);
 
+  // Mark both sides of each pool at the monitor's WOODY reference price.
+  // This is an estimate; it is not a quote-token valuation or verified TVL.
+  const woodyPrice = num(data?.price?.usd);
+  const estimatedPoolUsd = live && woodyPrice > 0 && pools.length > 0
+    ? pools.reduce((sum, pool) => sum + 2 * pool.woody * woodyPrice, 0)
+    : null;
+  const metrics = [
+    ['Price', usd(data?.price?.usd)],
+    ['Pool liquidity estimate', estimatedPoolUsd === null ? '—' : usd(estimatedPoolUsd)],
+    ['Holders', plain(data?.holders?.count ?? data?.holders)],
+    ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
+  ];
+
   const unavailablePools = useMemo(() => Array.isArray(data?.liquidity?.pools) ? data.liquidity.pools.filter(p => p?.status === 'unavailable') : [], [data]);
 
   return (
@@ -85,7 +98,7 @@ export default function CommandCenter() {
           <div>
             <p className="badge mb-3">WOODY Monitor</p>
             <h1 className="section-title">Command Center</h1>
-            <p className="mt-2 max-w-2xl text-sm text-white/60">WOODY market data and monitor signals. Reported liquidity is a source estimate, not independently verified pool TVL.</p>
+            <p className="mt-2 max-w-2xl text-sm text-white/60">WOODY market data and monitor signals. USD pool liquidity is an estimate based on the WOODY reference price.</p>
           </div>
           <span className={live ? 'status-badge status-active' : 'status-badge status-soon'}>{live ? 'LIVE' : 'OFFLINE'}</span>
         </div>
@@ -120,8 +133,8 @@ export default function CommandCenter() {
       <section className="card glow-card p-5 md:p-8" aria-label="Observed pool reserves">
         <p className="badge mb-3">DEX reserves</p>
         <h2 className="section-title">Liquidity and reserves by pool</h2>
-        <p className="mt-2 max-w-2xl text-sm text-white/60">On-chain reserves reported by WOODY Monitor, separated by pool. These are token balances, not a verified USD TVL.</p>
-        {live && data?.liquidity?.totalUsd != null && <p className="mt-4 text-sm text-white/70">Reported USD liquidity: <strong className="text-white">{usd(data.liquidity.totalUsd)}</strong> · Source: {data.liquidity.source || 'WOODY Monitor'} · This aggregate is not the sum of the pool balances shown below.</p>}
+        <p className="mt-2 max-w-2xl text-sm text-white/60">On-chain reserves reported by WOODY Monitor, separated by pool.</p>
+        {estimatedPoolUsd !== null && <p className="mt-4 text-sm text-white/70">Estimated total across {pools.length} readable pools: <strong className="text-white">{usd(estimatedPoolUsd)}</strong>. Each pool is estimated as 2 × its WOODY reserve × the Monitor WOODY USD price. Quote-token prices are not independently valued; unavailable pools are excluded.</p>}
         {live && pools.length ? (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {pools.map((p, i) => (
@@ -129,6 +142,7 @@ export default function CommandCenter() {
                 <p className="text-xs font-semibold text-sky-300">{p.venue}</p>
                 <p className="mt-2 text-sm text-white/70">{p.pair}</p>
                 <p className="mt-2 text-lg font-black text-white">{plain(p.woody)} WOODY</p><p className="mt-1 text-sm text-white/70">+ {plain(p.quote)} {p.quoteSymbol}</p>
+                {estimatedPoolUsd !== null && <p className="mt-2 text-xs text-white/55">Estimated pool value: {usd(2 * p.woody * woodyPrice)}</p>}
               </article>
             ))}
           </div>

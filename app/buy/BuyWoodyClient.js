@@ -15,7 +15,7 @@ const venues = [
   {
     name: 'OneDex',
     href: 'https://swap.onedex.app/swap?firstToken=EGLD&secondToken=WOODY-5f9d9c',
-    detail: 'WOODY/EGLD route available; current pool reserves are not readable by WOODY Monitor',
+    detail: 'WOODY/WEGLD Pair 559 reserves are read directly by WOODY Monitor',
     status: 'Trading venue',
   },
   {

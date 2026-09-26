@@ -10,8 +10,8 @@ const usd = (value) => {
   const n = value === null || value === undefined || value === '' ? NaN : Number(value);
   if (!Number.isFinite(n)) return '—';
   if (n === 0) return '$0';
-  if (n > 0 && n < 0.00000001) return `${n.toExponential(2)}`;
-  if (n < 0.01) return `${n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '')}`;
+  if (n > 0 && n < 0.00000001) return `$${n.toExponential(2)}`;
+  if (n < 0.01) return `$${n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '')}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 };
 const number = (value) => value != null && value !== '' && Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
