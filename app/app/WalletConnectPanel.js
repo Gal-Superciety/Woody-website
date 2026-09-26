@@ -302,7 +302,7 @@ export default function WalletConnectPanel() {
               {xPortalUri ? (
                 <a href={xPortalUri} target="_self" className="cta cta-orange w-full text-center" aria-label="Open wallet chooser to approve xPortal connection">Choose xPortal and connect ↗</a>
               ) : (
-                <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Opening xPortal...' : 'Connect xPortal (one tap)'}</button>
+                <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Opening xPortal...' : 'Connect xPortal'}</button>
               )}
               {xPortalUri ? <p className="text-center text-xs leading-relaxed text-white/70">xPortal should open automatically. If your browser blocks it, tap the orange button once to continue.</p> : null}
               <button type="button" onClick={connectExtension} disabled={disabled} className="cta cta-blue w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'extension' ? 'Connecting Extension...' : 'Connect MultiversX DeFi Wallet'}</button>
