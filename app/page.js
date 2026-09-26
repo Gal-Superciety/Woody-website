@@ -5,19 +5,25 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const STATUS_URL = process.env.NEXT_PUBLIC_WOODY_MONITOR_STATUS_URL || 'https://worker-production-3838.up.railway.app/status.json';
+const isFresh = (status) => {
+  const updated = Number(status?.updatedAt);
+  return status?.freshness?.stale !== true && Number.isFinite(updated) && updated > 0 && Date.now() / 1000 - updated < 120;
+};
 
 const usd = (value) => {
+  if (value === null || value === undefined || value === '') return '—';
   const n = Number(value);
   if (!Number.isFinite(n)) return '—';
   if (n === 0) return '$0';
   if (n < 0.01) return `$${n.toFixed(8)}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
 };
-const number = (value) => Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
+const number = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
 
 export default function Home() {
   const [data, setData] = useState(null);
   const [live, setLive] = useState(false);
+  const [stale, setStale] = useState(false);
   const requestRef = useRef(0);
 
   useEffect(() => {
@@ -29,10 +35,12 @@ export default function Home() {
         if (!response.ok) throw new Error();
         const next = await response.json();
         if (!mounted || id !== requestRef.current) return;
+        const fresh = isFresh(next);
         setData(next);
-        setLive(true);
+        setLive(fresh);
+        setStale(!fresh);
       } catch {
-        if (mounted && id === requestRef.current) setLive(false);
+        if (mounted && id === requestRef.current) { setLive(false); setStale(false); }
       }
     };
     load();
@@ -41,10 +49,10 @@ export default function Home() {
   }, []);
 
   const stats = [
-    ['Price', usd(data?.price?.usd)],
-    ['Liquidity', usd(data?.liquidity?.totalUsd)],
-    ['Holders', number(data?.holders?.count ?? data?.holders)],
-    ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
+    ['Price', usd(live ? data?.price?.usd : null)],
+    ['Market liquidity', usd(live ? data?.liquidity?.totalUsd : null)],
+    ['Holders', number(live ? (data?.holders?.count ?? data?.holders) : null)],
+    ['24h Volume', usd(live ? (data?.volume24hUsd ?? data?.volume?.usd) : null)],
   ];
 
   return (
@@ -53,7 +61,7 @@ export default function Home() {
         <div className="relative z-10 grid items-center gap-4 md:grid-cols-[1.05fr_0.95fr] md:gap-8">
           <div className="order-2 md:order-1">
             <span className={live ? 'live-ecosystem-badge' : 'status-badge status-soon'}>
-              {live ? <span className="live-pulse-dot" /> : null}{live ? ' WOODY Monitor LIVE' : 'Monitor connecting'}
+              {live ? <span className="live-pulse-dot" /> : null}{live ? ' WOODY Monitor LIVE' : stale ? 'Monitor data stale' : 'Monitor connecting'}
             </span>
             <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-orange-300">MultiversX · WOODY-5f9d9c</p>
             <h1 className="mt-2 text-5xl font-black leading-none text-white md:text-7xl">WOODY</h1>
@@ -77,6 +85,7 @@ export default function Home() {
           </article>
         ))}
       </section>
+      <p className="px-1 text-xs text-white/45">Market liquidity is a feed estimate. Pair reserves are listed separately in Command Center.</p>
 
       <section className="card glow-card p-5 md:p-7">
         <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
