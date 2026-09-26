@@ -239,7 +239,14 @@ export default function WalletConnectPanel() {
       walletConnectProvider = new WalletConnectProvider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID);
       await walletConnectProvider.init?.();
       const { uri, approval } = await walletConnectProvider.connect();
-      if (uri) setXPortalUri(uri);
+      if (uri) {
+        setXPortalUri(uri);
+        // Open the same WalletConnect URI as the previously working manual link.
+        // Keep the link visible as a fallback if the in-app browser blocks automatic navigation.
+        try { window.location.assign(uri); } catch (navigationError) {
+          console.warn('Automatic xPortal navigation blocked; use the visible link', navigationError);
+        }
+      }
       await walletConnectProvider.login({ approval });
       saveSession(await walletConnectProvider.getAddress?.(), 'xPortal', walletConnectProvider);
     } catch (connectionError) {
@@ -295,9 +302,9 @@ export default function WalletConnectPanel() {
               {xPortalUri ? (
                 <a href={xPortalUri} target="_self" className="cta cta-orange w-full text-center" aria-label="Open wallet chooser to approve xPortal connection">Choose xPortal and connect ↗</a>
               ) : (
-                <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Preparing xPortal...' : 'Connect xPortal'}</button>
+                <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Opening xPortal...' : 'Connect xPortal (one tap)'}</button>
               )}
-              {xPortalUri ? <p className="text-center text-xs leading-relaxed text-white/70">Tap the orange button, approve in xPortal, then return to this browser tab.</p> : null}
+              {xPortalUri ? <p className="text-center text-xs leading-relaxed text-white/70">xPortal should open automatically. If your browser blocks it, tap the orange button once to continue.</p> : null}
               <button type="button" onClick={connectExtension} disabled={disabled} className="cta cta-blue w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'extension' ? 'Connecting Extension...' : 'Connect MultiversX DeFi Wallet'}</button>
               <button type="button" onClick={connectWebWallet} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'web' ? 'Connecting Web Wallet...' : 'Connect Web Wallet'}</button>
             </div>
