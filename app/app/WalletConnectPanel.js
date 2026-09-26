@@ -18,10 +18,11 @@ const walletErrorMessage = (error) => {
   if (/project id is not configured/i.test(message)) return 'xPortal is not configured on this deployment (missing WalletConnect Project ID).';
   if (/cancel|reject|declin/i.test(message)) return 'Connection was cancelled or declined in your wallet.';
   if (/timeout|timed out/i.test(message)) return 'Wallet connection timed out. Reopen xPortal and try again.';
-  return FRIENDLY_FAILURE;
+  if (/invalid project|unauthorized|403|relay/i.test(message)) return 'WalletConnect relay rejected the connection. Check the Reown project configuration.';
+  if (/failed to fetch|network|websocket/i.test(message)) return 'WalletConnect network connection failed. Try opening the preview in Chrome and check your connection.';
+  return message && message.length < 180 ? `WalletConnect error: ${message}` : FRIENDLY_FAILURE;
 };
 const isBrowser = () => typeof window !== 'undefined';
-const runtimeImport = (specifier) => new Function('specifier', 'return import(specifier)')(specifier);
 
 function shortenAddress(address) {
   if (!address) return 'Not connected';
@@ -184,7 +185,7 @@ export default function WalletConnectPanel() {
   const connectExtension = async () => {
     startConnection('extension');
     try {
-      const { ExtensionProvider } = await runtimeImport('@multiversx/sdk-extension-provider');
+      const { ExtensionProvider } = await import('@multiversx/sdk-extension-provider');
       const extensionProvider = ExtensionProvider?.getInstance?.();
       if (!extensionProvider?.init || !extensionProvider?.login) throw new Error('MultiversX DeFi Wallet provider is unavailable.');
       const initialized = await extensionProvider.init();
@@ -202,7 +203,7 @@ export default function WalletConnectPanel() {
   const connectWebWallet = async () => {
     startConnection('web');
     try {
-      const { CrossWindowProvider } = await runtimeImport('@multiversx/sdk-web-wallet-cross-window-provider');
+      const { CrossWindowProvider } = await import('@multiversx/sdk-web-wallet-cross-window-provider');
       const webWalletProvider = CrossWindowProvider?.getInstance?.();
       if (!webWalletProvider?.init || !webWalletProvider?.login) throw new Error('MultiversX Web Wallet provider is unavailable.');
       await webWalletProvider.init();
@@ -221,7 +222,7 @@ export default function WalletConnectPanel() {
     startConnection('xportal');
     try {
       if (!WALLETCONNECT_PROJECT_ID) throw new Error('WalletConnect Project ID is not configured.');
-      const walletConnectModule = await runtimeImport('@multiversx/sdk-wallet-connect-provider');
+      const walletConnectModule = await import('@multiversx/sdk-wallet-connect-provider');
       const WalletConnectProvider = walletConnectModule.WalletConnectV2Provider || walletConnectModule.WalletConnectProvider;
       if (!WalletConnectProvider) throw new Error('xPortal WalletConnect provider is unavailable.');
 
@@ -243,7 +244,8 @@ export default function WalletConnectPanel() {
       saveSession(await walletConnectProvider.getAddress?.(), 'xPortal', walletConnectProvider);
     } catch (connectionError) {
       console.error('WOODY xPortal wallet connection failed', connectionError);
-      failConnection(walletErrorMessage(connectionError));
+      const message = walletErrorMessage(connectionError);
+      failConnection(message);
     } finally {
       finishConnection();
     }
