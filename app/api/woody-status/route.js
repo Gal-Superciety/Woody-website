@@ -18,7 +18,7 @@ export async function GET() {
     const payload = await upstream.json();
     if (!payload || typeof payload !== 'object' || !payload.updatedAt) throw new Error('Monitor payload invalid');
     const age = Date.now() / 1000 - Number(payload.updatedAt);
-    if (!Number.isFinite(age) || age > 300 || age < -60) {
+    if (payload.freshness?.stale === true || !Number.isFinite(age) || age > 120 || age < -60) {
       return NextResponse.json({ available: false, reason: 'stale' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
     }
     return NextResponse.json(payload, { headers: { 'Cache-Control': 'no-store' } });
