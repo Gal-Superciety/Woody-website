@@ -1,166 +1,69 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMonitor } from '../lib/useMonitor';
+import { usd, plain, readablePools } from '../lib/monitor';
+import MonitorStatus from '../components/MonitorStatus';
 
-const num = (v) => (v === null || v === undefined || v === '' || typeof v === 'boolean') ? null : Number.isFinite(Number(v)) ? Number(v) : null;
-const usd = (v) => {
-  const n = num(v);
-  if (n === null) return '—';
-  if (n === 0) return '$0';
-  if (n > 0 && n < 0.00000001) return '$' + n.toExponential(2);
-  if (n > 0 && n < 0.01) return '$' + n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '');
-  return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 2 });
-};
-const formatUpdatedAt = (value) => { if (!value) return ''; const n = Number(value); const date = Number.isFinite(n) ? new Date(n < 1e12 ? n * 1000 : n) : new Date(value); return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(); };
-const plain = (v) => {
-  const n = num(v);
-  return n === null ? '—' : n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+const explanations = {
+  pulse: 'A 0–100 indicator combining monitored buy/sell flows, pool visibility and recent activity. Higher means stronger positive activity; it does not predict future price.',
+  risk: 'A 0–100 score of detected risk markers: sell pressure, large sells, missing pool data, feed instability and holder decline. Higher means more markers. LOW is not a safety guarantee.',
+  accumulation: 'A 0–100 indicator based on monitored buying, selling, wallet flows and liquidity. It is a rule-based signal, not a probability of profit.',
+  wallets: 'A rule-based summary of observed market and wallet activity. Its confidence is an indicator score, not a statistically calibrated probability.',
+  pump: 'A 0–100 risk-marker score, not confidence that momentum is healthy. Higher means more unusual volume, wallet repetition or unstable flows. Sparse activity limits what can be concluded.',
 };
 
-export default function CommandCenter() {
-  const [data, setData] = useState(null);
-  const [live, setLive] = useState(false);
-  const [updated, setUpdated] = useState(null);
-  const requestRef = useRef(0);
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const id = ++requestRef.current;
-      try {
-        const response = await fetch('/api/woody-status', { cache: 'no-store' });
-        if (!response.ok) throw new Error('Monitor unavailable');
-        const next = await response.json();
-        if (!mounted || id !== requestRef.current) return;
-        setData(next);
-        setUpdated(next.updatedAt || next.timestamp || null);
-        setLive(true);
-      } catch {
-        if (mounted && id === requestRef.current) { setLive(false); setData(null); setUpdated(null); }
-      }
-    };
-    load();
-    const timer = window.setInterval(load, 30000);
-    return () => { mounted = false; window.clearInterval(timer); };
-  }, []);
-
-  const signals = useMemo(() => [
-    ['Market Pulse', data?.marketPulse?.mood ?? data?.marketPulse?.activity, data?.marketPulse?.score != null ? `Score ${data.marketPulse.score}/100` : 'No published score'],
-    ['Risk Radar', data?.riskRadar?.level, data?.riskRadar?.score != null ? `Risk score ${data.riskRadar.score}` : 'No published score'],
-    ['Accumulation', data?.accumulation?.level, data?.accumulation?.confidence != null ? `Confidence ${data.accumulation.confidence}` : 'No published confidence'],
-    ['Wallet Intelligence', data?.walletIntelligence?.signal, data?.walletIntelligence?.reason || 'No published signal'],
-    ['Fake Pump Check', data?.fakePump?.status, data?.fakePump?.confidence != null ? `Confidence ${data.fakePump.confidence}` : 'No published confidence'],
-  ].map(([title, value, detail]) => [title, value ?? 'Unavailable', value == null ? 'Monitor has not published this signal' : detail]), [data]);
-
-  // Only render individual pools when the monitor explicitly supplies them.
-  // Never reconstruct DEX liquidity from a token price or screenshot.
-  const pools = useMemo(() => {
-    const raw = data?.liquidity?.pools;
-    if (!Array.isArray(raw)) return [];
-    const seen = new Set();
-    return raw.filter(p => {
-      if (!p || typeof p !== 'object' || !/WOODY/i.test(String(p.pair ?? '')) || !(num(p.woodyReserve) > 0) || !(num(p.quoteReserve) > 0)) return false;
-      const key = p.address ? String(p.address).toLowerCase() : `${p.dex}:${p.pair}`.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-      .map(p => ({
-        venue: String(p.dex ?? 'DEX'),
-        pair: String(p.pair),
-        woody: num(p.woodyReserve),
-        quote: num(p.quoteReserve),
-        quoteSymbol: String(p.quoteSymbol ?? ''),
-        address: String(p.address ?? ''),
-      }));
-  }, [data]);
-
-  // Mark both sides of each pool at the monitor's WOODY reference price.
-  // This is an estimate; it is not a quote-token valuation or verified TVL.
-  const woodyPrice = num(data?.price?.usd);
-  const estimatedPoolUsd = live && woodyPrice > 0 && pools.length > 0
-    ? pools.reduce((sum, pool) => sum + 2 * pool.woody * woodyPrice, 0)
-    : null;
+export default function CommandCenter({ children }) {
+  const { data, status, live, refreshing, refresh } = useMonitor();
+  const pools = readablePools(data);
+  const unavailable = data?.liquidity?.pools?.filter(pool => pool.status === 'unavailable') || [];
+  const signals = [
+    { key: 'pulse', title: 'Market Pulse', value: data?.marketPulse?.mood, score: data?.marketPulse?.score, detail: data?.marketPulse?.activity ? `${data.marketPulse.activity} activity · last 24h` : '', reasons: data?.marketPulse?.reasons, samples: data?.marketPulse?.sampleCount },
+    { key: 'risk', title: 'Risk Radar', value: data?.riskRadar?.level, score: data?.riskRadar?.score, detail: 'Detected risk markers · last 24h', reasons: data?.riskRadar?.detected, samples: data?.riskRadar?.sampleCount },
+    { key: 'accumulation', title: 'Accumulation', value: data?.accumulation?.level, score: data?.accumulation?.confidence, detail: 'Accumulation indicator · last 24h' },
+    { key: 'wallets', title: 'Wallet Intelligence', value: data?.walletIntelligence?.signal, score: data?.walletIntelligence?.confidence, detail: data?.walletIntelligence?.reason },
+    { key: 'pump', title: 'Pump Risk Markers', value: (data?.fakePump?.riskScore ?? data?.fakePump?.confidence) < 45 ? 'Few markers detected' : data?.fakePump?.status, score: data?.fakePump?.riskScore ?? data?.fakePump?.confidence, detail: 'Higher score = more risk markers', samples: data?.fakePump?.sampleCount },
+  ];
   const metrics = [
-    ['Price', usd(data?.price?.usd)],
-    ['Pool liquidity estimate', estimatedPoolUsd === null ? '—' : usd(estimatedPoolUsd)],
-    ['Holders', plain(data?.holders?.count ?? data?.holders)],
-    ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
+    ['WOODY price', usd(data?.price?.usd), 'USD reference price'],
+    ['Pool liquidity', usd(data?.liquidity?.totalUsd), `${data?.liquidity?.estimatedPoolCount ?? '—'} readable pools · estimated`],
+    ['Holders', plain(data?.holders?.count ?? data?.holders), 'Accounts holding WOODY'],
+    ['Tracked volume · 24h', usd(data?.volume24hUsd), data?.volume?.tradeCount != null ? `${plain(data.volume.tradeCount)} detected trades` : 'WOODY Monitor detected trades'],
   ];
 
-  const unavailablePools = useMemo(() => Array.isArray(data?.liquidity?.pools) ? data.liquidity.pools.filter(p => p?.status === 'unavailable') : [], [data]);
-
-  return (
-    <>
-      <section className="card glow-card p-5 md:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="badge mb-3">WOODY Monitor</p>
-            <h1 className="section-title">Command Center</h1>
-            <p className="mt-2 max-w-2xl text-sm text-white/60">WOODY market data and monitor signals. USD pool liquidity is an estimate based on the WOODY reference price.</p>
-          </div>
-          <span className={live ? 'status-badge status-active' : 'status-badge status-soon'}>{live ? 'LIVE' : 'OFFLINE'}</span>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {metrics.map(([label, value]) => (
-            <article key={label} className="live-stat-card">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-white/45">{label}</p>
-              <p className="mt-2 whitespace-nowrap text-[clamp(0.85rem,3.6vw,1.5rem)] font-black tracking-tight text-white tabular-nums">{value}</p>
-            </article>
-          ))}
-        </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {signals.map(([title, value, detail]) => (
-            <article key={title} className="ai-module-card">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-300/80">{title}</p>
-              <p className="mt-2 text-xl font-black text-white">{value}</p>
-              <p className="mt-1 text-xs text-white/50">{detail}</p>
-            </article>
-          ))}
-        </div>
-
-        <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-white/40">{live ? 'Auto-refresh every 30 seconds' : 'Live monitor data is temporarily unavailable'}{updated ? ` · Updated ${formatUpdatedAt(updated)}` : ''}</p>
-          <div className="flex gap-2">
-            <Link href="/buy" className="cta cta-orange text-center">Buy WOODY</Link>
-            <Link href="/" className="cta cta-blue text-center">Home</Link>
-          </div>
-        </div>
-      </section>
-      <section className="card glow-card p-5 md:p-8" aria-label="Observed pool reserves">
-        <p className="badge mb-3">DEX reserves</p>
-        <h2 className="section-title">Liquidity and reserves by pool</h2>
-        <p className="mt-2 max-w-2xl text-sm text-white/60">On-chain reserves reported by WOODY Monitor, separated by pool.</p>
-        {estimatedPoolUsd !== null && <p className="mt-4 text-sm text-white/70">Estimated total across {pools.length} readable pools: <strong className="text-white">{usd(estimatedPoolUsd)}</strong>. Each pool is estimated as 2 × its WOODY reserve × the Monitor WOODY USD price. Quote-token prices are not independently valued; unavailable pools are excluded.</p>}
-        {live && pools.length ? (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {pools.map((p, i) => (
-              <article className="live-stat-card" key={`${p.venue}-${p.pair}-${i}`}>
-                <p className="text-xs font-semibold text-sky-300">{p.venue}</p>
-                <p className="mt-2 text-sm text-white/70">{p.pair}</p>
-                <p className="mt-2 text-lg font-black text-white">{plain(p.woody)} WOODY</p><p className="mt-1 text-sm text-white/70">+ {plain(p.quote)} {p.quoteSymbol}</p>
-                {estimatedPoolUsd !== null && <p className="mt-2 text-xs text-white/55">Estimated pool value: {usd(2 * p.woody * woodyPrice)}</p>}
-              </article>
-            ))}
-          </div>
-        ) : <p className="mt-5 rounded-xl border border-white/10 p-4 text-sm text-white/65">On-chain pool reserves are currently unavailable from the monitor. No unverified USD value will be displayed.</p>}
-        {live && unavailablePools.length > 0 && <div className="mt-4 rounded-xl border border-amber-400/20 p-4"><p className="text-sm font-bold text-amber-200">Pools awaiting verified data</p>{unavailablePools.map((p,i) => <p className="mt-2 text-xs text-white/60" key={p.address || i}>{p.dex} · {p.pair}: {p.reason || 'Unavailable'}</p>)}</div>}
-        <p className="mt-4 text-xs text-white/40">Source: WOODY Monitor · Pools with readable on-chain reserves only. OneDex appears when its pool data is available. Refresh every 30 seconds.</p>
-      </section>
-      <section aria-labelledby="woody-arcade-title" className="card relative overflow-hidden border border-emerald-400/30 bg-gradient-to-br from-emerald-950/70 via-slate-950 to-orange-950/30 p-5 md:p-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-xl">
-            <p className="text-xs font-bold uppercase tracking-[.22em] text-emerald-300">WOODY Arcade · Season 1</p>
-            <h2 id="woody-arcade-title" className="mt-2 text-2xl font-black text-white md:text-3xl">WOODY Forest Adventure</h2>
-            <p className="mt-2 text-sm leading-relaxed text-white/65">Three levels. Collect coins, dodge traps and face Shadow WOODY King. Your personal records and unlocked levels stay on this device.</p>
-            <p className="mt-2 text-xs text-amber-200/80">Free browser game · No wallet connection required · In-game points have no token value</p>
-          </div>
-          <Link href="/forest-adventure" className="cta cta-orange shrink-0 text-center" aria-label="Play WOODY Forest Adventure">▶ PLAY WOODY</Link>
-        </div>
-      </section>
-    </>
-  );
+  return <>
+    <header className="dashboard-heading">
+      <div><p className="section-eyebrow">WOODY / MARKET INTELLIGENCE</p><h1>Command Center<span>.</span></h1><p>Your market snapshot, wallet and pool reserves. In one place.</p></div>
+      <Link href="/buy" className="cta cta-orange">Buy WOODY ↗</Link>
+    </header>
+    <nav className="dashboard-tabs" aria-label="Command Center sections"><a href="#overview">Overview</a><a href="#wallet">Wallet</a><a href="#signals">Signals</a><a href="#pools">Pool reserves</a></nav>
+    <section id="overview" className="dashboard-section" aria-label="Market overview">
+      <MonitorStatus status={status} updatedAt={data?.updatedAt} refreshing={refreshing} refresh={refresh} />
+      <div className="market-overview">{metrics.map(([label,value,note]) => <article key={label}><p>{label}</p><strong>{status === 'loading' ? '…' : value}</strong><span>{note}</span></article>)}</div>
+      {!live && status !== 'loading' && <p className="feed-message">The Monitor is temporarily unavailable or its data is too old. Values are hidden until a fresh snapshot arrives. Try Refresh.</p>}
+      <p className="data-caption">Automatic refresh every 30 seconds. Volume covers detected trades; liquidity is an estimate, not independently verified USD TVL.</p>
+    </section>
+    <section id="wallet" className="dashboard-section wallet-section">{children}</section>
+    <section id="signals" className="dashboard-section">
+      <div className="section-heading-row"><div><p className="section-eyebrow">UNDERSTAND THE ACTIVITY</p><h2>Market signals</h2></div><span className="subtle-label">Rule-based · 24h window</span></div>
+      <div className="signal-grid">{signals.map(signal => <article className="signal-card" key={signal.key}>
+        <div className="signal-card-top"><h3>{signal.title}</h3><span>{live && signal.score != null ? `${signal.score}/100` : '—'}</span></div>
+        <p className="signal-value">{live ? signal.samples === 0 ? 'No recent trades' : signal.value || 'Unavailable' : 'Awaiting data'}</p>
+        <p className="signal-detail">{live ? signal.detail : 'A fresh Monitor snapshot is required.'}</p>
+        <details><summary>How to read this</summary><p>{explanations[signal.key]}</p>{signal.reasons?.length > 0 && <ul>{signal.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}{signal.samples != null && <p>{signal.samples} monitored trades in this window.</p>}</details>
+      </article>)}</div>
+    </section>
+    <section id="pools" className="dashboard-section">
+      <div className="section-heading-row"><div><p className="section-eyebrow">LIQUIDITY / ON-CHAIN RESERVES</p><h2>Across the ecosystem</h2></div><div className="pool-total"><strong>{usd(data?.liquidity?.totalUsd)}</strong><span>estimated total · {data?.liquidity?.estimatedPoolCount ?? '—'} pools</span></div></div>
+      <details className="method-note"><summary>How the liquidity estimate is calculated</summary><p>For each readable pool: 2 × WOODY reserve × the Monitor WOODY USD reference price. The total is the sum of those pool estimates. Quote-token USD prices are not independently valued. Unavailable pools are excluded.</p></details>
+      {live && pools.length ? <div className="pool-grid">{pools.map(pool => <article className="pool-card" key={pool.address || `${pool.dex}:${pool.pair}`}>
+        <div className="pool-card-head"><span>{pool.dex}</span><strong>{pool.pair}</strong></div>
+        <p className="pool-value">{usd(pool.estimatedUsd ?? (data.price.usd > 0 ? 2 * pool.woodyReserve * data.price.usd : null))}<span>estimated</span></p>
+        <dl><div><dt>WOODY</dt><dd>{plain(pool.woodyReserve)}</dd></div><div><dt>{pool.quoteSymbol}</dt><dd>{plain(pool.quoteReserve)}</dd></div></dl>
+        {pool.address && <a className="pool-explorer" href={`https://explorer.multiversx.com/accounts/${encodeURIComponent(pool.address)}`} target="_blank" rel="noopener noreferrer">View pool account ↗</a>}
+      </article>)}</div> : <p className="feed-message">{status === 'loading' ? 'Loading pool reserves…' : 'Readable pool reserves are currently unavailable.'}</p>}
+      {unavailable.length > 0 && <details className="method-note"><summary>{unavailable.length} pools excluded — data unavailable</summary>{unavailable.map((pool,i) => <p key={pool.address || i}>{pool.dex} · {pool.pair}: {pool.reason || 'Unavailable'}</p>)}</details>}
+    </section>
+    <section className="arcade-strip"><div><p className="section-eyebrow">TAKE A BREAK / WOODY ARCADE</p><h2>Into the forest.</h2><p>Three levels. One final boss. Free to play, no wallet needed.</p></div><Link href="/forest-adventure" className="cta cta-blue">Play Forest Adventure ↗</Link></section>
+  </>;
 }
