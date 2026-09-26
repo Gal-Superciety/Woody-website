@@ -84,7 +84,7 @@ export default function BuyWoodyPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">MultiversX trading access</p>
           <h2 className="mt-2 text-2xl font-black text-white">Choose a trading venue</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
-            These venues provide WOODY trading routes. WOODY Monitor currently reads reserves for supported xExchange and JEX pools; OneDex reserve data may be unavailable. Always verify the token ID and route before signing.
+            These venues provide WOODY trading routes. WOODY Monitor reads reserves for supported xExchange and JEX pools and OneDex WOODY/WEGLD Pair 559. Pool data can be temporarily unavailable. Always verify the token ID and route before signing.
           </p>
         </div>
 

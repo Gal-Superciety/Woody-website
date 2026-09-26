@@ -7,6 +7,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-orbitron' });
 
 export const metadata = {
+  metadataBase: new URL('https://woody-website.vercel.app'),
   title: 'WOODY Meme',
   description: 'Community-driven meme ecosystem on MultiversX',
   icons: { icon: '/icon.svg' },
