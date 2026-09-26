@@ -293,7 +293,7 @@ export default function WalletConnectPanel() {
           ) : (
             <div className="grid w-full gap-2 sm:w-80">
               {xPortalUri ? (
-                <a href={xPortalUri} className="cta cta-orange w-full text-center" aria-label="Open xPortal to approve wallet connection">Open xPortal to connect ↗</a>
+                <a href={xPortalUri} target="_self" className="cta cta-orange w-full text-center" aria-label="Open wallet chooser to approve xPortal connection">Choose xPortal and connect ↗</a>
               ) : (
                 <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Preparing xPortal...' : 'Connect xPortal'}</button>
               )}
@@ -310,7 +310,7 @@ export default function WalletConnectPanel() {
               <a href={`${EXPLORER_URL}/accounts/${address}`} target="_blank" rel="noopener noreferrer" className="underline decoration-white/30 underline-offset-2 hover:text-white">Explorer</a>
             </div>
           ) : null}
-          {xPortalUri ? <a className="max-w-xs break-words text-xs text-sky-200 underline" href={xPortalUri}>Alternative: open xPortal on this device</a> : null}
+          {xPortalUri ? <p className="max-w-xs text-xs leading-relaxed text-sky-200">If your phone asks which wallet to use, select xPortal and approve the connection there.</p> : null}
           {error ? <p className="max-w-xs text-xs leading-relaxed text-orange-200">{error}</p> : null}
         </div>
       </div>
