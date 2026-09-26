@@ -1,45 +1,29 @@
-# WOODY Meme Website
+# WOODY Website
 
-Landing page simplu și modern pentru proiectul **WOODY Meme**, construit cu **Next.js + Tailwind CSS**.
+Site-ul public WOODY pe MultiversX: homepage, Command Center, Buy Hub și Forest Adventure. Token oficial: `WOODY-5f9d9c`.
 
-## Cerințe
+## Dezvoltare
 
-- Node.js 18+
-- npm 9+
-
-## Rulare locală
+Necesită Node.js 18.18+ și npm. Instalează dependențele din lockfile și rulează:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Deschide în browser: `http://localhost:3000`
-
-## Build producție
+Pentru verificarea producției:
 
 ```bash
+npm run lint
 npm run build
-npm start
 ```
 
-## Deploy pe Vercel
+## Date și portofel
 
-1. Urcă repository-ul pe GitHub/GitLab/Bitbucket.
-2. Intră pe [vercel.com](https://vercel.com) și apasă **Add New Project**.
-3. Importă repository-ul.
-4. Framework detectat automat: **Next.js**.
-5. Apasă **Deploy**.
+- `/api/woody-status` preia statusul WOODY Monitor de la Railway. Răspunsurile vechi sau marcate ca stale primesc HTTP 503.
+- `/app` afișează preț, holderi, volum, semnale și rezerve pe pool. Totalul USD este o **estimare**: pentru fiecare pool lizibil, `2 × rezerva WOODY × prețul USD WOODY`. Poolurile indisponibile sunt excluse; tokenurile pereche nu sunt evaluate independent.
+- Portofelul xPortal folosește WalletConnect, iar soldurile EGLD/WOODY se citesc din API-ul public MultiversX. Este necesar `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` pentru conexiune. Restabilirea unei sesiuni se bazează pe sesiunea autentificată din provider, nu doar pe adresa salvată în browser.
+- `/buy` conține linkuri către xExchange, OneDex și JEX. Verifică tokenul și ruta înainte de semnare.
+- Forest Adventure stochează scorurile local în browser; punctele din joc nu au valoare de token.
 
-Alternativ, cu CLI:
-
-```bash
-npm i -g vercel
-vercel
-```
-
-## Structură principală
-
-- `app/page.js` — landing page (hero, about, bot, token info, liquidity, roadmap, community)
-- `app/globals.css` — stiluri globale și temă dark
-- `tailwind.config.js` — configurare Tailwind
+Deployul public este pe Vercel din ramura `main`: https://woody-website.vercel.app/.
