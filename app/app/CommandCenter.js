@@ -28,7 +28,7 @@ export default function CommandCenter({ children }) {
     ['WOODY price', usd(data?.price?.usd), 'USD reference price'],
     ['Pool liquidity', usd(data?.liquidity?.totalUsd), `${data?.liquidity?.estimatedPoolCount ?? '—'} readable pools · estimated`],
     ['Holders', plain(data?.holders?.count ?? data?.holders), 'Accounts holding WOODY'],
-    ['Tracked volume · 24h', usd(data?.volume24hUsd), data?.volume?.tradeCount != null ? `${plain(data.volume.tradeCount)} detected trades` : 'WOODY Monitor detected trades'],
+    ['Tracked volume · 24h', usd(data?.volume24hUsd), data?.volume?.tradeCount != null ? `${plain(data.volume.tradeCount)} detected ${data.volume.tradeCount === 1 ? 'trade' : 'trades'}` : 'WOODY Monitor detected trades'],
   ];
 
   return <>
@@ -41,7 +41,7 @@ export default function CommandCenter({ children }) {
       <MonitorStatus status={status} updatedAt={data?.updatedAt} refreshing={refreshing} refresh={refresh} />
       <div className="market-overview">{metrics.map(([label,value,note]) => <article key={label}><p>{label}</p><strong>{status === 'loading' ? '…' : value}</strong><span>{note}</span></article>)}</div>
       {!live && status !== 'loading' && <p className="feed-message">The Monitor is temporarily unavailable or its data is too old. Values are hidden until a fresh snapshot arrives. Try Refresh.</p>}
-      <p className="data-caption">Automatic refresh every 30 seconds. Volume covers detected trades; liquidity is an estimate, not independently verified USD TVL.</p>
+      <p className="data-caption">Automatic refresh every 30 seconds. Volume covers detected trades; liquidity is an estimate, not independently verified USD TVL.{data?.volume?.reportedApiUsd != null && <> The MultiversX token API separately reports {usd(data.volume.reportedApiUsd)} in 24h volume; its coverage can differ from detected trades.</>}</p>
     </section>
     <section id="wallet" className="dashboard-section wallet-section">{children}</section>
     <section id="signals" className="dashboard-section">
@@ -50,6 +50,7 @@ export default function CommandCenter({ children }) {
         <div className="signal-card-top"><h3>{signal.title}</h3><span>{live && signal.score != null ? `${signal.score}/100` : '—'}</span></div>
         <p className="signal-value">{live ? signal.samples === 0 ? 'No recent trades' : signal.value || 'Unavailable' : 'Awaiting data'}</p>
         <p className="signal-detail">{live ? signal.detail : 'A fresh Monitor snapshot is required.'}</p>
+        {live && signal.samples != null && signal.samples < 3 && <p className="signal-sample">Limited sample: {signal.samples} detected {signal.samples === 1 ? 'trade' : 'trades'}.</p>}
         <details><summary>How to read this</summary><p>{explanations[signal.key]}</p>{signal.reasons?.length > 0 && <ul>{signal.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}{signal.samples != null && <p>{signal.samples} monitored trades in this window.</p>}</details>
       </article>)}</div>
     </section>

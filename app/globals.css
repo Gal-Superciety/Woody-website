@@ -346,3 +346,5 @@ summary { cursor:pointer;min-height:30px; }
   .arcade-strip{padding:24px 20px;align-items:flex-start;flex-direction:column}.v2-market{padding:48px 0}.v2-explore{padding-top:55px;padding-bottom:55px}.v2-feature-main{min-height:350px}.v2-end{padding:55px 0}.v2-hero-copy{padding-top:32px}.v2-hero-kicker{margin-top:28px}.v2-metric strong{font-size:22px}.v2-metric-foot{font-size:8px}.v2-art{min-height:290px}.v2-mascot{max-width:260px}.v2-art-coordinate{display:none}.v2-hero-bottom{font-size:8px}.v2-eyebrow{font-size:8px;letter-spacing:.08em}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.live-pulse-dot{animation:none}}
+
+.signal-sample { margin-top:10px;font-size:11px;color:#dcb381;line-height:1.6; }
