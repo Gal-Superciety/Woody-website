@@ -54,7 +54,7 @@ function formatToken(raw, decimals = 18) {
 
 async function readWalletData(address) {
   const [balanceResponse, tokenResponse] = await Promise.all([
-    fetch(`${API_URL}/address/${address}/balance`, { cache: 'no-store' }),
+    fetch(`${API_URL}/accounts/${address}`, { cache: 'no-store' }),
     fetch(`${API_URL}/accounts/${address}/tokens?identifier=${encodeURIComponent(WOODY_TOKEN_ID)}`, { cache: 'no-store' }),
   ]);
 
@@ -63,10 +63,10 @@ async function readWalletData(address) {
 
   const egldRaw = await balanceResponse.json();
   const tokens = await tokenResponse.json();
-  const woody = Array.isArray(tokens) ? tokens.find((item) => item.identifier === WOODY_TOKEN_ID) || tokens[0] : null;
+  const woody = Array.isArray(tokens) ? tokens.find((item) => item.identifier === WOODY_TOKEN_ID) : null;
 
   return {
-    egld: formatEgld(egldRaw),
+    egld: formatEgld(egldRaw?.balance),
     woody: woody ? formatToken(woody.balance, woody.numDecimals ?? woody.decimals ?? 18) : '0',
     woodyRaw: woody?.balance || '0',
     woodyDecimals: woody?.numDecimals ?? woody?.decimals ?? 18,
@@ -122,9 +122,9 @@ export default function WalletConnectPanel() {
         storage.removeItem(STORAGE_KEY);
         return;
       }
-      setAddress(parsedSession.address);
-      setProviderType(parsedSession.providerType || 'Saved session');
-      refreshBalances(parsedSession.address);
+      // A stored address is not proof of an authenticated wallet connection.
+      // Require a fresh provider login rather than restoring a misleading session.
+      storage.removeItem(STORAGE_KEY);
     } catch {
       storage.removeItem(STORAGE_KEY);
     }
