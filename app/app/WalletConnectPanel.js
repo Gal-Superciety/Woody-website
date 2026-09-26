@@ -88,6 +88,7 @@ async function readWalletData(address) {
 export default function WalletConnectPanel() {
   const router = useRouter();
   const providerRef = useRef(null);
+  const pendingXPortalRef = useRef(null);
   const balanceRequestRef = useRef(0);
   const [address, setAddress] = useState('');
   const [providerType, setProviderType] = useState('');
@@ -192,6 +193,7 @@ export default function WalletConnectPanel() {
       failConnection(FRIENDLY_FAILURE);
       return;
     }
+    if (pendingXPortalRef.current === nextProvider) pendingXPortalRef.current = null;
     providerRef.current = nextProvider || null;
     setAddress(nextAddress);
     setProviderType(nextProviderType);
@@ -201,6 +203,25 @@ export default function WalletConnectPanel() {
     refreshBalances(nextAddress);
     router.replace('/app');
   };
+
+  useEffect(() => {
+    const resumePendingConnection = async () => {
+      if (document.visibilityState === 'hidden') return;
+      const provider = pendingXPortalRef.current;
+      if (!provider?.isConnected?.()) return;
+      const connectedAddress = await provider.getAddress?.();
+      if (pendingXPortalRef.current === provider && isValidAddress(connectedAddress)) {
+        pendingXPortalRef.current = null;
+        saveSession(connectedAddress, 'xPortal', provider);
+      }
+    };
+    window.addEventListener('pageshow', resumePendingConnection);
+    document.addEventListener('visibilitychange', resumePendingConnection);
+    return () => {
+      window.removeEventListener('pageshow', resumePendingConnection);
+      document.removeEventListener('visibilitychange', resumePendingConnection);
+    };
+  });
 
   const startConnection = (label) => {
     setIsConnecting(true);
@@ -287,6 +308,7 @@ export default function WalletConnectPanel() {
         },
       } : undefined;
       walletConnectProvider = new WalletConnectProvider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID, mobileOptions);
+      pendingXPortalRef.current = walletConnectProvider;
       await walletConnectProvider.init?.();
       const { uri, approval } = await walletConnectProvider.connect();
       if (uri) {
@@ -305,6 +327,7 @@ export default function WalletConnectPanel() {
       const message = walletErrorMessage(connectionError);
       failConnection(message);
     } finally {
+      pendingXPortalRef.current = null;
       finishConnection();
     }
   };
