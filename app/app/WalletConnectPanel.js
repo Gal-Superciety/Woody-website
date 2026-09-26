@@ -362,8 +362,8 @@ export default function WalletConnectPanel() {
       <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="badge mb-4">MultiversX Wallet</p>
-          <h1 className="text-3xl font-black leading-tight text-white md:text-5xl">Your WOODY Wallet</h1>
-          <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-lg">Connect securely to view your EGLD and WOODY balances. Your wallet keeps control of every signature.</p>
+          <h2 className="wallet-title">Your wallet</h2>
+          <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-lg">Connect xPortal to view your EGLD and WOODY balances. You approve every signature in your wallet.</p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
           {address ? (
@@ -401,7 +401,7 @@ export default function WalletConnectPanel() {
         </div>
       </div>
 
-      <div className="relative z-10 mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {address ? (<div className="relative z-10 mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {walletStatusItems.map((item) => (
           <article key={item.label} className="wallet-status-card">
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/50">{item.label}</p>
@@ -409,7 +409,7 @@ export default function WalletConnectPanel() {
             {item.detail ? <p className="mt-1 text-xs text-white/60">{item.detail}</p> : null}
           </article>
         ))}
-      </div>
+      </div>) : null}
 
       {address ? (
         <div className="relative z-10 mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-xs leading-relaxed text-white/65">

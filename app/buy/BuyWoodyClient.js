@@ -15,7 +15,7 @@ const venues = [
   {
     name: 'OneDex',
     href: 'https://swap.onedex.app/swap?firstToken=EGLD&secondToken=WOODY-5f9d9c',
-    detail: 'WOODY/WEGLD Pair 559 reserves are read directly by WOODY Monitor',
+    detail: 'WOODY/WEGLD trading and liquidity on OneDex',
     status: 'Trading venue',
   },
   {
@@ -84,7 +84,7 @@ export default function BuyWoodyPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-300">MultiversX trading access</p>
           <h2 className="mt-2 text-2xl font-black text-white">Choose a trading venue</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
-            These venues provide WOODY trading routes. WOODY Monitor reads reserves for supported xExchange and JEX pools and OneDex WOODY/WEGLD Pair 559. Pool data can be temporarily unavailable. Always verify the token ID and route before signing.
+            These venues provide WOODY trading routes. Pool reserves are available in the Command Center. Pool data can be temporarily unavailable. Always verify the token ID and route before signing.
           </p>
         </div>
 
@@ -104,9 +104,7 @@ export default function BuyWoodyPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-sky-400/15 bg-sky-400/5 p-4 text-xs leading-relaxed text-white/55">
-        <span className="font-semibold text-sky-200">Aggregator note:</span> XOXNO&apos;s MultiversX aggregator API is still documented as routing across xExchange, OneDex and JEX, but no current public WOODY swap UI is linked here until the user-facing route is independently confirmed.
-      </section>
+
     </main>
   );
 }

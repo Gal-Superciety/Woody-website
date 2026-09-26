@@ -1,51 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-
-const STATUS_URL = '/api/woody-status';
-
-const usd = (value) => {
-  const n = value === null || value === undefined || value === '' ? NaN : Number(value);
-  if (!Number.isFinite(n)) return '—';
-  if (n === 0) return '$0';
-  if (n > 0 && n < 0.00000001) return `$${n.toExponential(2)}`;
-  if (n < 0.01) return `$${n.toFixed(8).replace(/0+$/, '').replace(/\.$/, '')}`;
-  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
-};
-const number = (value) => value != null && value !== '' && Number.isFinite(Number(value)) ? Number(value).toLocaleString() : '—';
+import { useMonitor } from './lib/useMonitor';
+import { usd, plain } from './lib/monitor';
+import MonitorStatus from './components/MonitorStatus';
 
 export default function Home() {
-  const [data, setData] = useState(null);
-  const [live, setLive] = useState(false);
-  const requestRef = useRef(0);
-
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const id = ++requestRef.current;
-      try {
-        const response = await fetch(STATUS_URL, { cache: 'no-store' });
-        if (!response.ok) throw new Error();
-        const next = await response.json();
-        if (!mounted || id !== requestRef.current) return;
-        setData(next);
-        setLive(true);
-      } catch {
-        if (mounted && id === requestRef.current) { setLive(false); setData(null); }
-      }
-    };
-    load();
-    const timer = window.setInterval(load, 30000);
-    return () => { mounted = false; window.clearInterval(timer); };
-  }, []);
-
+  const { data, live, status, refreshing, refresh } = useMonitor();
   const stats = [
     ['Price', usd(data?.price?.usd)],
-    ['Liquidity', 'VIEW BY POOL ↗'],
-    ['Holders', number(data?.holders?.count ?? data?.holders)],
-    ['24h Volume', usd(data?.volume24hUsd ?? data?.volume?.usd)],
+    ['Pool liquidity · est.', usd(data?.liquidity?.totalUsd)],
+    ['Holders', plain(data?.holders?.count ?? data?.holders)],
+    ['Tracked volume · 24h', usd(data?.volume24hUsd ?? data?.volume?.usd)],
   ];
 
   return (
@@ -54,7 +21,7 @@ export default function Home() {
         <div className="v2-hero-noise" aria-hidden="true" />
         <div className="v2-container v2-hero-layout">
           <div className="v2-hero-copy">
-            <div className="v2-eyebrow"><span className={live ? 'v2-status-dot' : 'v2-status-dot v2-offline'} /> {live ? 'LIVE ECOSYSTEM DATA' : 'CONNECTING TO MONITOR'} <span className="v2-eyebrow-divider" /> MULTIVERSX</div>
+            <div className="v2-eyebrow"><span className={live ? 'v2-status-dot' : 'v2-status-dot v2-offline'} /> {live ? 'LIVE ECOSYSTEM DATA' : status === 'loading' ? 'CONNECTING TO MONITOR' : 'MONITOR UNAVAILABLE'} <span className="v2-eyebrow-divider" /> MULTIVERSX</div>
             <p className="v2-hero-kicker">THE WOODY UNIVERSE</p>
             <h1>NOT JUST<br /><em>A MEME.</em><br />A MOVEMENT<span className="v2-period">.</span></h1>
             <p className="v2-hero-description">Meet WOODY. One home for market intelligence, the community and a growing world of experiences on MultiversX.</p>
@@ -78,8 +45,8 @@ export default function Home() {
       <section className="v2-market" aria-label="Live market snapshot">
         <div className="v2-container">
           <div className="v2-section-heading"><div><span className="v2-section-index">01 / MARKET PULSE</span><h2>THE NUMBERS<span>.</span></h2></div><span className="v2-market-source"><span className={live ? 'v2-status-dot' : 'v2-status-dot v2-offline'} /> {live ? 'WOODY MONITOR CONNECTED' : 'LIVE FEED UNAVAILABLE'}</span></div>
-          <div className="v2-market-grid">{stats.map(([label,value],i)=><div className="v2-metric" key={label}><span className="v2-metric-index">0{i+1}</span><span className="v2-metric-label">{label}</span><strong>{label === 'Liquidity' ? <Link href="/app" className="underline decoration-orange-300/50 underline-offset-4 hover:text-orange-300">{value}</Link> : value}</strong><span className="v2-metric-foot">WOODY / MULTIVERSX</span></div>)}</div>
-          <p className="v2-data-note">Live values are sourced from WOODY Monitor. Unavailable data is displayed as —. Pool reserves are shown separately in Command Center.</p>
+          <div className="v2-market-grid">{stats.map(([label,value],i)=><div className="v2-metric" key={label}><span className="v2-metric-index">0{i+1}</span><span className="v2-metric-label">{label}</span><strong>{label === 'Pool liquidity · est.' ? <Link href="/app#pools" className="underline decoration-orange-300/50 underline-offset-4 hover:text-orange-300">{value}</Link> : value}</strong><span className="v2-metric-foot">WOODY / MULTIVERSX</span></div>)}</div>
+          <MonitorStatus status={status} updatedAt={data?.updatedAt} refreshing={refreshing} refresh={refresh} /><p className="v2-data-note">Source: WOODY Monitor. Liquidity is an estimate across readable pools; volume covers detected trades. Missing data is shown as —.</p>
         </div>
       </section>
 
