@@ -14,6 +14,7 @@ export default function Leaderboard() {
   },[period]);
   const rows = data?.rows || [];
   return <section id="leaderboard" className="mt-6 rounded-2xl border border-emerald-500/30 bg-slate-900 p-5 text-white">
+    <div className="mb-4 rounded-xl border border-emerald-400/30 bg-emerald-950/40 p-4"><h3 className="text-lg font-bold text-emerald-200">PLAYER PROFILE</h3><p className="mt-1 text-sm text-slate-200">Connect your xPortal wallet to get ready for your WOODY gamer profile. Username registration and score saving are not enabled yet.</p><Link href="/app" className="mt-3 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-bold text-slate-950">CONNECT WALLET IN COMMAND CENTER ↗</Link></div>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h2 className="text-2xl font-black text-emerald-300">FOREST LEADERBOARD</h2><p className="text-sm text-slate-300">Only verified game scores count. No ads, entry fees or automatic prizes.</p></div>
       <div className="flex gap-2">
