@@ -418,7 +418,7 @@ export default function WalletConnectPanel() {
         </div>
       ) : null}
 
-      {address ? <ForestProfileRegistration wallet={address} providerRef={providerRef} /> : null}
+      {address ? <ForestProfileRegistration wallet={address} providerRef={providerRef} providerType={providerType} /> : null}
     </>
   );
 }
