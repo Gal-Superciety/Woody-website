@@ -27,3 +27,27 @@ npm run build
 - Forest Adventure stochează scorurile local în browser; punctele din joc nu au valoare de token.
 
 Deployul public este pe Vercel din ramura `main`: https://woody-website.vercel.app/.
+
+
+## Forest Adventure — five-chapter preview
+
+`/forest-adventure` runs the unified campaign. `/living-forest` redirects there.
+The first three chapters retain the original ground-platform routes and add
+12–16 canopy tiers. Chapters four and five use new approaches and 18 tiers.
+The Moonwood bird renderer is shared by all chapters.
+
+- Gear, remaining lives and coins carry across chapter transitions.
+- Firing is unlimited; block rewards unlock double/triple shots.
+- Reaching the second canopy tier arms the floor hazard. Landing on a lower
+  platform is safe; touching the floor or falling out costs one life, bypassing
+  shields. Respawning retains current gear and disarms the floor until climbing.
+- Guardians telegraph attacks, open their armour after firing and attack faster
+  below half health. Wolf guardians also rush the player.
+- Saves use `woody-forest-campaign-v2`; old Season 1 records are not deleted.
+  Resuming restores the latest checkpoint, collected rewards and equipment;
+  partial guardian damage resets. Storage is device-local, with no leaderboard.
+- `node --test tests/living-forest.test.mjs` checks transitions, jumps, combat,
+  floor hazards and validated saves. `npm run build` checks production compilation.
+
+This branch is a gameplay preview. The public production deployment is unchanged
+until the PR is merged. Difficulty still needs human playtesting on phones.

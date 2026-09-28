@@ -65,6 +65,6 @@ export default function CommandCenter({ children }) {
       </article>)}</div> : <p className="feed-message">{status === 'loading' ? 'Loading pool reserves…' : 'Readable pool reserves are currently unavailable.'}</p>}
       {unavailable.length > 0 && <details className="method-note"><summary>{unavailable.length} pools excluded — data unavailable</summary>{unavailable.map((pool,i) => <p key={pool.address || i}>{pool.dex} · {pool.pair}: {pool.reason || 'Unavailable'}</p>)}</details>}
     </section>
-    <section className="arcade-strip"><div><p className="section-eyebrow">TAKE A BREAK / WOODY ARCADE</p><h2>Into the forest.</h2><p>Three levels. One final boss. Free to play, no wallet needed.</p></div><Link href="/forest-adventure" className="cta cta-blue">Play Forest Adventure ↗</Link></section>
+    <section className="arcade-strip"><div><p className="section-eyebrow">TAKE A BREAK / WOODY ARCADE</p><h2>Into the forest.</h2><p>Five chapters. Forest guardians. Free to play, no wallet needed.</p></div><Link href="/forest-adventure" className="cta cta-blue">Play Forest Adventure ↗</Link></section>
   </>;
 }

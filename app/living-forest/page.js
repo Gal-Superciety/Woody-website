@@ -1,3 +1,2 @@
-import LivingForest from './LivingForest';
-export const metadata = { title: 'WOODY: Living Forest — Playtest', robots: { index: false, follow: false } };
-export default function Page() { return <LivingForest />; }
+import { redirect } from 'next/navigation';
+export default function LivingForestPreview(){redirect('/forest-adventure');}

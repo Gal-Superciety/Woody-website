@@ -15,7 +15,7 @@ export function drawDragon(c,b,t){
  c.strokeStyle='#a4aa75';c.lineWidth=3;for(let i=0;i<5;i++){c.beginPath();c.moveTo(-17,i*9-6);c.lineTo(15,i*9-3);c.stroke();}
  c.fillStyle='#80957a';c.beginPath();c.moveTo(8,-7);c.lineTo(8,-43);c.lineTo(-14,-54);c.lineTo(-28,-44);c.lineTo(-47,-36);c.lineTo(-43,-22);c.lineTo(-15,-20);c.lineTo(-17,4);c.fill();
  c.fillStyle='#c6c399';c.beginPath();c.moveTo(-10,-48);c.lineTo(4,-72);c.lineTo(4,-43);c.fill();c.beginPath();c.moveTo(-24,-46);c.lineTo(-25,-66);c.lineTo(-14,-49);c.fill();
- c.shadowColor=b.timer>1.8?'#ff7449':'#b4edac';c.shadowBlur=15;c.fillStyle=c.shadowColor;c.beginPath();c.arc(-23,-38,4,0,Math.PI*2);c.fill();c.shadowBlur=0;
- if(b.timer>1.8){c.fillStyle='#ffb759';c.beginPath();c.arc(-43,-26,5+Math.sin(t*25)*2,0,Math.PI*2);c.fill();}
+ c.shadowColor=b.phase==='charging'?'#ff7449':'#b4edac';c.shadowBlur=15;c.fillStyle=c.shadowColor;c.beginPath();c.arc(-23,-38,4,0,Math.PI*2);c.fill();c.shadowBlur=0;
+ if(b.phase==='charging'){c.fillStyle='#ffb759';c.beginPath();c.arc(-43,-26,5+Math.sin(t*25)*2,0,Math.PI*2);c.fill();}
  c.restore();
 }
