@@ -66,19 +66,11 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
       return;
     }
 
-    // Reserve a browser tab during the trusted click. Mobile browsers block
-    // opening wallet apps after an awaited network request, so navigate this
-    // tab only after the WalletConnect signing request has been sent.
+    // Open xPortal directly from the trusted tap. Navigating an about:blank
+    // tab after awaiting the challenge loses Android's app-link handoff and
+    // shows the xPortal landing page before the app opens.
     const shouldOpenXPortal = isMobileDevice() && /xportal/i.test(providerType || '');
-    const walletTab = shouldOpenXPortal ? window.open('about:blank', '_blank') : null;
-    if (walletTab) {
-      try {
-        walletTab.document.title = 'Opening xPortal';
-        walletTab.document.body.innerHTML = '<p style="font:16px sans-serif;padding:24px">Opening xPortal to approve your WOODY profile signature…</p>';
-      } catch {
-        // A browser may restrict access to the temporary tab; navigation still works.
-      }
-    }
+    if (shouldOpenXPortal) window.open(XPORTAL_APP_LINK, '_blank');
 
     setIsSaving(true);
     setError('');
@@ -90,11 +82,7 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
       }));
       const { Message } = await import('@multiversx/sdk-core/out/core/message');
       const message = new Message({ data: new TextEncoder().encode(challengeResult.challenge) });
-      const signing = provider.signMessage(message);
-      if (walletTab && !walletTab.closed) {
-        walletTab.location.replace(XPORTAL_APP_LINK);
-      }
-      const signedMessage = await signing;
+      const signedMessage = await provider.signMessage(message);
       if (!signedMessage?.signature) throw new Error('invalid_wallet_signature');
       const signature = Array.from(signedMessage.signature, (byte) => byte.toString(16).padStart(2, '0')).join('');
       const result = await readJson(await fetch('/api/forest/profile', {
@@ -107,7 +95,6 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
     } catch (cause) {
       setError(errorText(cause.message));
     } finally {
-      if (walletTab && !walletTab.closed) walletTab.close();
       setIsSaving(false);
     }
   };
@@ -152,7 +139,7 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
       {error && <p role="alert" className="mt-3 text-sm text-orange-200">{error}</p>}
       {isSaving && isMobileDevice() && /xportal/i.test(providerType || '') && (
         <p className="mt-3 text-xs text-white/60">
-          If xPortal did not open, <a className="underline text-emerald-200" href={XPORTAL_APP_LINK} target="_blank" rel="noreferrer">open xPortal</a>, approve the message, then return to this WOODY page. This is a message signature, not a transaction.
+          If xPortal did not open, <a className="underline text-emerald-200" href={XPORTAL_APP_LINK} target="_blank" rel="noreferrer">open xPortal</a> and approve the profile message. This is not a blockchain transaction and costs no network fee.
         </p>
       )}
     </section>
