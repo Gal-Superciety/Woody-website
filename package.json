@@ -6,13 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint app"
+    "lint": "eslint app",
+    "test": "node --test"
   },
   "dependencies": {
+    "@multiversx/sdk-core": "^15.4.1",
     "@multiversx/sdk-extension-provider": "^5.1.2",
     "@multiversx/sdk-wallet-connect-provider": "^6.1.5",
     "@multiversx/sdk-web-wallet-cross-window-provider": "^3.2.2",
     "next": "15.5.24",
+    "pg": "^8.23.0",
     "qrcode.react": "^4.2.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"

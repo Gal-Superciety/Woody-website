@@ -14,7 +14,7 @@ export default function Leaderboard() {
   },[period]);
   const rows = data?.rows || [];
   return <section id="leaderboard" className="mt-6 rounded-2xl border border-emerald-500/30 bg-slate-900 p-5 text-white">
-    <div className="mb-4 rounded-xl border border-emerald-400/30 bg-emerald-950/40 p-4"><h3 className="text-lg font-bold text-emerald-200">PLAYER PROFILE</h3><p className="mt-1 text-sm text-slate-200">Connect your xPortal wallet to get ready for your WOODY gamer profile. Username registration and score saving are not enabled yet.</p><Link href="/app" className="mt-3 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-bold text-slate-950">CONNECT WALLET IN COMMAND CENTER ↗</Link></div>
+    <div className="mb-4 rounded-xl border border-emerald-400/30 bg-emerald-950/40 p-4"><h3 className="text-lg font-bold text-emerald-200">PLAYER PROFILE</h3><p className="mt-1 text-sm text-slate-200">Choose a unique game name linked to your MultiversX wallet. Verified scores will appear here once secure score submission is enabled.</p><Link href="/app#player-profile" className="mt-3 inline-block rounded-lg bg-emerald-400 px-4 py-3 font-bold text-slate-950">CREATE YOUR GAME NAME ↗</Link></div>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h2 className="text-2xl font-black text-emerald-300">FOREST LEADERBOARD</h2><p className="text-sm text-slate-300">Only verified game scores count. No ads, entry fees or automatic prizes.</p></div>
       <div className="flex gap-2">
@@ -31,6 +31,6 @@ export default function Leaderboard() {
     {data?.status==='ok' && !rows.length && <p className="mt-5 text-slate-300">No verified scores yet.</p>}
     {rows.length>0 && <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-white/20 text-slate-400"><th className="py-2">Rank</th><th>Player</th><th>Games</th><th className="text-right">Total points</th></tr></thead>
       <tbody>{rows.map((row,i)=><tr key={row.username} className="border-b border-white/10"><td className="py-3">{i+1}</td><td className="font-semibold">{row.username}</td><td>{row.games}</td><td className="text-right font-bold text-emerald-300">{Number(row.points).toLocaleString()}</td></tr>)}</tbody></table></div>}
-    <p className="mt-4 text-xs text-slate-400">Wallet login, unique usernames and secure score verification must be enabled before official competitions begin. <Link href="/app" className="underline text-emerald-300">Open wallet in Command Center</Link>.</p>
+    <p className="mt-4 text-xs text-slate-400">Only server-verified scores count. Game-name registration uses a wallet signature; score submission and season automation are still being completed. <Link href="/app#player-profile" className="underline text-emerald-300">Create your player profile</Link>.</p>
   </section>;
 }

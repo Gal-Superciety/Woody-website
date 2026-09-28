@@ -2,18 +2,19 @@
 
 ## Current foundation
 - Forest Adventure remains playable, unchanged in scoring or game physics.
-- Read-only weekly and all-time leaderboard API and UI.
-- PostgreSQL schema for unique usernames bound to MultiversX wallet addresses, seasons, and individually verified runs.
+- Weekly and all-time leaderboard UI and read API, backed by the same PostgreSQL database as player profiles.
+- Player profile form in the Command Center: a unique 3–20 character game name is bound to a MultiversX wallet after a server-issued, five-minute, single-use challenge is signed in the wallet.
+- PostgreSQL schema for players, expiring wallet challenges, seasons, and individually verified runs.
 - Leaderboard deliberately counts ONLY `verification_status='verified'` scores.
+- Profile registration does not submit or verify game scores. The game score remains client-controlled until authoritative run verification is implemented.
 - No paid entry, ads, automated prizes, or on-chain transactions.
 
-## Deployment prerequisites (NOT YET ENABLED)
+## Activation prerequisites
 1. Provision dedicated PostgreSQL and run `db/forest-competition.sql`.
-2. Set server-only `FOREST_DATABASE_URL` in deployment environment; never use NEXT_PUBLIC prefix.
-3. Implement challenge/response wallet signature verification, with single-use expiring nonces and server-side address verification, before enabling profile creation.
+2. Set server-only `FOREST_DATABASE_URL` in the deployment environment; never use a `NEXT_PUBLIC_` prefix. Until this is configured, profile registration and leaderboard reads return unavailable.
+3. Configure `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` and test xPortal mobile signing plus desktop wallet signing on the deployed site.
 4. Implement authoritative score validation (deterministic replay or server-controlled game state), unique run IDs, time bounds and replay protection before enabling score submission. Browser `g.score` and localStorage are untrusted.
-5. Test mobile xPortal deep-link login and desktop extension login. Current Command Center wallet connection alone is NOT competition authentication.
-6. Create UTC Monday 00:00–next Monday 00:00 seasons; freeze Sunday results, manually review anomalies, then finalize and publish results. Weekly resets via new season; all-time never resets.
-7. Write contest terms, jurisdiction eligibility and manual prize distribution policy before announcing a prize competition.
+5. Create UTC Monday 00:00–next Monday 00:00 seasons; freeze Sunday results, review anomalies, then finalize and publish results. Weekly resets via new season; all-time never resets.
+6. Write contest terms, jurisdiction eligibility and manual prize distribution policy before announcing a prize competition.
 
-**Do not represent the leaderboard as live competition-ready until steps 1–6 are done.**
+**Do not represent the leaderboard as a live competition until steps 1–6 are done.**

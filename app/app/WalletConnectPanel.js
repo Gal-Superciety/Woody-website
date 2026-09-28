@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
+import ForestProfileRegistration from './ForestProfileRegistration';
 
 const STORAGE_KEY = 'woody:multiversx-wallet-session';
 const WEB_WALLET_URL = 'https://wallet.multiversx.com';
@@ -416,6 +417,8 @@ export default function WalletConnectPanel() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p><span className="font-semibold text-emerald-200">On-chain wallet connected.</span> Balances are read directly from the MultiversX API. WOODY never asks for your seed phrase or private key.</p><Link href="/buy" className="cta cta-orange shrink-0 text-center">Buy WOODY</Link></div>
         </div>
       ) : null}
+
+      {address ? <ForestProfileRegistration wallet={address} providerRef={providerRef} /> : null}
     </>
   );
 }
