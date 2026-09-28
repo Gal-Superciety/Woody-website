@@ -4,13 +4,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 const NAME_PATTERN = /^[A-Za-z0-9_]{3,20}$/;
-const XPORTAL_APP_LINK = 'https://xportal.app.link/x';
-
-function isMobileDevice() {
-  return typeof navigator !== 'undefined' && (
-    navigator.userAgentData?.mobile || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  );
-}
 
 async function readJson(response) {
   const body = await response.json().catch(() => ({}));
@@ -21,12 +14,11 @@ async function readJson(response) {
 function errorText(code) {
   if (code === 'username_taken') return 'That game name is already taken. Try another one.';
   if (code === 'profile_already_exists') return 'This wallet already has a game profile.';
-  if (code === 'invalid_wallet_signature') return 'The wallet signature could not be verified. Please try again.';
-  if (code === 'challenge_expired_or_used') return 'The sign request expired. Please submit again.';
+  if (code === 'invalid_native_auth') return 'Reconnect your wallet to verify it, then create your profile.';
   return 'Player profiles are not available right now. Please try again later.';
 }
 
-export default function ForestProfileRegistration({ wallet, providerRef, providerType }) {
+export default function ForestProfileRegistration({ wallet, authToken }) {
   const [username, setUsername] = useState('');
   const [profile, setProfile] = useState(null);
   const [serviceState, setServiceState] = useState('loading');
@@ -60,40 +52,24 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
       setError('Choose a game name with 3–20 letters, numbers or underscores.');
       return;
     }
-    const provider = providerRef.current;
-    if (!provider?.signMessage) {
-      setError('This wallet connection cannot sign a login message. Reconnect with xPortal or another supported MultiversX wallet.');
+    if (!authToken) {
+      setError('Disconnect and reconnect your wallet to verify it before creating your profile.');
       return;
     }
-
-    // Open xPortal directly from the trusted tap. Navigating an about:blank
-    // tab after awaiting the challenge loses Android's app-link handoff and
-    // shows the xPortal landing page before the app opens.
-    const shouldOpenXPortal = isMobileDevice() && /xportal/i.test(providerType || '');
-    if (shouldOpenXPortal) window.open(XPORTAL_APP_LINK, '_blank');
 
     setIsSaving(true);
     setError('');
     try {
-      const challengeResult = await readJson(await fetch('/api/forest/profile/challenge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet, username: cleanName }),
-      }));
-      const { Message } = await import('@multiversx/sdk-core/out/core/message');
-      const message = new Message({ data: new TextEncoder().encode(challengeResult.challenge) });
-      const signedMessage = await provider.signMessage(message);
-      if (!signedMessage?.signature) throw new Error('invalid_wallet_signature');
-      const signature = Array.from(signedMessage.signature, (byte) => byte.toString(16).padStart(2, '0')).join('');
       const result = await readJson(await fetch('/api/forest/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet, username: cleanName, challengeId: challengeResult.challengeId, signature }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ wallet, username: cleanName }),
       }));
       setProfile(result.profile);
       setServiceState('registered');
     } catch (cause) {
       setError(errorText(cause.message));
+      if (cause.message === 'invalid_native_auth') setServiceState('auth-required');
     } finally {
       setIsSaving(false);
     }
@@ -103,7 +79,7 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
     <section id="player-profile" className="relative z-10 mt-5 rounded-2xl border border-emerald-400/30 bg-slate-950/70 p-5 text-white">
       <p className="text-xs font-bold uppercase tracking-[.2em] text-emerald-300">Forest Adventure · Player profile</p>
       <h3 className="mt-2 text-xl font-black">Choose your game name</h3>
-      <p className="mt-1 text-sm text-white/65">Your name will appear on the leaderboard and be linked to this wallet. You will approve a message signature; no transaction is sent.</p>
+      <p className="mt-1 text-sm text-white/65">Your name is linked to this wallet. Your wallet is verified when you connect; saving your name does not ask for another approval or send a transaction.</p>
 
       {serviceState === 'loading' && <p className="mt-4 text-sm text-white/60">Checking your player profile…</p>}
       {serviceState === 'unavailable' && <p className="mt-4 rounded-lg border border-amber-300/20 bg-amber-950/40 p-3 text-sm text-amber-100">The profile database is not available yet. Game names can be registered after the competition database is configured.</p>}
@@ -113,7 +89,10 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
           <Link href="/forest-adventure#leaderboard" className="rounded-lg bg-emerald-400 px-4 py-2 font-bold text-slate-950">View leaderboard ↗</Link>
         </div>
       )}
-      {serviceState === 'ready' && (
+      {(serviceState === 'auth-required' || (serviceState === 'ready' && !authToken)) && (
+        <p className="mt-4 rounded-lg border border-amber-300/20 bg-amber-950/40 p-3 text-sm text-amber-100">Reconnect your wallet to verify it before creating a player profile. Your saved player name will still appear automatically when this same wallet returns.</p>
+      )}
+      {serviceState === 'ready' && authToken && (
         <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={register}>
           <label className="flex-1">
             <span className="sr-only">Game name</span>
@@ -132,16 +111,11 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
             <span id="forest-name-help" className="mt-1 block text-xs text-white/50">3–20 characters · letters, numbers and underscore · unique across players</span>
           </label>
           <button type="submit" disabled={isSaving} className="rounded-lg bg-emerald-400 px-5 py-3 font-bold text-slate-950 disabled:cursor-wait disabled:opacity-60">
-            {isSaving ? (isMobileDevice() && /xportal/i.test(providerType || '') ? 'Opening xPortal…' : 'Approve in wallet…') : 'Create player profile'}
+            {isSaving ? 'Saving…' : 'Create player profile'}
           </button>
         </form>
       )}
       {error && <p role="alert" className="mt-3 text-sm text-orange-200">{error}</p>}
-      {isSaving && isMobileDevice() && /xportal/i.test(providerType || '') && (
-        <p className="mt-3 text-xs text-white/60">
-          If xPortal did not open, <a className="underline text-emerald-200" href={XPORTAL_APP_LINK} target="_blank" rel="noreferrer">open xPortal</a> and approve the profile message. This is not a blockchain transaction and costs no network fee.
-        </p>
-      )}
     </section>
   );
 }
