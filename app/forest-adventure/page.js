@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createForestAudio } from './audio';
+import Leaderboard from './Leaderboard';
 
 const W = 960, H = 540, WORLD = 7900, FLOOR = 456;
 const LEVELS=[
@@ -533,6 +534,7 @@ export default function ForestAdventure(){
     </div>
     <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the clock: Level 1 has 1:30, Level 2 has 1:18, and Level 3 has 1:35. Time-out costs a life and restarts the current level; enemies and water return you to the last checkpoint. Coins are in-game points only. Progress and records are stored in this browser.</p>
    </section>
+   <Leaderboard />
    <p className="woody-footer mt-4 text-center text-xs text-white/50">WOODY Forest Adventure · Season 1. Three levels, one final boss. Your unlocked levels and personal records are saved on this device.</p>
    <style jsx global>{`
      /* Keep all four touch buttons and the stage visible together on a phone. */
