@@ -12,6 +12,8 @@
   "dependencies": {
     "@multiversx/sdk-core": "^15.4.1",
     "@multiversx/sdk-extension-provider": "^5.1.2",
+    "@multiversx/sdk-native-auth-client": "2.0.1",
+    "@multiversx/sdk-native-auth-server": "2.1.0",
     "@multiversx/sdk-wallet-connect-provider": "^6.1.5",
     "@multiversx/sdk-web-wallet-cross-window-provider": "^3.2.2",
     "next": "15.5.24",

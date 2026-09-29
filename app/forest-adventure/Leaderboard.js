@@ -31,6 +31,6 @@ export default function Leaderboard() {
     {data?.status==='ok' && !rows.length && <p className="mt-5 text-slate-300">No verified scores yet.</p>}
     {rows.length>0 && <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-white/20 text-slate-400"><th className="py-2">Rank</th><th>Player</th><th>Games</th><th className="text-right">Total points</th></tr></thead>
       <tbody>{rows.map((row,i)=><tr key={row.username} className="border-b border-white/10"><td className="py-3">{i+1}</td><td className="font-semibold">{row.username}</td><td>{row.games}</td><td className="text-right font-bold text-emerald-300">{Number(row.points).toLocaleString()}</td></tr>)}</tbody></table></div>}
-    <p className="mt-4 text-xs text-slate-400">Only server-verified scores count. Game-name registration uses a wallet signature; score submission and season automation are still being completed. <Link href="/app#player-profile" className="underline text-emerald-300">Create your player profile</Link>.</p>
+    <p className="mt-4 text-xs text-slate-400">Only server-verified scores count. Your wallet is verified at connection; saving your game name needs no second approval; score submission and season automation are still being completed. <Link href="/app#player-profile" className="underline text-emerald-300">Create your player profile</Link>.</p>
   </section>;
 }
