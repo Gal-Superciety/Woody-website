@@ -36,6 +36,7 @@ export default function ForestProfileRegistration({ wallet, authToken }) {
         return readJson(response);
       })
       .then((result) => {
+        if (controller.signal.aborted) return;
         setProfile(result.profile);
         setServiceState(result.profile ? 'registered' : 'ready');
       })
@@ -82,7 +83,7 @@ export default function ForestProfileRegistration({ wallet, authToken }) {
       <p className="mt-1 text-sm text-white/65">Your name is linked to this wallet. Your wallet is verified when you connect; saving your name does not ask for another approval or send a transaction.</p>
 
       {serviceState === 'loading' && <p className="mt-4 text-sm text-white/60">Checking your player profile…</p>}
-      {serviceState === 'unavailable' && <p className="mt-4 rounded-lg border border-amber-300/20 bg-amber-950/40 p-3 text-sm text-amber-100">The profile database is not available yet. Game names can be registered after the competition database is configured.</p>}
+      {serviceState === 'unavailable' && <p className="mt-4 rounded-lg border border-amber-300/20 bg-amber-950/40 p-3 text-sm text-amber-100">Player profiles are temporarily unavailable. Please try again shortly.</p>}
       {serviceState === 'registered' && profile && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-950/60 p-4">
           <p><span className="block text-xs text-white/55">Your game name</span><strong className="text-lg text-emerald-200">{profile.username}</strong></p>

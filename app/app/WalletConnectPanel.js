@@ -102,6 +102,7 @@ export default function WalletConnectPanel() {
   const router = useRouter();
   const providerRef = useRef(null);
   const pendingXPortalRef = useRef(null);
+  const pendingNativeAuthRef = useRef(null);
   const balanceRequestRef = useRef(0);
   const [address, setAddress] = useState('');
   const [profileAuthToken, setProfileAuthToken] = useState('');
@@ -174,9 +175,10 @@ export default function WalletConnectPanel() {
         }
         providerRef.current = provider;
         setAddress(verifiedAddress);
-        setProfileAuthToken('');
+        const savedSession = JSON.parse(storage?.getItem(STORAGE_KEY) || 'null');
+        const restoredToken = savedSession?.address === verifiedAddress && typeof savedSession?.authToken === 'string' ? savedSession.authToken : '';
+        setProfileAuthToken(restoredToken);
         setProviderType('xPortal');
-        storage?.setItem(STORAGE_KEY, JSON.stringify({ address: verifiedAddress, providerType: 'xPortal' }));
         refreshBalances(verifiedAddress);
       } catch {
         storage?.removeItem(STORAGE_KEY);
@@ -217,7 +219,7 @@ export default function WalletConnectPanel() {
     setProviderType(nextProviderType);
     setError('');
     setXPortalUri('');
-    safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: nextProviderType }));
+    safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: nextProviderType, authToken: nextProfileAuthToken }));
     refreshBalances(nextAddress);
     router.replace('/app');
   };
@@ -229,8 +231,11 @@ export default function WalletConnectPanel() {
       if (!provider?.isConnected?.()) return;
       const connectedAddress = await provider.getAddress?.();
       if (pendingXPortalRef.current === provider && isValidAddress(connectedAddress)) {
-        pendingXPortalRef.current = null;
-        saveSession(connectedAddress, 'xPortal', provider);
+        if (!pendingNativeAuthRef.current) return;
+        try {
+          const token = finishNativeAuth(pendingNativeAuthRef.current, provider, connectedAddress);
+          saveSession(connectedAddress, 'xPortal', provider, token);
+        } catch { /* The login promise completes once wallet proof is available. */ }
       }
     };
     window.addEventListener('pageshow', resumePendingConnection);
@@ -309,7 +314,12 @@ export default function WalletConnectPanel() {
       const callbacks = {
         onClientLogin: async () => {
           const connectedAddress = await walletConnectProvider?.getAddress?.();
-          if (isValidAddress(connectedAddress)) saveSession(connectedAddress, 'xPortal', walletConnectProvider);
+          if (isValidAddress(connectedAddress)) {
+            try {
+              const token = finishNativeAuth(nativeAuth, walletConnectProvider, connectedAddress);
+              saveSession(connectedAddress, 'xPortal', walletConnectProvider, token);
+            } catch { /* Wait for the authenticated login result below. */ }
+          }
         },
         onClientLogout: () => {
           providerRef.current = null;
@@ -335,6 +345,7 @@ export default function WalletConnectPanel() {
       } : undefined;
       walletConnectProvider = new WalletConnectProvider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID, mobileOptions);
       pendingXPortalRef.current = walletConnectProvider;
+      pendingNativeAuthRef.current = nativeAuth;
       await walletConnectProvider.init?.();
       const { uri, approval } = await walletConnectProvider.connect();
       if (uri) {
@@ -356,6 +367,7 @@ export default function WalletConnectPanel() {
       failConnection(message);
     } finally {
       pendingXPortalRef.current = null;
+      pendingNativeAuthRef.current = null;
       finishConnection();
     }
   };

@@ -6,7 +6,10 @@ const MAX_TOKEN_TTL_SECONDS = 24 * 60 * 60;
 const ACCEPTED_ORIGINS = [
   'https://www.woodymvx.com',
   'https://woodymvx.com',
-  'http://localhost:3000',
+  'https://woody-website.vercel.app',
+  ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000'] : []),
+  ...[process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL]
+    .filter(Boolean).map(host => `https://${host}`),
 ];
 
 let authServer;
@@ -25,7 +28,7 @@ function getAuthServer() {
 export async function verifyForestNativeAuth(token, server = getAuthServer()) {
   if (typeof token !== 'string' || token.length > 4096 || token.split('.').length !== 3) return null;
   try {
-    const result = await getAuthServer().validate(token);
+    const result = await server.validate(token);
     return normalizeWallet(result.address) || null;
   } catch (error) {
     if (String(error?.constructor?.name || '').startsWith('NativeAuth')) return null;

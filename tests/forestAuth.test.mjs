@@ -33,6 +33,10 @@ test('native-auth login token verifies the wallet that signed the login', async 
   try {
     assert.equal(await verifyForestNativeAuth(token, server), address);
     assert.equal(await verifyForestNativeAuth(`${token.slice(0, -2)}00`, server), null);
+    const wrongOrigin = new NativeAuthServer({ apiUrl, acceptedOrigins: ['https://other.invalid'], maxExpirySeconds: 86400 });
+    assert.equal(await verifyForestNativeAuth(token, wrongOrigin), null);
+    const shortExpiry = new NativeAuthServer({ apiUrl, acceptedOrigins: [origin], maxExpirySeconds: 60 });
+    assert.equal(await verifyForestNativeAuth(token, shortExpiry), null);
   } finally {
     axios.get = originalGet;
   }
@@ -45,4 +49,16 @@ test('player names and wallet addresses are validated before profile operations'
   assert.equal(USERNAME_PATTERN.test('Forest_Runner7'), true);
   assert.equal(USERNAME_PATTERN.test('ab'), false);
   assert.equal(USERNAME_PATTERN.test('bad name'), false);
+});
+
+ test('malformed login tokens never reach the verifier', async () => {
+  const server = { validate() { throw new Error('must not be called'); } };
+  for (const token of [null, '', 'bad', 'a.b', 'a.b.c.d', 'x'.repeat(4097)]) {
+    assert.equal(await verifyForestNativeAuth(token, server), null);
+  }
+});
+
+test('upstream verifier outages are not disguised as invalid wallet proofs', async () => {
+  const server = { validate() { throw new Error('upstream unavailable'); } };
+  await assert.rejects(verifyForestNativeAuth('a.b.c', server), /upstream unavailable/);
 });
