@@ -458,7 +458,7 @@ export default function WalletConnectPanel() {
         </div>
       ) : null}
 
-      {address ? <ForestProfileRegistration wallet={address} authToken={profileAuthToken} /> : null}
+      {address ? <ForestProfileRegistration key={address} wallet={address} authToken={profileAuthToken} /> : null}
     </>
   );
 }

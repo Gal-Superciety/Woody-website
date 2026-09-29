@@ -2,16 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { forestRequest } from '../lib/forestRequest.mjs';
 
 const NAME_PATTERN = /^[A-Za-z0-9_]{3,20}$/;
 
-async function readJson(response) {
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || 'profile_service_unavailable');
-  return body;
-}
-
 function errorText(code) {
+  if (code === 'profile_request_timeout' || code === 'AbortError') return 'Saving took too long to confirm. You can retry; your existing profile will be recovered if it was saved.';
   if (code === 'username_taken') return 'That game name is already taken. Try another one.';
   if (code === 'profile_already_exists') return 'This wallet already has a game profile.';
   if (code === 'invalid_native_auth') return 'Reconnect your wallet to verify it, then create your profile.';
@@ -30,18 +26,15 @@ export default function ForestProfileRegistration({ wallet, authToken }) {
     setServiceState('loading');
     setProfile(null);
     setError('');
-    fetch(`/api/forest/profile?wallet=${encodeURIComponent(wallet)}`, { signal: controller.signal, cache: 'no-store' })
-      .then(async (response) => {
-        if (response.status === 404) return { profile: null };
-        return readJson(response);
-      })
+    forestRequest(`/api/forest/profile?wallet=${encodeURIComponent(wallet)}`, { signal: controller.signal, cache: 'no-store' })
+      .catch(cause => { if (cause.message === 'profile_not_found') return { profile: null }; throw cause; })
       .then((result) => {
         if (controller.signal.aborted) return;
         setProfile(result.profile);
         setServiceState(result.profile ? 'registered' : 'ready');
       })
       .catch((cause) => {
-        if (cause.name !== 'AbortError') setServiceState('unavailable');
+        if (!controller.signal.aborted && cause.name !== 'AbortError') setServiceState('unavailable');
       });
     return () => controller.abort();
   }, [wallet]);
@@ -61,15 +54,23 @@ export default function ForestProfileRegistration({ wallet, authToken }) {
     setIsSaving(true);
     setError('');
     try {
-      const result = await readJson(await fetch('/api/forest/profile', {
+      const result = await forestRequest('/api/forest/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ wallet, username: cleanName }),
-      }));
+      });
       setProfile(result.profile);
       setServiceState('registered');
     } catch (cause) {
-      setError(errorText(cause.message));
+      if (['profile_already_exists', 'username_taken'].includes(cause.message)) {
+        try {
+          const recovered = await forestRequest(`/api/forest/profile?wallet=${encodeURIComponent(wallet)}`, { cache: 'no-store' });
+          setProfile(recovered.profile);
+          setServiceState('registered');
+          return;
+        } catch { /* Keep the original actionable error below. */ }
+      }
+      setError(errorText(cause.name === 'AbortError' ? cause.name : cause.message));
       if (cause.message === 'invalid_native_auth') setServiceState('auth-required');
     } finally {
       setIsSaving(false);
