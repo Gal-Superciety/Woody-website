@@ -305,6 +305,26 @@ a,button,summary { -webkit-tap-highlight-color:transparent; }
 .token-board-card dl div { display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:9px;font-size:11px; }
 .token-board-card dt { color:#96a4b4; }
 .token-board-card dd { color:white;text-align:right;font-variant-numeric:tabular-nums; }
+.token-picker-wrap { position:relative;z-index:3;margin-top:18px; }
+.token-picker { position:relative;max-width:480px; }
+.token-picker>summary { display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 15px;border:1px solid var(--line);border-radius:11px;background:#0c121b;list-style:none; }
+.token-picker>summary::-webkit-details-marker,.pool-disclosure>summary::-webkit-details-marker { display:none; }
+.token-picker>summary::marker,.pool-disclosure>summary::marker { content:""; }
+.token-picker>summary strong { flex:1;overflow:hidden;color:#f1f4f7;font-size:12px;text-overflow:ellipsis;white-space:nowrap; }
+.token-picker-label { color:var(--muted);font-size:10px;white-space:nowrap; }
+.token-picker-chevron,.pool-disclosure-chevron { display:grid;width:28px;height:28px;flex:0 0 auto;place-items:center;border:1px solid var(--line);border-radius:50%;color:#ffc080;font-size:17px;transition:transform .18s ease; }
+.token-picker[open]>summary .token-picker-chevron,.pool-disclosure[open]>summary .pool-disclosure-chevron { transform:rotate(180deg); }
+.token-picker-panel { position:absolute;top:calc(100% + 8px);left:0;width:min(100%,480px);padding:12px;border:1px solid #314152;border-radius:12px;background:#0b111a;box-shadow:0 20px 50px #0009; }
+.token-picker-search { display:grid;gap:7px;color:#aebbc9;font-size:10px; }
+.token-picker-search input { width:100%;height:40px;padding:0 11px;border:1px solid var(--line);border-radius:8px;outline:none;background:#111922;color:#f1f4f7;font:inherit;font-size:12px; }
+.token-picker-search input:focus { border-color:#f6a463;box-shadow:0 0 0 2px #f6a46325; }
+.token-picker-options { display:grid;gap:4px;max-height:260px;overflow-y:auto;margin-top:8px; }
+.token-picker-options button { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:8px 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#ffc080;text-align:left; }
+.token-picker-options button:hover,.token-picker-options button[aria-pressed="true"] { border-color:#f6a46335;background:#f6a4630d; }
+.token-picker-options button>span:first-child { display:grid;gap:3px; }
+.token-picker-options button strong { font-size:11px; }
+.token-picker-options button small,.token-picker-empty { color:var(--muted);font-size:10px; }
+.token-picker-empty { padding:14px 10px; }
 .data-caption { margin-top:24px;color:var(--muted);font-size:11px;line-height:1.7; }
 .feed-message { padding:16px;margin-top:20px;border:1px solid #ffb15a30;border-radius:10px;color:#e3b98e;font-size:13px;line-height:1.7; }
 .wallet-title { font-family:var(--font-inter),sans-serif;font-size:26px;font-weight:700;letter-spacing:-.03em; }
@@ -361,6 +381,13 @@ summary { cursor:pointer;min-height:30px; }
 .pool-total { text-align:right; }
 .pool-total strong { display:block;font-size:28px;letter-spacing:-.04em;font-variant-numeric:tabular-nums; }
 .pool-total span { font-size:10px;color:var(--muted); }
+.pool-disclosure { margin-top:16px;border:1px solid var(--line);border-radius:12px;background:#0c121b; }
+.pool-disclosure>summary { display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 15px;list-style:none; }
+.pool-disclosure>summary>span:first-child { color:#e8edf3;font-size:12px;font-weight:700; }
+.pool-disclosure>summary small { flex:1;color:var(--muted);font-size:10px; }
+.pool-disclosure-content { padding:0 14px 14px; }
+.pool-disclosure-content .method-note { margin:0 0 14px;background:#101720; }
+.pool-disclosure-content .pool-grid { padding-top:2px; }
 .method-note { padding:12px 15px;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.8;color:#aebbc9;margin:16px 0; }
 .method-note p { margin-top:8px; }
 .pool-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px; }
