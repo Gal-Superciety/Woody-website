@@ -70,7 +70,21 @@ const FOREST_BIOMES = [
   { top:'#070d2a', mid:'#242d63', horizon:'#604578', ridge:['#302d61','#26234f','#1b1d42'], tree:['#201d48','#19183e','#11142f'], glow:'#b39bff', orb:'#d7d2ff' },
 ];
 
-function drawForestBackdrop(ctx, viewW, height, camera, clock, level) {
+function drawForestBackdrop(ctx, viewW, height, camera, clock, level, images = []) {
+  const artwork = images[level - 1];
+  if (artwork?.complete && artwork.naturalWidth) {
+    const tileWidth = height * artwork.naturalWidth / artwork.naturalHeight;
+    const offset = (camera * .11) % tileWidth;
+    for (let x = -offset - tileWidth; x < viewW + tileWidth; x += tileWidth) {
+      ctx.drawImage(artwork, x, 0, tileWidth, height);
+    }
+    const shade = ctx.createLinearGradient(0, height * .48, 0, height);
+    shade.addColorStop(0, 'rgba(5, 12, 24, 0)');
+    shade.addColorStop(1, 'rgba(5, 12, 24, .24)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, viewW, height);
+    return;
+  }
   const biome = FOREST_BIOMES[Math.max(0, Math.min(2, (level || 1) - 1))];
   const sky = ctx.createLinearGradient(0, 0, 0, height);
   sky.addColorStop(0, biome.top);
@@ -222,7 +236,7 @@ function createGame(level=1){
  elapsed:0,remaining:config.seconds,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
- const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
+ const canvas=useRef(null),game=useRef(null),sprite=useRef(null),backdrops=useRef([]),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
  const [soundOn,setSoundOn]=useState(true);
  const toggleSound=()=>{const next=!soundOn;setSoundOn(next);audio.current?.setEnabled(next);};
  useEffect(()=>{audio.current=createForestAudio();return()=>{audio.current?.dispose();audio.current=null;};},[]);
@@ -245,6 +259,7 @@ export default function ForestAdventure(){
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1)));const saved=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');setRecords({times:saved.times||{},bossWins:Number(saved.bossWins)||0}); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
+   backdrops.current=['/forest-adventure/biome-1.webp','/forest-adventure/biome-2.webp','/forest-adventure/biome-3.webp'].map(src=>{const art=new Image();art.src=src;return art;});
  },[]);
  useEffect(()=>{
   const key=(e,down)=>{
@@ -452,7 +467,7 @@ export default function ForestAdventure(){
     if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor((p.x-g.config.start)/(g.config.end-g.config.start)*100)),boost:p.doubleJump,ammo:p.flame,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
-   drawForestBackdrop(ctx,viewW,H,cam,clock,g?.level||1);
+   drawForestBackdrop(ctx,viewW,H,cam,clock,g?.level||1,backdrops.current);
    ctx.save();ctx.translate(-cam,0);
    // Floating spores and collectible fireflies.
    for(let x=0;x<WORLD;x+=115){
@@ -670,7 +685,7 @@ export default function ForestAdventure(){
       {mode==="playing"&&hud.notice&&<div role="status" className="pointer-events-none absolute left-1/2 top-6 z-10 w-max max-w-[90%] -translate-x-1/2 rounded-xl border-2 border-orange-300 bg-red-950/95 px-5 py-3 text-center text-sm font-black text-white shadow-xl md:text-xl">{hud.notice}</div>}
       {mode==="playing"&&hud.remaining<=20&&<div className="pointer-events-none absolute right-3 top-3 z-10 rounded-lg bg-red-700/95 px-3 py-2 text-sm font-black text-white animate-pulse">HURRY UP!</div>}
       <canvas ref={canvas} width={W} height={H} aria-label="WOODY Forest Adventure playable level" className="woody-canvas block aspect-[16/9] w-full"/>
-      {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/70 px-4 text-center">
+      {mode!=='playing'&&<div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/45 px-4 text-center">
         {mode==='won'&&game.current?.level===3&&<div className="mb-1 text-4xl drop-shadow-[0_0_20px_rgba(251,191,36,.85)] animate-bounce" aria-label="Forest Conqueror trophy">🏆✨</div>}
         <h2 className="text-xl font-black text-orange-200 md:text-4xl">{mode==='won'?(game.current?.level===3?'FOREST CONQUEROR!':'LEVEL COMPLETE!'):mode==='over'?'GAME OVER':'CHOOSE YOUR LEVEL'}</h2>
         <p className="mt-1 max-w-md text-xs text-white/80 sm:mt-3 sm:text-sm">{mode==='won'?(game.current?.level===3?'🏆 You defeated Shadow WOODY King!':'Portal reached! Next challenge unlocked.'):mode==='over'?'Try again — your unlocked levels and records are saved.':'Find crystals, collect coins and conquer the forest.'}</p>
