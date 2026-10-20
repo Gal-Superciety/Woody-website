@@ -267,7 +267,7 @@ export default function ForestAdventure(){
  const start=useCallback((level=selectedLevel)=>{audio.current?.setBoss(false);audio.current?.start(level);game.current=createGame(level);setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:LEVELS[level-1].seconds,notice:''});setMode('playing');},[selectedLevel]);
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1)));const saved=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');setRecords({times:saved.times||{},bossWins:Number(saved.bossWins)||0}); } catch {}
-   const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
+   const img=new Image();img.src='/forest-adventure/woody-hero.webp';img.onload=()=>{sprite.current=img;};
    backdrops.current=['/forest-adventure/biome-2.webp','/forest-adventure/biome-1.webp','/forest-adventure/biome-3.webp'].map(src=>{const art=new Image();art.src=src;return art;});
  },[]);
  useEffect(()=>{
@@ -650,7 +650,7 @@ export default function ForestAdventure(){
     ctx.rotate(tilt);
     const bob=p.ground&&Math.abs(p.vx)>20?Math.abs(stride)*-3:0;
     // Until the supplied bird art is packaged as an animation sprite sheet, render the site's existing mascot.
-    if(sprite.current){ctx.save();ctx.beginPath();ctx.ellipse(0,bob,24,29,0,0,Math.PI*2);ctx.clip();ctx.drawImage(sprite.current,-32,-42+bob,64,86);ctx.restore();}
+    if(sprite.current){ctx.save();ctx.beginPath();ctx.ellipse(0,bob,24,29,0,0,Math.PI*2);ctx.clip();ctx.drawImage(sprite.current,-38,-42+bob,76,84);ctx.restore();}
     else{
      ctx.fillStyle='#f9a044';ctx.beginPath();ctx.ellipse(0,bob,22,27,0,0,Math.PI*2);ctx.fill();
      ctx.fillStyle='#b0ffb7';ctx.beginPath();ctx.arc(9,-9+bob,6,0,Math.PI*2);ctx.fill();
