@@ -63,6 +63,150 @@ const movingPlatforms = [{x:1280,y:348,w:106,h:17,range:65,phase:0},{x:2740,y:33
  {x:7100,y:310,w:110,h:17,range:46,phase:4}];
 const START = {x:65,y:FLOOR-58,vx:0,vy:0,w:43,h:58,ground:false,facing:1,invuln:0,jumps:0,doubleJump:0,flame:0,shotCooldown:0,jumpHeld:false};
 const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+
+const FOREST_BIOMES = [
+  { top:'#071b35', mid:'#174e58', horizon:'#a1bd8f', ridge:['#23475b','#1e554f','#17473e'], tree:['#163b3c','#103a36','#0b302e'], glow:'#b5f2c5', orb:'#f4d28b' },
+  { top:'#211b3b', mid:'#78445b', horizon:'#efa96e', ridge:['#493a61','#514054','#3f3549'], tree:['#402f43','#33283d','#292337'], glow:'#ffc28b', orb:'#ffd69a' },
+  { top:'#070d2a', mid:'#242d63', horizon:'#604578', ridge:['#302d61','#26234f','#1b1d42'], tree:['#201d48','#19183e','#11142f'], glow:'#b39bff', orb:'#d7d2ff' },
+];
+
+function drawForestBackdrop(ctx, viewW, height, camera, clock, level) {
+  const biome = FOREST_BIOMES[Math.max(0, Math.min(2, (level || 1) - 1))];
+  const sky = ctx.createLinearGradient(0, 0, 0, height);
+  sky.addColorStop(0, biome.top);
+  sky.addColorStop(.56, biome.mid);
+  sky.addColorStop(1, biome.horizon);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, viewW, height);
+
+  const orbX = level === 3 ? viewW * .73 : viewW * .78;
+  const orbY = level === 2 ? 116 : 96;
+  const orbGlow = ctx.createRadialGradient(orbX, orbY, 3, orbX, orbY, 170);
+  orbGlow.addColorStop(0, biome.glow + '88');
+  orbGlow.addColorStop(.28, biome.glow + '30');
+  orbGlow.addColorStop(1, biome.glow + '00');
+  ctx.fillStyle = orbGlow;
+  ctx.fillRect(orbX - 175, orbY - 175, 350, 350);
+  ctx.fillStyle = biome.orb;
+  ctx.globalAlpha = .72;
+  ctx.beginPath();
+  ctx.arc(orbX, orbY, level === 3 ? 24 : 31, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  if (level === 3) {
+    for (let i = 0; i < 46; i++) {
+      const worldX = i * 181 + 37;
+      const x = ((worldX - camera * .04) % (viewW + 120) + viewW + 120) % (viewW + 120);
+      const y = 22 + ((i * 73) % 205);
+      const pulse = .35 + (Math.sin(clock * 1.7 + i) + 1) * .25;
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = i % 5 === 0 ? '#ffd7a0' : '#dce8ff';
+      ctx.beginPath();
+      ctx.arc(x, y, i % 7 === 0 ? 1.8 : 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Broad light shafts add atmosphere without adding image payload or heavy effects.
+  ctx.save();
+  ctx.globalAlpha = level === 3 ? .08 : .12;
+  for (let i = 0; i < 5; i++) {
+    const x = ((i * 291 - camera * .08) % (viewW + 260) + viewW + 260) % (viewW + 260) - 130;
+    const beam = ctx.createLinearGradient(x, 70, x + 110, 390);
+    beam.addColorStop(0, biome.glow + '00');
+    beam.addColorStop(.48, biome.glow + '30');
+    beam.addColorStop(1, biome.glow + '00');
+    ctx.fillStyle = beam;
+    ctx.beginPath();
+    ctx.moveTo(x, 65);
+    ctx.lineTo(x + 34, 65);
+    ctx.lineTo(x + 166, 420);
+    ctx.lineTo(x + 83, 420);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Curved mountain ridges create depth and move at different camera speeds.
+  const ridgeSteps = [480, 370, 285];
+  for (let layer = 0; layer < ridgeSteps.length; layer++) {
+    const step = ridgeSteps[layer];
+    const parallax = .07 + layer * .12;
+    const offset = camera * parallax;
+    const start = Math.floor(offset / step) - 2;
+    const end = Math.ceil((offset + viewW) / step) + 2;
+    const baseY = height * (.68 + layer * .055);
+    ctx.fillStyle = biome.ridge[layer];
+    ctx.beginPath();
+    ctx.moveTo(start * step - offset, height);
+    for (let i = start; i <= end; i++) {
+      const x = i * step - offset;
+      const peak = baseY - 60 - Math.sin(i * 1.73 + layer) * 46;
+      ctx.lineTo(x + step * .34, peak);
+      ctx.bezierCurveTo(x + step * .48, peak - 3, x + step * .53, baseY - 12, x + step * .72, baseY);
+    }
+    ctx.lineTo(end * step - offset + step, height);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Distant pine silhouettes; only trees intersecting the current viewport are drawn.
+  for (let layer = 0; layer < 3; layer++) {
+    const step = 170 - layer * 28;
+    const parallax = .23 + layer * .13;
+    const offset = camera * parallax;
+    const first = Math.floor(offset / step) - 2;
+    const last = Math.ceil((offset + viewW) / step) + 2;
+    ctx.fillStyle = biome.tree[layer];
+    for (let i = first; i <= last; i++) {
+      const worldX = i * step + (i * 47 % 53);
+      const x = worldX - offset;
+      const baseY = height * (.79 + layer * .035);
+      const treeH = 145 + ((i * 37 % 91) + 91) % 91 + layer * 22;
+      const trunkW = 13 + layer * 4;
+      ctx.globalAlpha = .72 + layer * .12;
+      ctx.fillRect(x - trunkW / 2, baseY - treeH * .42, trunkW, treeH * .42);
+      ctx.beginPath();
+      ctx.moveTo(x, baseY - treeH);
+      ctx.lineTo(x - 37 - layer * 9, baseY - treeH * .43);
+      ctx.lineTo(x - 18, baseY - treeH * .47);
+      ctx.lineTo(x - 50 - layer * 8, baseY - treeH * .13);
+      ctx.lineTo(x + 50 + layer * 8, baseY - treeH * .13);
+      ctx.lineTo(x + 17, baseY - treeH * .49);
+      ctx.lineTo(x + 39 + layer * 8, baseY - treeH * .45);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Low fog and a dark canopy frame the play area like a cinematic scene.
+  const fog = ctx.createLinearGradient(0, height * .66, 0, height * .86);
+  fog.addColorStop(0, biome.glow + '00');
+  fog.addColorStop(.6, biome.glow + '18');
+  fog.addColorStop(1, biome.glow + '00');
+  ctx.fillStyle = fog;
+  ctx.fillRect(0, height * .64, viewW, height * .24);
+
+  const canopy = ctx.createLinearGradient(0, 0, 0, 150);
+  canopy.addColorStop(0, biome.tree[2] + 'ee');
+  canopy.addColorStop(1, biome.tree[2] + '00');
+  ctx.fillStyle = canopy;
+  ctx.fillRect(0, 0, viewW, 150);
+  for (let i = -1; i < Math.ceil(viewW / 210) + 2; i++) {
+    const x = i * 210 - (camera * .34 % 210);
+    ctx.globalAlpha = .55;
+    ctx.fillStyle = biome.tree[2];
+    ctx.beginPath();
+    ctx.ellipse(x + 38, -12, 92, 46 + Math.sin(clock * .5 + i) * 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 150, -18, 74, 37, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
 function createGame(level=1){
  const config=LEVELS[level-1];
  return {level,config,player:{...START,x:config.start},coins:coinPositions.map(([x,y])=>({x,y,taken:false})),
@@ -308,31 +452,7 @@ export default function ForestAdventure(){
     if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor((p.x-g.config.start)/(g.config.end-g.config.start)*100)),boost:p.doubleJump,ammo:p.flame,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
-   // Layered fantasy forest: distant sky, mountains, canopies, trunks and foreground.
-   const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#071c37');sky.addColorStop(.6,'#1d6475');sky.addColorStop(1,'#b0c98c');ctx.fillStyle=sky;ctx.fillRect(0,0,viewW,H);
-   ctx.fillStyle='#c8e8ba';ctx.shadowBlur=45;ctx.shadowColor='#b6f6c0';ctx.beginPath();ctx.arc(790,105,43,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-   for(let layer=0;layer<3;layer++){
-    const step=layer===0?320:layer===1?230:155,shift=cam*(.1+layer*.17);
-    ctx.fillStyle=['#225b69','#1d595c','#184e46'][layer];
-    for(let i=-2;i<Math.ceil(viewW/step)+3;i++){
-     const x=i*step-shift%step;
-     ctx.beginPath();ctx.moveTo(x-85,380);ctx.lineTo(x+step*.4,125+layer*37);ctx.lineTo(x+step+80,380);ctx.fill();
-     if(layer>0){
-      ctx.fillStyle=layer===1?'#275e54':'#224e3f';ctx.fillRect(x+step*.37,160+layer*28,17,280);
-      ctx.fillStyle=layer===1?'#2e806b':'#276b51';
-      for(let n=0;n<3;n++){ctx.beginPath();ctx.moveTo(x-38,235+n*32);ctx.lineTo(x+step*.4,65+n*35);ctx.lineTo(x+step*.85,235+n*32);ctx.fill();}
-      ctx.fillStyle=['#225b69','#1d595c','#184e46'][layer];
-     }
-    }
-   }
-   // Distant cascading falls, shafts of light and luminous forest atmosphere.
-   for(const wx of [455,1510,2480,3500]){
-    const x=wx-cam*.3;
-    if(x<-150||x>viewW+150)continue;
-    const fall=ctx.createLinearGradient(x,140,x+110,140);fall.addColorStop(0,'rgba(91,222,230,0)');fall.addColorStop(.5,'rgba(164,250,245,.44)');fall.addColorStop(1,'rgba(91,222,230,0)');
-    ctx.fillStyle=fall;ctx.beginPath();ctx.moveTo(x,162);ctx.lineTo(x+92,162);ctx.lineTo(x+108,393);ctx.lineTo(x-10,393);ctx.fill();
-    ctx.fillStyle='rgba(190,251,233,.27)';for(let n=0;n<9;n++){ctx.beginPath();ctx.ellipse(x+Math.sin(clock*2+n)*40+45,390+n%3*4,14,3,0,0,Math.PI*2);ctx.fill();}
-   }
+   drawForestBackdrop(ctx,viewW,H,cam,clock,g?.level||1);
    ctx.save();ctx.translate(-cam,0);
    // Floating spores and collectible fireflies.
    for(let x=0;x<WORLD;x+=115){
@@ -340,14 +460,30 @@ export default function ForestAdventure(){
     ctx.fillStyle='rgba(222,252,156,.55)';ctx.beginPath();ctx.arc(sx,y,2.2,0,Math.PI*2);ctx.fill();
    }
    for(const s of solids){
-    ctx.fillStyle='#4a352f';ctx.fillRect(s.x,s.y,s.w,s.h);
-    ctx.fillStyle='#78a54b';ctx.fillRect(s.x,s.y,s.w,11);
-    ctx.fillStyle='#a4cf68';ctx.fillRect(s.x,s.y,s.w,3);
-    ctx.fillStyle='rgba(24,18,22,.23)';
-    for(let x=s.x+22;x<s.x+s.w;x+=65)ctx.fillRect(x,s.y+15,5,Math.min(45,s.h-15));
-    for(let x=s.x+12;x<s.x+s.w;x+=87){
-      ctx.fillStyle='#a9ce64';ctx.beginPath();ctx.ellipse(x,s.y-4,12,7,0,0,Math.PI*2);ctx.fill();
+    if(s.x+s.w<cam-100||s.x>cam+viewW+100)continue;
+    const soil=ctx.createLinearGradient(0,s.y,0,s.y+s.h);
+    soil.addColorStop(0,g?.level===2?'#514047':g?.level===3?'#2a2947':'#473b35');
+    soil.addColorStop(.24,g?.level===2?'#302d38':g?.level===3?'#1d203c':'#322f30');
+    soil.addColorStop(1,'#171c25');
+    ctx.fillStyle=soil;ctx.fillRect(s.x,s.y,s.w,s.h);
+    ctx.fillStyle='rgba(5,10,18,.28)';ctx.fillRect(s.x,s.y+13,s.w,Math.max(0,s.h-13));
+    const grass=ctx.createLinearGradient(0,s.y-2,0,s.y+14);
+    grass.addColorStop(0,g?.level===2?'#ffcc82':g?.level===3?'#aa8dff':'#c5f38a');
+    grass.addColorStop(.28,g?.level===2?'#9d795e':g?.level===3?'#615c98':'#76ad69');
+    grass.addColorStop(1,g?.level===2?'#493d43':g?.level===3?'#292b50':'#2d5146');
+    ctx.fillStyle=grass;ctx.fillRect(s.x,s.y,s.w,13);
+    ctx.fillStyle='rgba(240,255,205,.42)';ctx.fillRect(s.x,s.y,s.w,1.5);
+    ctx.strokeStyle='rgba(9,16,23,.38)';ctx.lineWidth=2;
+    for(let x=s.x+22;x<s.x+s.w;x+=58){
+      ctx.beginPath();ctx.moveTo(x,s.y+20);ctx.lineTo(x-8,s.y+39);ctx.lineTo(x+2,s.y+57);ctx.stroke();
+      ctx.fillStyle='rgba(212,197,151,.15)';ctx.beginPath();ctx.ellipse(x+19,s.y+27,8,2,0,0,Math.PI*2);ctx.fill();
     }
+    for(let x=s.x+9;x<s.x+s.w;x+=19){
+      const height=4+((Math.floor(x/19)*3)%7);
+      ctx.strokeStyle=g?.level===2?'rgba(255,205,133,.65)':g?.level===3?'rgba(179,158,255,.62)':'rgba(192,239,148,.7)';
+      ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,s.y+4);ctx.quadraticCurveTo(x-2,s.y-height,x+1,s.y-1);ctx.stroke();
+    }
+    ctx.fillStyle='rgba(3,8,14,.25)';ctx.fillRect(s.x,s.y+s.h-4,s.w,4);
    }
    // Suspended rune stones move vertically and require timed jumps.
    for(const platform of g?.moving||[]){
@@ -429,11 +565,27 @@ export default function ForestAdventure(){
     ctx.shadowBlur=0;ctx.strokeStyle='#fff1a8';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#855122';ctx.font='bold 13px sans-serif';ctx.fillText('W',c.x-6,c.y+5+bob);
    }
    for(const e of g?.enemies||[]){
-    if(!e.alive)continue;
-    ctx.fillStyle='#763f75';ctx.beginPath();ctx.ellipse(e.x+18,e.y+17,21,23,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#e8a8f6';ctx.beginPath();ctx.arc(e.x+12,e.y+12,5,0,Math.PI*2);ctx.arc(e.x+25,e.y+12,5,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#2d1640';ctx.fillRect(e.x+12,e.y+12,3,6);ctx.fillRect(e.x+25,e.y+12,3,6);
-    ctx.strokeStyle='#f2a4e4';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x+7,e.y+32);ctx.lineTo(e.x-4,e.y+38);ctx.moveTo(e.x+29,e.y+32);ctx.lineTo(e.x+41,e.y+38);ctx.stroke();
+    if(!e.alive||e.x+e.w<cam-70||e.x>cam+viewW+70)continue;
+    const bob=Math.sin(clock*5+e.phase)*2;
+    ctx.fillStyle='rgba(4,8,18,.42)';ctx.beginPath();ctx.ellipse(e.x+18,FLOOR-3,22,5,0,0,Math.PI*2);ctx.fill();
+    const hide=ctx.createRadialGradient(e.x+12,e.y+7+bob,2,e.x+18,e.y+19+bob,27);
+    hide.addColorStop(0,'#f2b6fd');hide.addColorStop(.38,'#a84bc0');hide.addColorStop(1,'#482454');
+    ctx.save();ctx.shadowColor='#d26bfa';ctx.shadowBlur=12;
+    ctx.fillStyle=hide;ctx.strokeStyle='#271534';ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.moveTo(e.x+2,e.y+34+bob);ctx.quadraticCurveTo(e.x-8,e.y+21+bob,e.x+2,e.y+12+bob);
+    ctx.lineTo(e.x+1,e.y+3+bob);ctx.lineTo(e.x+10,e.y+9+bob);
+    ctx.quadraticCurveTo(e.x+18,e.y-2+bob,e.x+26,e.y+9+bob);
+    ctx.lineTo(e.x+35,e.y+3+bob);ctx.lineTo(e.x+34,e.y+14+bob);
+    ctx.quadraticCurveTo(e.x+43,e.y+25+bob,e.x+34,e.y+35+bob);
+    ctx.quadraticCurveTo(e.x+18,e.y+43+bob,e.x+2,e.y+34+bob);
+    ctx.closePath();ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+    ctx.fillStyle='#f4d9ff';ctx.beginPath();ctx.ellipse(e.x+12,e.y+16+bob,5,7,0,0,Math.PI*2);ctx.ellipse(e.x+25,e.y+16+bob,5,7,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#29153b';ctx.beginPath();ctx.arc(e.x+13,e.y+17+bob,2,0,Math.PI*2);ctx.arc(e.x+26,e.y+17+bob,2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(e.x+14,e.y+15+bob,1.4,0,Math.PI*2);ctx.arc(e.x+27,e.y+15+bob,1.4,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#ffd0f6';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(e.x+14,e.y+29+bob);ctx.quadraticCurveTo(e.x+19,e.y+33+bob,e.x+24,e.y+28+bob);ctx.stroke();
+    ctx.strokeStyle='#d689e8';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x+8,e.y+35+bob);ctx.lineTo(e.x+4,e.y+39+bob);ctx.moveTo(e.x+29,e.y+35+bob);ctx.lineTo(e.x+33,e.y+39+bob);ctx.stroke();
+    ctx.restore();
    }
    // Shadow WOODY soldiers and the stronger final king are unique to level three.
    for(const soldier of g?.shadows||[]){
