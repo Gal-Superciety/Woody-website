@@ -2,8 +2,8 @@ import WalletConnectPanel from './WalletConnectPanel';
 import CommandCenter from './CommandCenter';
 
 export const metadata = {
-  title: 'WOODY Command Center',
-  description: 'Live WOODY market intelligence and MultiversX wallet dashboard.',
+  title: 'WOODY dApp Hub',
+  description: 'Explore the MultiversX ecosystem, track WOODY market activity, and view your wallet portfolio.',
 };
 
 export default function WoodyApp() {

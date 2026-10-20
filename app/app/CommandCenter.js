@@ -34,10 +34,10 @@ export default function CommandCenter({ children }) {
 
   return <>
     <header className="dashboard-heading">
-      <div><p className="section-eyebrow">WOODY / MARKET INTELLIGENCE</p><h1>Command Center<span>.</span></h1><p>Your market snapshot, wallet and pool reserves. In one place.</p></div>
+      <div><p className="section-eyebrow">WOODY / MULTIVERSX</p><h1>dApp Hub<span>.</span></h1><p>Markets, token discovery, wallet portfolio and WOODY community tools.</p></div>
       <Link href="/buy" className="cta cta-orange">Buy WOODY ↗</Link>
     </header>
-    <nav className="dashboard-tabs" aria-label="Command Center sections"><a href="#overview">Overview</a><a href="#ecosystem">Token radar</a><a href="#wallet">Wallet</a><a href="#signals">Signals</a><a href="#pools">Pool reserves</a></nav>
+    <nav className="dashboard-tabs" aria-label="dApp Hub sections"><a href="#overview">Overview</a><a href="#wallet">Wallet & portfolio</a><a href="#ecosystem">Token radar</a><a href="#signals">Signals</a><a href="#pools">Pool reserves</a></nav>
     <section id="overview" className="dashboard-section" aria-label="Market overview">
       <MonitorStatus status={status} updatedAt={data?.updatedAt} refreshing={refreshing} refresh={refresh} />
       <div className="market-overview">{metrics.map(([label,value,note]) => <article key={label}><p>{label}</p><strong>{status === 'loading' ? '…' : value}</strong><span>{note}</span></article>)}</div>

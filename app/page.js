@@ -53,7 +53,7 @@ export default function Home() {
       <section className="v2-explore v2-container" aria-label="Explore WOODY">
         <div className="v2-section-heading"><div><span className="v2-section-index">02 / DISCOVER THE ECOSYSTEM</span><h2>YOUR WORLD<span>.</span></h2></div><p>Everything WOODY, without the noise. Choose where you want to go.</p></div>
         <div className="v2-explore-grid">
-          <Link href="/app" className="v2-feature v2-feature-main"><span className="v2-feature-top">01 — INTELLIGENCE <span>↗</span></span><div className="v2-feature-graphic" aria-hidden="true"><span className="v2-graphic-ring"/><span className="v2-graphic-core">W</span><span className="v2-graphic-line"/></div><div><span className="v2-feature-tag">THE CONTROL ROOM</span><h3>COMMAND<br/>CENTER</h3><p>Market data, signals and wallet access. Your WOODY dashboard.</p><span className="v2-feature-link">EXPLORE THE DASHBOARD ↗</span></div></Link>
+          <Link href="/app" className="v2-feature v2-feature-main"><span className="v2-feature-top">01 — MULTIVERSX HUB <span>↗</span></span><div className="v2-feature-graphic" aria-hidden="true"><span className="v2-graphic-ring"/><span className="v2-graphic-core">W</span><span className="v2-graphic-line"/></div><div><span className="v2-feature-tag">THE WOODY DAPP</span><h3>DAPP<br/>HUB</h3><p>Explore tokens, connect your wallet and follow WOODY market activity.</p><span className="v2-feature-link">OPEN THE DAPP HUB ↗</span></div></Link>
           <div className="v2-feature-stack">
             <Link href="/buy" className="v2-feature v2-feature-buy"><span className="v2-feature-top">02 — TRADING <span>↗</span></span><div><span className="v2-feature-tag">GET STARTED</span><h3>BUY WOODY</h3><p>Explore the available trading routes for the official token.</p><span className="v2-feature-link">FIND TRADING OPTIONS ↗</span></div><span className="v2-feature-symbol" aria-hidden="true">↗</span></Link>
             <Link href="/forest-adventure" className="v2-feature v2-feature-game"><span className="v2-feature-top">03 — THE ARCADE <span>↗</span></span><div><span className="v2-feature-tag">SEASON 01 / PLAY FREE</span><h3>FOREST<br/>ADVENTURE</h3><p>Step into the WOODY universe. Three levels, one final boss.</p><span className="v2-feature-link">ENTER THE FOREST ↗</span></div><span className="v2-feature-symbol" aria-hidden="true">✳</span></Link>
@@ -61,7 +61,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="v2-end"><div className="v2-container v2-end-inner"><div><span className="v2-section-index">03 / ONE CONNECTED ECOSYSTEM</span><h2>GO BEYOND<br/><em>THE CHART.</em></h2><p>Explore real WOODY Monitor insights in the Command Center. Built around the official WOODY token on MultiversX.</p></div><Link href="/app" className="v2-end-button">ENTER COMMAND CENTER <span>↗</span></Link></div></section>
+      <section className="v2-end"><div className="v2-container v2-end-inner"><div><span className="v2-section-index">03 / ONE CONNECTED ECOSYSTEM</span><h2>GO BEYOND<br/><em>THE CHART.</em></h2><p>Explore MultiversX tokens, your wallet portfolio and WOODY Monitor insights in one dApp Hub.</p></div><Link href="/app" className="v2-end-button">ENTER DAPP HUB <span>↗</span></Link></div></section>
       <footer className="v2-footer v2-container"><span>© WOODY ECOSYSTEM</span><span>WOODY-5f9d9c · MULTIVERSX</span><Link href="/forest-adventure">WOODY ARCADE ↗</Link></footer>
     </main>
   );
