@@ -1,6 +1,6 @@
 export const ECOSYSTEM_TOKENS = [
   { identifier: 'MEX-455c57', symbol: 'MEX', name: ' xExchange Token' },
-  { identifier: 'RIDE-7d18e9', symbol: 'RIDE', name: 'holoride' },
+  { identifier: 'EAPES-014cd7', symbol: 'EAPES', name: 'EAPES' },
   { identifier: 'BOBER-9eb764', symbol: 'BOBER', name: 'BOBER' },
   { identifier: 'WEGLD-bd4d79', symbol: 'WEGLD', name: 'Wrapped EGLD' },
 ];

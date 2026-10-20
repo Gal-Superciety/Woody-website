@@ -6,6 +6,8 @@ test('ecosystem list uses unique MultiversX token identifiers', () => {
   assert.ok(ECOSYSTEM_TOKENS.length >= 4);
   assert.equal(new Set(ECOSYSTEM_TOKENS.map(({ identifier }) => identifier)).size, ECOSYSTEM_TOKENS.length);
   assert.ok(ECOSYSTEM_TOKENS.every(({ identifier }) => /^[A-Z0-9]+-[a-f0-9]{6}$/.test(identifier)));
+  assert.ok(ECOSYSTEM_TOKENS.some(({ identifier }) => identifier === 'EAPES-014cd7'));
+  assert.ok(!ECOSYSTEM_TOKENS.some(({ identifier }) => identifier === 'RIDE-7d18e9'));
 });
 
 test('market API values are normalized without inventing missing numbers', () => {
