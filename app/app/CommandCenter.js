@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMonitor } from '../lib/useMonitor';
 import { usd, plain, readablePools } from '../lib/monitor';
 import MonitorStatus from '../components/MonitorStatus';
+import EcosystemTokenBoard from '../components/EcosystemTokenBoard';
 
 const explanations = {
   pulse: 'A 0–100 indicator combining monitored buy/sell flows, pool visibility and recent activity. Higher means stronger positive activity; it does not predict future price.',
@@ -33,10 +34,10 @@ export default function CommandCenter({ children }) {
 
   return <>
     <header className="dashboard-heading">
-      <div><p className="section-eyebrow">WOODY / MARKET INTELLIGENCE</p><h1>Command Center<span>.</span></h1><p>Your market snapshot, wallet and pool reserves. In one place.</p></div>
+      <div><p className="section-eyebrow">WOODY / MULTIVERSX</p><h1>dApp Hub<span>.</span></h1><p>Markets, token discovery, wallet portfolio and WOODY community tools.</p></div>
       <Link href="/buy" className="cta cta-orange">Buy WOODY ↗</Link>
     </header>
-    <nav className="dashboard-tabs" aria-label="Command Center sections"><a href="#overview">Overview</a><a href="#wallet">Wallet</a><a href="#signals">Signals</a><a href="#pools">Pool reserves</a></nav>
+    <nav className="dashboard-tabs" aria-label="dApp Hub sections"><a href="#overview">Overview</a><a href="#wallet">Wallet & portfolio</a><a href="#ecosystem">Token radar</a><a href="#signals">Signals</a><a href="#pools">Pool reserves</a></nav>
     <section id="overview" className="dashboard-section" aria-label="Market overview">
       <MonitorStatus status={status} updatedAt={data?.updatedAt} refreshing={refreshing} refresh={refresh} />
       <div className="market-overview">{metrics.map(([label,value,note]) => <article key={label}><p>{label}</p><strong>{status === 'loading' ? '…' : value}</strong><span>{note}</span></article>)}</div>
@@ -44,6 +45,7 @@ export default function CommandCenter({ children }) {
       <p className="data-caption">Automatic refresh every 30 seconds. Volume covers detected trades; liquidity is an estimate, not independently verified USD TVL.{data?.volume?.reportedApiUsd != null && <> The MultiversX token API separately reports {usd(data.volume.reportedApiUsd)} in 24h volume; its coverage can differ from detected trades.</>}</p>
     </section>
     <section id="wallet" className="dashboard-section wallet-section">{children}</section>
+    <EcosystemTokenBoard />
     <section id="signals" className="dashboard-section">
       <div className="section-heading-row"><div><p className="section-eyebrow">UNDERSTAND THE ACTIVITY</p><h2>Market signals</h2></div><span className="subtle-label">Rule-based · 24h window</span></div>
       <div className="signal-grid">{signals.map(signal => <article className="signal-card" key={signal.key}>
@@ -56,13 +58,18 @@ export default function CommandCenter({ children }) {
     </section>
     <section id="pools" className="dashboard-section">
       <div className="section-heading-row"><div><p className="section-eyebrow">LIQUIDITY / ON-CHAIN RESERVES</p><h2>Across the ecosystem</h2></div><div className="pool-total"><strong>{usd(data?.liquidity?.totalUsd)}</strong><span>estimated total · {data?.liquidity?.estimatedPoolCount ?? '—'} pools</span></div></div>
-      <details className="method-note"><summary>How the liquidity estimate is calculated</summary><p>For each readable pool: 2 × WOODY reserve × the Monitor WOODY USD reference price. The total is the sum of those pool estimates. Quote-token USD prices are not independently valued. Unavailable pools are excluded.</p></details>
-      {live && pools.length ? <div className="pool-grid">{pools.map(pool => <article className="pool-card" key={pool.address || `${pool.dex}:${pool.pair}`}>
-        <div className="pool-card-head"><span>{pool.dex}</span><strong>{pool.pair}</strong></div>
-        <p className="pool-value">{usd(pool.estimatedUsd ?? (data.price.usd > 0 ? 2 * pool.woodyReserve * data.price.usd : null))}<span>estimated</span></p>
-        <dl><div><dt>WOODY</dt><dd>{plain(pool.woodyReserve)}</dd></div><div><dt>{pool.quoteSymbol}</dt><dd>{plain(pool.quoteReserve)}</dd></div></dl>
-        {pool.address && <a className="pool-explorer" href={`https://explorer.multiversx.com/accounts/${encodeURIComponent(pool.address)}`} target="_blank" rel="noopener noreferrer">View pool account ↗</a>}
-      </article>)}</div> : <p className="feed-message">{status === 'loading' ? 'Loading pool reserves…' : 'Readable pool reserves are currently unavailable.'}</p>}
+      <details className="pool-disclosure">
+        <summary><span>Show all pool reserves</span><small>{data?.liquidity?.estimatedPoolCount ?? pools.length} pools · estimated liquidity</small><span className="pool-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+        <div className="pool-disclosure-content">
+          <details className="method-note"><summary>How the liquidity estimate is calculated</summary><p>For each readable pool: 2 × WOODY reserve × the Monitor WOODY USD reference price. The total is the sum of those pool estimates. Quote-token USD prices are not independently valued. Unavailable pools are excluded.</p></details>
+          {live && pools.length ? <div className="pool-grid">{pools.map(pool => <article className="pool-card" key={pool.address || `${pool.dex}:${pool.pair}`}>
+            <div className="pool-card-head"><span>{pool.dex}</span><strong>{pool.pair}</strong></div>
+            <p className="pool-value">{usd(pool.estimatedUsd ?? (data.price.usd > 0 ? 2 * pool.woodyReserve * data.price.usd : null))}<span>estimated</span></p>
+            <dl><div><dt>WOODY</dt><dd>{plain(pool.woodyReserve)}</dd></div><div><dt>{pool.quoteSymbol}</dt><dd>{plain(pool.quoteReserve)}</dd></div></dl>
+            {pool.address && <a className="pool-explorer" href={`https://explorer.multiversx.com/accounts/${encodeURIComponent(pool.address)}`} target="_blank" rel="noopener noreferrer">View pool account ↗</a>}
+          </article>)}</div> : <p className="feed-message">{status === 'loading' ? 'Loading pool reserves…' : 'Readable pool reserves are currently unavailable.'}</p>}
+        </div>
+      </details>
       {unavailable.length > 0 && <details className="method-note"><summary>{unavailable.length} pools excluded — data unavailable</summary>{unavailable.map((pool,i) => <p key={pool.address || i}>{pool.dex} · {pool.pair}: {pool.reason || 'Unavailable'}</p>)}</details>}
     </section>
     <section className="arcade-strip"><div><p className="section-eyebrow">TAKE A BREAK / WOODY ARCADE</p><h2>Into the forest.</h2><p>Three levels. One final boss. Free to play, no wallet needed.</p></div><Link href="/forest-adventure" className="cta cta-blue">Play Forest Adventure ↗</Link></section>
