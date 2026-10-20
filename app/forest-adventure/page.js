@@ -268,7 +268,7 @@ export default function ForestAdventure(){
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1)));const saved=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');setRecords({times:saved.times||{},bossWins:Number(saved.bossWins)||0}); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
-   backdrops.current=['/forest-adventure/biome-1.webp','/forest-adventure/biome-2.webp','/forest-adventure/biome-3.webp'].map(src=>{const art=new Image();art.src=src;return art;});
+   backdrops.current=['/forest-adventure/biome-2.webp','/forest-adventure/biome-1.webp','/forest-adventure/biome-3.webp'].map(src=>{const art=new Image();art.src=src;return art;});
  },[]);
  useEffect(()=>{
   const key=(e,down)=>{
