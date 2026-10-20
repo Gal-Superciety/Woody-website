@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMonitor } from '../lib/useMonitor';
 import { usd, plain, readablePools } from '../lib/monitor';
 import MonitorStatus from '../components/MonitorStatus';
+import EcosystemTokenBoard from '../components/EcosystemTokenBoard';
 
 const explanations = {
   pulse: 'A 0–100 indicator combining monitored buy/sell flows, pool visibility and recent activity. Higher means stronger positive activity; it does not predict future price.',
@@ -36,7 +37,7 @@ export default function CommandCenter({ children }) {
       <div><p className="section-eyebrow">WOODY / MARKET INTELLIGENCE</p><h1>Command Center<span>.</span></h1><p>Your market snapshot, wallet and pool reserves. In one place.</p></div>
       <Link href="/buy" className="cta cta-orange">Buy WOODY ↗</Link>
     </header>
-    <nav className="dashboard-tabs" aria-label="Command Center sections"><a href="#overview">Overview</a><a href="#wallet">Wallet</a><a href="#signals">Signals</a><a href="#pools">Pool reserves</a></nav>
+    <nav className="dashboard-tabs" aria-label="Command Center sections"><a href="#overview">Overview</a><a href="#ecosystem">Token radar</a><a href="#wallet">Wallet</a><a href="#signals">Signals</a><a href="#pools">Pool reserves</a></nav>
     <section id="overview" className="dashboard-section" aria-label="Market overview">
       <MonitorStatus status={status} updatedAt={data?.updatedAt} refreshing={refreshing} refresh={refresh} />
       <div className="market-overview">{metrics.map(([label,value,note]) => <article key={label}><p>{label}</p><strong>{status === 'loading' ? '…' : value}</strong><span>{note}</span></article>)}</div>
@@ -44,6 +45,7 @@ export default function CommandCenter({ children }) {
       <p className="data-caption">Automatic refresh every 30 seconds. Volume covers detected trades; liquidity is an estimate, not independently verified USD TVL.{data?.volume?.reportedApiUsd != null && <> The MultiversX token API separately reports {usd(data.volume.reportedApiUsd)} in 24h volume; its coverage can differ from detected trades.</>}</p>
     </section>
     <section id="wallet" className="dashboard-section wallet-section">{children}</section>
+    <EcosystemTokenBoard />
     <section id="signals" className="dashboard-section">
       <div className="section-heading-row"><div><p className="section-eyebrow">UNDERSTAND THE ACTIVITY</p><h2>Market signals</h2></div><span className="subtle-label">Rule-based · 24h window</span></div>
       <div className="signal-grid">{signals.map(signal => <article className="signal-card" key={signal.key}>

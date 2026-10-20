@@ -293,6 +293,18 @@ a,button,summary { -webkit-tap-highlight-color:transparent; }
 .market-overview p { font-size:11px;font-weight:600;color:#b1bdca; }
 .market-overview strong { display:block;margin:9px 0;font-size:clamp(20px,2.4vw,29px);font-weight:700;letter-spacing:-.05em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere; }
 .market-overview span { display:block;font-size:10px;line-height:1.5;color:var(--muted); }
+.token-board-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:22px; }
+.token-board-card { min-width:0;padding:20px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(145deg,#151e2a,#101720); }
+.token-board-top { display:flex;align-items:flex-start;justify-content:space-between;gap:10px; }
+.token-board-top p { color:#f6a463;font-size:11px;font-weight:800;letter-spacing:.16em; }
+.token-board-top h3 { margin-top:5px;color:#b1bdca;font-size:12px; }
+.token-board-top a { display:grid;width:30px;height:30px;place-items:center;border:1px solid var(--line);border-radius:50%;color:#f6a463; }
+.token-board-price { display:block;margin:20px 0;color:white;font-size:clamp(20px,2vw,27px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere; }
+.token-board-price span { color:#8492a2;font-size:10px;font-weight:600; }
+.token-board-card dl { display:grid;gap:10px; }
+.token-board-card dl div { display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:9px;font-size:11px; }
+.token-board-card dt { color:#96a4b4; }
+.token-board-card dd { color:white;text-align:right;font-variant-numeric:tabular-nums; }
 .data-caption { margin-top:24px;color:var(--muted);font-size:11px;line-height:1.7; }
 .feed-message { padding:16px;margin-top:20px;border:1px solid #ffb15a30;border-radius:10px;color:#e3b98e;font-size:13px;line-height:1.7; }
 .wallet-title { font-family:var(--font-inter),sans-serif;font-size:26px;font-weight:700;letter-spacing:-.03em; }
@@ -338,10 +350,12 @@ summary { cursor:pointer;min-height:30px; }
 .v2-data-note { line-height:1.8; }
 .v2-hero-kicker { margin-top:30px; }
 @media(max-width:1000px) { .signal-grid,.pool-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.market-overview article{padding:0 14px}.market-overview strong{font-size:23px} }
+@media(max-width:1000px) { .token-board-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media(max-width:640px) {
   html{scroll-padding-top:20px}.site-header{position:relative}.site-nav{padding:14px 16px 8px;flex-wrap:wrap;gap:10px}.site-brand img{width:34px;height:34px}.site-links{width:100%;justify-content:space-between;gap:0}.site-links a{padding:11px 8px;font-size:11px}.site-brand span{font-size:15px}
   .dashboard-shell{width:calc(100% - 28px);padding:28px 0 40px;gap:16px}.dashboard-heading{align-items:flex-start}.dashboard-heading>.cta{font-size:11px;padding:10px;min-width:92px}.dashboard-heading>div>p:last-child{font-size:12px}.dashboard-heading h1{font-size:28px}.section-eyebrow{font-size:8px;line-height:1.6}.dashboard-tabs{gap:22px}.dashboard-tabs a{font-size:12px}
   .dashboard-section{padding:20px 16px;border-radius:14px}.market-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 0}.market-overview article{padding:0 13px}.market-overview article:nth-child(odd){padding-left:0}.market-overview article:nth-child(even){border-right:0}.market-overview strong{font-size:23px}.market-overview p{font-size:10px}.market-overview span{font-size:9px}.monitor-status{gap:9px;font-size:10px}.refresh-feed{padding:5px 7px}
+  .token-board-grid{grid-template-columns:1fr}.token-board-card{padding:17px}
   .signal-grid,.pool-grid{grid-template-columns:1fr}.signal-card,.pool-card{padding:18px}.section-heading-row{align-items:flex-start;flex-wrap:wrap;gap:10px}.section-heading-row h2{font-size:23px}.subtle-label{font-size:10px}.pool-total{text-align:left}.pool-total strong{font-size:25px}.wallet-title{font-size:24px}.wallet-section .cta{font-size:12px}.wallet-section .text-sm{font-size:12px}
   .arcade-strip{padding:24px 20px;align-items:flex-start;flex-direction:column}.v2-market{padding:48px 0}.v2-explore{padding-top:55px;padding-bottom:55px}.v2-feature-main{min-height:350px}.v2-end{padding:55px 0}.v2-hero-copy{padding-top:32px}.v2-hero-kicker{margin-top:28px}.v2-metric strong{font-size:22px}.v2-metric-foot{font-size:8px}.v2-art{min-height:290px}.v2-mascot{max-width:260px}.v2-art-coordinate{display:none}.v2-hero-bottom{font-size:8px}.v2-eyebrow{font-size:8px;letter-spacing:.08em}
 }

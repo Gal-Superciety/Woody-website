@@ -178,11 +178,11 @@ export default function WalletConnectPanel() {
     safeSessionStorage()?.removeItem(STORAGE_KEY);
   };
 
-  const failConnection = (message = FRIENDLY_FAILURE) => {
+  const failConnection = (message = FRIENDLY_FAILURE, { preserveXPortalUri = false } = {}) => {
     providerRef.current = null;
     setAddress('');
     setProviderType('');
-    setXPortalUri('');
+    if (!preserveXPortalUri) setXPortalUri('');
     setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
     setError(message);
     clearSession();
@@ -326,7 +326,9 @@ export default function WalletConnectPanel() {
     } catch (connectionError) {
       console.error('WOODY xPortal wallet connection failed', connectionError);
       const message = walletErrorMessage(connectionError);
-      failConnection(message);
+      // Keep the pairing URI available if mobile deep-linking was blocked or
+      // the user returned from xPortal without completing approval.
+      failConnection(message, { preserveXPortalUri: true });
     } finally {
       pendingXPortalRef.current = null;
       finishConnection();
@@ -381,6 +383,7 @@ export default function WalletConnectPanel() {
                   <div className="hidden rounded-xl bg-white p-3 md:block"><QRCodeSVG value={xPortalUri} size={224} level="M" marginSize={0} title="Scan to connect xPortal" /></div>
                   <p className="hidden text-xs leading-relaxed text-white/70 md:block">On your phone, open xPortal and scan this QR code. Approve the connection in xPortal.</p>
                   <a href={xPortalUri} target="_self" className="cta cta-orange w-full text-center" aria-label="Open xPortal on this device">Open xPortal on this device ↗</a>
+                  <button type="button" onClick={connectXPortal} disabled={disabled} className="w-full rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-white/80 hover:bg-white/5 disabled:opacity-50">Generate a new connection</button>
                 </div>
               ) : (
                 <button type="button" onClick={connectXPortal} disabled={disabled} className="cta cta-orange w-full disabled:cursor-not-allowed disabled:opacity-70">{isConnecting && activeProvider === 'xportal' ? 'Opening xPortal...' : 'Connect xPortal'}</button>
