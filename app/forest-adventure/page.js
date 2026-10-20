@@ -75,8 +75,17 @@ function drawForestBackdrop(ctx, viewW, height, camera, clock, level, images = [
   if (artwork?.complete && artwork.naturalWidth) {
     const tileWidth = height * artwork.naturalWidth / artwork.naturalHeight;
     const offset = (camera * .11) % tileWidth;
-    for (let x = -offset - tileWidth; x < viewW + tileWidth; x += tileWidth) {
-      ctx.drawImage(artwork, x, 0, tileWidth, height);
+    let tileIndex = -1;
+    for (let x = -offset - tileWidth; x < viewW + tileWidth; x += tileWidth, tileIndex++) {
+      ctx.save();
+      if (Math.abs(tileIndex % 2) === 1) {
+        ctx.translate(x + tileWidth, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(artwork, 0, 0, tileWidth, height);
+      } else {
+        ctx.drawImage(artwork, x, 0, tileWidth, height);
+      }
+      ctx.restore();
     }
     const shade = ctx.createLinearGradient(0, height * .48, 0, height);
     shade.addColorStop(0, 'rgba(5, 12, 24, 0)');
