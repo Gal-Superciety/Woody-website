@@ -245,7 +245,7 @@ function createGame(level=1){
  elapsed:0,remaining:config.seconds,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
- const canvas=useRef(null),game=useRef(null),sprite=useRef(null),backdrops=useRef([]),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
+ const canvas=useRef(null),game=useRef(null),sprite=useRef(null),backdrops=useRef([]),shadowDragon=useRef(null),kingDragon=useRef(null),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
  const [soundOn,setSoundOn]=useState(true);
  const toggleSound=()=>{const next=!soundOn;setSoundOn(next);audio.current?.setEnabled(next);};
  useEffect(()=>{audio.current=createForestAudio();return()=>{audio.current?.dispose();audio.current=null;};},[]);
@@ -269,6 +269,8 @@ export default function ForestAdventure(){
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1)));const saved=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');setRecords({times:saved.times||{},bossWins:Number(saved.bossWins)||0}); } catch {}
    const img=new Image();img.src='/forest-adventure/woody-hero.webp';img.onload=()=>{sprite.current=img;};
    backdrops.current=['/forest-adventure/biome-2.webp','/forest-adventure/biome-1.webp','/forest-adventure/biome-3.webp'].map(src=>{const art=new Image();art.src=src;return art;});
+   const shadowArt=new Image();shadowArt.src='/forest-adventure/shadow-dragon.webp';shadowArt.onload=()=>{shadowDragon.current=shadowArt;};
+   const kingArt=new Image();kingArt.src='/forest-adventure/shadow-dragon-king.webp';kingArt.onload=()=>{kingDragon.current=kingArt;};
  },[]);
  useEffect(()=>{
   const key=(e,down)=>{
@@ -611,24 +613,26 @@ export default function ForestAdventure(){
     ctx.strokeStyle='#d689e8';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x+8,e.y+35+bob);ctx.lineTo(e.x+4,e.y+39+bob);ctx.moveTo(e.x+29,e.y+35+bob);ctx.lineTo(e.x+33,e.y+39+bob);ctx.stroke();
     ctx.restore();
    }
-   // Shadow WOODY soldiers and the stronger final king are unique to level three.
+   // Level-three shadow dragons and the final dragon king.
    for(const soldier of g?.shadows||[]){
      if(soldier.hp<=0)continue;
-     ctx.save();ctx.shadowColor='#c364ff';ctx.shadowBlur=13;
-     ctx.fillStyle='#392257';ctx.beginPath();ctx.ellipse(soldier.x+22,FLOOR-27,22,28,0,0,Math.PI*2);ctx.fill();
-     ctx.fillStyle='#e950b5';ctx.beginPath();ctx.arc(soldier.x+13,FLOOR-38,5,0,Math.PI*2);ctx.arc(soldier.x+30,FLOOR-38,5,0,Math.PI*2);ctx.fill();
-     ctx.fillStyle='#ff7b36';ctx.beginPath();ctx.moveTo(soldier.x+12,FLOOR-53);ctx.lineTo(soldier.x+19,FLOOR-71);ctx.lineTo(soldier.x+30,FLOOR-52);ctx.fill();
+     const bob=Math.sin(clock*3+soldier.origin)*2;
+     ctx.save();ctx.shadowColor='#c364ff';ctx.shadowBlur=15;
+     if(shadowDragon.current)ctx.drawImage(shadowDragon.current,soldier.x-31,FLOOR-77+bob,105,75);
      ctx.restore();
-     ctx.fillStyle='#fb98ed';ctx.fillRect(soldier.x,FLOOR-66,43*(soldier.hp/2),4);
+     ctx.fillStyle='rgba(16,8,30,.78)';ctx.fillRect(soldier.x-2,FLOOR-88,52,5);
+     ctx.fillStyle='#fb98ed';ctx.fillRect(soldier.x-2,FLOOR-88,52*(soldier.hp/2),5);
    }
    if(g?.boss?.alive){
-     const b=g.boss;ctx.save();ctx.shadowColor='#bb39fa';ctx.shadowBlur=25;
-     ctx.fillStyle='#281238';ctx.beginPath();ctx.ellipse(b.x+33,b.y+38,33,39,0,0,Math.PI*2);ctx.fill();
-     ctx.fillStyle='#e449ec';ctx.beginPath();ctx.arc(b.x+22,b.y+25,7,0,Math.PI*2);ctx.arc(b.x+46,b.y+25,7,0,Math.PI*2);ctx.fill();
-     ctx.fillStyle='#ff8b3c';ctx.beginPath();ctx.moveTo(b.x+12,b.y+5);ctx.lineTo(b.x+25,b.y-22);ctx.lineTo(b.x+39,b.y+5);ctx.fill();
-     ctx.restore();ctx.fillStyle='#3c1648';ctx.fillRect(b.x-12,b.y-36,90,11);
-     ctx.fillStyle='#fa3d72';ctx.fillRect(b.x-12,b.y-36,90*b.hp/b.maxHp,11);
-     ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.fillText('SHADOW WOODY KING',b.x-32,b.y-43);
+     const b=g.boss,bob=Math.sin(clock*2.4)*3;
+     const dragonX=b.x+b.w/2-112,dragonY=FLOOR-158+bob;
+     ctx.save();ctx.shadowColor='#bb39fa';ctx.shadowBlur=28;
+     if(kingDragon.current)ctx.drawImage(kingDragon.current,dragonX,dragonY,230,158);
+     ctx.restore();
+     const barX=b.x+b.w/2-58,barY=FLOOR-174;
+     ctx.fillStyle='rgba(24,8,38,.9)';ctx.fillRect(barX,barY,116,13);
+     ctx.fillStyle='#fa3d72';ctx.fillRect(barX+2,barY+2,112*b.hp/b.maxHp,9);
+     ctx.save();ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('SHADOW DRAGON KING',b.x+b.w/2,FLOOR-181);ctx.restore();
    }
    for(const shot of g?.enemyShots||[]){
      ctx.save();ctx.shadowColor='#d355ff';ctx.shadowBlur=17;ctx.fillStyle='#d56dff';
@@ -650,7 +654,7 @@ export default function ForestAdventure(){
     ctx.rotate(tilt);
     const bob=p.ground&&Math.abs(p.vx)>20?Math.abs(stride)*-3:0;
     // Until the supplied bird art is packaged as an animation sprite sheet, render the site's existing mascot.
-    if(sprite.current){ctx.save();ctx.beginPath();ctx.ellipse(0,bob,24,29,0,0,Math.PI*2);ctx.clip();ctx.drawImage(sprite.current,-38,-42+bob,76,84);ctx.restore();}
+    if(sprite.current){ctx.save();ctx.beginPath();ctx.ellipse(0,bob,24,29,0,0,Math.PI*2);ctx.clip();ctx.drawImage(sprite.current,-35,-42+bob,70,82);ctx.restore();}
     else{
      ctx.fillStyle='#f9a044';ctx.beginPath();ctx.ellipse(0,bob,22,27,0,0,Math.PI*2);ctx.fill();
      ctx.fillStyle='#b0ffb7';ctx.beginPath();ctx.arc(9,-9+bob,6,0,Math.PI*2);ctx.fill();
