@@ -31,11 +31,18 @@ function errorText(code) {
 export default function ForestProfileRegistration({ wallet, providerRef, providerType }) {
   const [username, setUsername] = useState('');
   const [profile, setProfile] = useState(null);
-  const [serviceState, setServiceState] = useState('loading');
+  const [serviceState, setServiceState] = useState(wallet ? 'loading' : 'disconnected');
   const [registrationStep, setRegistrationStep] = useState('idle');
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!wallet) {
+      setProfile(null);
+      setServiceState('disconnected');
+      setError('');
+      return undefined;
+    }
+
     const controller = new AbortController();
     setServiceState('loading');
     setProfile(null);
@@ -124,6 +131,11 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
       <p className="mt-1 text-sm text-white/65">Your name will appear on the leaderboard and be linked to this wallet. You will approve a message signature; no transaction is sent.</p>
 
       {serviceState === 'loading' && <p className="mt-4 text-sm text-white/60">Checking your player profile…</p>}
+      {serviceState === 'disconnected' && (
+        <p className="mt-4 text-sm text-white/70">
+          Connect your MultiversX wallet above, then return here to choose your game name. <Link href="#wallet-connect" className="font-semibold text-emerald-200 underline underline-offset-2">Connect wallet ↑</Link>
+        </p>
+      )}
       {serviceState === 'unavailable' && <p className="mt-4 rounded-lg border border-amber-300/20 bg-amber-950/40 p-3 text-sm text-amber-100">The profile database is not available yet. Game names can be registered after the competition database is configured.</p>}
       {serviceState === 'registered' && profile && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-emerald-950/60 p-4">
