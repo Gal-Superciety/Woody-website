@@ -23,7 +23,7 @@ function errorText(code) {
   if (code === 'profile_already_exists') return 'This wallet already has a game profile.';
   if (code === 'invalid_wallet_signature') return 'The wallet signature could not be verified. Please try again.';
   if (code === 'challenge_expired_or_used') return 'The sign request expired. Please submit again.';
-  if (code === 'wallet_signature_failed') return 'xPortal did not complete the signature. Return to the site, approve the message in xPortal, and try again.';
+  if (code === 'wallet_signature_failed') return 'The wallet did not complete the signature. Return to the site, approve the message in your wallet, and try again.';
   if (code === 'profile_service_unavailable') return 'The profile service is temporarily unavailable. Please try again later.';
   return 'Player profiles are not available right now. Please try again later.';
 }
