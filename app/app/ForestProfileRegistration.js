@@ -23,6 +23,8 @@ function errorText(code) {
   if (code === 'profile_already_exists') return 'This wallet already has a game profile.';
   if (code === 'invalid_wallet_signature') return 'The wallet signature could not be verified. Please try again.';
   if (code === 'challenge_expired_or_used') return 'The sign request expired. Please submit again.';
+  if (code === 'wallet_signature_failed') return 'The wallet did not complete the signature. Return to the site, approve the message in your wallet, and try again.';
+  if (code === 'profile_service_unavailable') return 'The profile service is temporarily unavailable. Please try again later.';
   return 'Player profiles are not available right now. Please try again later.';
 }
 
@@ -30,7 +32,7 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
   const [username, setUsername] = useState('');
   const [profile, setProfile] = useState(null);
   const [serviceState, setServiceState] = useState('loading');
-  const [isSaving, setIsSaving] = useState(false);
+  const [registrationStep, setRegistrationStep] = useState('idle');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
     const shouldOpenXPortal = isMobileDevice() && /xportal/i.test(providerType || '');
     if (shouldOpenXPortal) window.open(XPORTAL_APP_LINK, '_blank');
 
-    setIsSaving(true);
+    setRegistrationStep('preparing');
     setError('');
     try {
       const challengeResult = await readJson(await fetch('/api/forest/profile/challenge', {
@@ -82,9 +84,18 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
       }));
       const { Message } = await import('@multiversx/sdk-core/out/core/message');
       const message = new Message({ data: new TextEncoder().encode(challengeResult.challenge) });
-      const signedMessage = await provider.signMessage(message);
+
+      setRegistrationStep('signing');
+      let signedMessage;
+      try {
+        signedMessage = await provider.signMessage(message);
+      } catch {
+        throw new Error('wallet_signature_failed');
+      }
       if (!signedMessage?.signature) throw new Error('invalid_wallet_signature');
+
       const signature = Array.from(signedMessage.signature, (byte) => byte.toString(16).padStart(2, '0')).join('');
+      setRegistrationStep('saving');
       const result = await readJson(await fetch('/api/forest/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,9 +106,16 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
     } catch (cause) {
       setError(errorText(cause.message));
     } finally {
-      setIsSaving(false);
+      setRegistrationStep('idle');
     }
   };
+
+  const isSaving = registrationStep !== 'idle';
+  const buttonLabel = {
+    preparing: 'Preparing sign request…',
+    signing: 'Approve message in wallet…',
+    saving: 'Saving player profile…',
+  }[registrationStep] || 'Create player profile';
 
   return (
     <section id="player-profile" className="relative z-10 mt-5 rounded-2xl border border-emerald-400/30 bg-slate-950/70 p-5 text-white">
@@ -132,14 +150,14 @@ export default function ForestProfileRegistration({ wallet, providerRef, provide
             <span id="forest-name-help" className="mt-1 block text-xs text-white/50">3–20 characters · letters, numbers and underscore · unique across players</span>
           </label>
           <button type="submit" disabled={isSaving} className="rounded-lg bg-emerald-400 px-5 py-3 font-bold text-slate-950 disabled:cursor-wait disabled:opacity-60">
-            {isSaving ? (isMobileDevice() && /xportal/i.test(providerType || '') ? 'Opening xPortal…' : 'Approve in wallet…') : 'Create player profile'}
+            {buttonLabel}
           </button>
         </form>
       )}
       {error && <p role="alert" className="mt-3 text-sm text-orange-200">{error}</p>}
-      {isSaving && isMobileDevice() && /xportal/i.test(providerType || '') && (
+      {registrationStep === 'signing' && isMobileDevice() && /xportal/i.test(providerType || '') && (
         <p className="mt-3 text-xs text-white/60">
-          If xPortal did not open, <a className="underline text-emerald-200" href={XPORTAL_APP_LINK} target="_blank" rel="noreferrer">open xPortal</a> and approve the profile message. This is not a blockchain transaction and costs no network fee.
+          Approve the profile message in xPortal. If the app did not open, <a className="underline text-emerald-200" href={XPORTAL_APP_LINK} target="_blank" rel="noreferrer">open xPortal</a>. This is not a blockchain transaction and costs no network fee.
         </p>
       )}
     </section>
