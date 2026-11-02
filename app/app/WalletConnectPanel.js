@@ -202,7 +202,7 @@ export default function WalletConnectPanel() {
     setXPortalUri('');
     safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: nextProviderType }));
     refreshBalances(nextAddress);
-    router.replace('/app');
+    router.replace(window.location.hash === '#player-profile' ? '/app#player-profile' : '/app');
   };
 
   useEffect(() => {
@@ -360,7 +360,7 @@ export default function WalletConnectPanel() {
 
   return (
     <>
-      <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div id="wallet-connect" className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="badge mb-4">MultiversX Wallet</p>
           <h2 className="wallet-title">Your wallet</h2>
@@ -418,7 +418,7 @@ export default function WalletConnectPanel() {
         </div>
       ) : null}
 
-      {address ? <ForestProfileRegistration wallet={address} providerRef={providerRef} providerType={providerType} /> : null}
+      <ForestProfileRegistration wallet={address} providerRef={providerRef} providerType={providerType} />
     </>
   );
 }
