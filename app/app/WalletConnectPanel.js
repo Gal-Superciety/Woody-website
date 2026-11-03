@@ -409,7 +409,7 @@ export default function WalletConnectPanel() {
 
   return (
     <>
-      <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <div id="wallet-connect" className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="badge mb-4">MultiversX Wallet</p>
           <h2 className="wallet-title">Your wallet</h2>
