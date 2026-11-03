@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createForestAudio } from './audio';
 import Leaderboard from './Leaderboard';
+import ForestPlayerGate from './ForestPlayerGate';
 
 const W = 960, H = 540, WORLD = 7900, FLOOR = 456;
 const LEVELS=[
@@ -80,6 +81,7 @@ function createGame(level=1){
 export default function ForestAdventure(){
  const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
  const [soundOn,setSoundOn]=useState(true);
+ const [profileReady,setProfileReady]=useState(false);
  const toggleSound=()=>{const next=!soundOn;setSoundOn(next);audio.current?.setEnabled(next);};
  useEffect(()=>{audio.current=createForestAudio();return()=>{audio.current?.dispose();audio.current=null;};},[]);
  const [fullScreen,setFullScreen]=useState(false);
@@ -494,6 +496,7 @@ export default function ForestAdventure(){
     onPointerUp={()=>press(key,false)} onPointerCancel={()=>press(key,false)}
     className="woody-control min-w-0 flex-1 select-none rounded-xl border border-emerald-300/50 bg-emerald-900/80 px-2 py-3 text-sm font-bold text-white active:bg-orange-500 touch-none sm:px-5 sm:py-4 sm:text-lg">{label}</button>
  );
+ if(!profileReady)return <ForestPlayerGate onReady={()=>setProfileReady(true)} />;
  return <main className="woody-page mx-auto max-w-6xl px-2 py-3 md:px-8 md:py-8">
    <section className="woody-intro mb-3 rounded-3xl border border-emerald-300/20 bg-gradient-to-r from-emerald-950/90 to-sky-950/80 p-6">
     <span className="text-xs font-bold uppercase tracking-[.3em] text-emerald-300">WOODY ARCADE · THREE LEVELS</span>
