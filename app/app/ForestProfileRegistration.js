@@ -14,7 +14,7 @@ function errorText(code) {
   return 'Player profiles are not available right now. Please try again later.';
 }
 
-export default function ForestProfileRegistration({ wallet, authToken }) {
+export default function ForestProfileRegistration({ wallet, authToken, onProfileCreated }) {
   const [username, setUsername] = useState('');
   const [profile, setProfile] = useState(null);
   const [serviceState, setServiceState] = useState('loading');
@@ -61,12 +61,14 @@ export default function ForestProfileRegistration({ wallet, authToken }) {
       });
       setProfile(result.profile);
       setServiceState('registered');
+      onProfileCreated?.(result.profile);
     } catch (cause) {
       if (['profile_already_exists', 'username_taken'].includes(cause.message)) {
         try {
           const recovered = await forestRequest(`/api/forest/profile?wallet=${encodeURIComponent(wallet)}`, { cache: 'no-store' });
           setProfile(recovered.profile);
           setServiceState('registered');
+          onProfileCreated?.(recovered.profile);
           return;
         } catch { /* Keep the original actionable error below. */ }
       }

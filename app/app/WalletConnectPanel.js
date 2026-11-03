@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
-import ForestProfileRegistration from './ForestProfileRegistration';
 
 const STORAGE_KEY = 'woody:multiversx-wallet-session';
 const WEB_WALLET_URL = 'https://wallet.multiversx.com';
@@ -25,6 +24,12 @@ const walletErrorMessage = (error) => {
   return message && message.length < 180 ? `WalletConnect error: ${message}` : FRIENDLY_FAILURE;
 };
 const isBrowser = () => typeof window !== 'undefined';
+const returnPath = () => {
+  if (!isBrowser()) return '/app';
+  return new URLSearchParams(window.location.search).get('returnTo') === '/forest-adventure'
+    ? '/forest-adventure'
+    : '/app';
+};
 const isMobileDevice = () => isBrowser() && (
   navigator.userAgentData?.mobile || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 );
@@ -180,6 +185,7 @@ export default function WalletConnectPanel() {
         setProfileAuthToken(restoredToken);
         setProviderType('xPortal');
         refreshBalances(verifiedAddress);
+        if (returnPath() === '/forest-adventure') router.replace('/forest-adventure');
       } catch {
         storage?.removeItem(STORAGE_KEY);
       } finally {
@@ -188,7 +194,7 @@ export default function WalletConnectPanel() {
     };
     restore();
     return () => { mounted = false; };
-  }, [refreshBalances]);
+  }, [refreshBalances, router]);
 
   const clearSession = () => {
     balanceRequestRef.current += 1;
@@ -204,7 +210,7 @@ export default function WalletConnectPanel() {
     setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
     setError(message);
     clearSession();
-    router.replace('/app');
+    router.replace(returnPath());
   };
 
   const saveSession = (nextAddress, nextProviderType, nextProvider, nextProfileAuthToken = '') => {
@@ -221,7 +227,7 @@ export default function WalletConnectPanel() {
     setXPortalUri('');
     safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: nextProviderType, authToken: nextProfileAuthToken }));
     refreshBalances(nextAddress);
-    router.replace('/app');
+    router.replace(returnPath());
   };
 
   useEffect(() => {
@@ -334,13 +340,16 @@ export default function WalletConnectPanel() {
 
       // The wallet can use this URL to return to the dApp after mobile approval.
       // Keep QR-initiated desktop sessions free of a mobile redirect.
+      const redirectPath = returnPath() === '/forest-adventure'
+        ? '/app?returnTo=%2Fforest-adventure'
+        : '/app';
       const mobileOptions = isMobileDevice() ? {
         metadata: {
           name: 'WOODY Meme',
           description: 'WOODY Command Center on MultiversX',
           url: window.location.origin,
           icons: [`${window.location.origin}/woody-logo.png`],
-          redirect: { universal: `${window.location.origin}/app` },
+          redirect: { universal: `${window.location.origin}${redirectPath}` },
         },
       } : undefined;
       walletConnectProvider = new WalletConnectProvider(callbacks, CHAIN_ID, WALLETCONNECT_RELAY_URL, WALLETCONNECT_PROJECT_ID, mobileOptions);
@@ -458,7 +467,6 @@ export default function WalletConnectPanel() {
         </div>
       ) : null}
 
-      {address ? <ForestProfileRegistration key={address} wallet={address} authToken={profileAuthToken} /> : null}
     </>
   );
 }
