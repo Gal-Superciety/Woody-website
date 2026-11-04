@@ -522,13 +522,13 @@ export default function ForestAdventure(){
     const tilt=p.ground?stride*.055:Math.max(-.25,Math.min(.28,p.vy/1300));
     ctx.rotate(tilt);
     const bob=p.ground&&Math.abs(p.vx)>20?Math.abs(stride)*-3:0;
-    // Until the supplied bird art is packaged as an animation sprite sheet, render the site's existing mascot.
-    if(sprite.current){ctx.save();ctx.beginPath();ctx.ellipse(0,bob,24,29,0,0,Math.PI*2);ctx.clip();ctx.drawImage(sprite.current,-32,-42+bob,64,86);ctx.restore();}
+    if(sprite.current){ctx.shadowColor='rgba(8,18,24,.45)';ctx.shadowBlur=8;ctx.drawImage(sprite.current,-27.5,-32+bob,55,65);ctx.shadowBlur=0;}
     else{
-     ctx.fillStyle='#f9a044';ctx.beginPath();ctx.ellipse(0,bob,22,27,0,0,Math.PI*2);ctx.fill();
-     ctx.fillStyle='#b0ffb7';ctx.beginPath();ctx.arc(9,-9+bob,6,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='rgba(15,24,30,.22)';ctx.beginPath();ctx.ellipse(0,26,20,5,0,0,Math.PI*2);ctx.fill();
+     ctx.strokeStyle='#142c44';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(-10,8+bob);ctx.lineTo(-17+stride*5,23+bob);ctx.lineTo(-23+stride*5,24+bob);ctx.moveTo(9,8+bob);ctx.lineTo(15-stride*5,23+bob);ctx.lineTo(22-stride*5,24+bob);ctx.moveTo(-16,-2+bob);ctx.lineTo(-25+stride*4,8+bob);ctx.moveTo(16,-2+bob);ctx.lineTo(25-stride*4,8+bob);ctx.stroke();
+     const body=ctx.createLinearGradient(-15,0,15,0);body.addColorStop(0,'#d86a28');body.addColorStop(.48,'#ffae4a');body.addColorStop(1,'#c65c23');ctx.fillStyle=body;ctx.beginPath();ctx.ellipse(0,3+bob,18,22,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffe0ae';ctx.beginPath();ctx.ellipse(0,9+bob,10,12,0,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle='#34517b';ctx.beginPath();ctx.ellipse(0,-12+bob,19,19,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#b0ffb7';ctx.beginPath();ctx.arc(7,-17+bob,4,0,Math.PI*2);ctx.fill();ctx.fillStyle='#182c44';ctx.beginPath();ctx.arc(8,-17+bob,1.7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ff9a39';ctx.beginPath();ctx.moveTo(12,-12+bob);ctx.lineTo(27,-7+bob);ctx.lineTo(12,-3+bob);ctx.fill();
     }
-    ctx.strokeStyle='#f5a444';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-12,17+bob);ctx.lineTo(-18+stride*5,29+bob);ctx.moveTo(8,17+bob);ctx.lineTo(13-stride*5,29+bob);ctx.stroke();
     ctx.restore();
    }
    ctx.restore();
