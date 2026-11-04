@@ -1,14 +1,9 @@
 import { normalizeWallet, USERNAME_PATTERN } from './forestAuth.mjs';
 
-export async function registerForestProfile(body, token, { verify, pool }) {
+export async function registerForestProfile(body, { pool }) {
   const wallet = normalizeWallet(body?.wallet);
   const username = typeof body?.username === 'string' ? body.username.trim() : '';
   if (!wallet || !USERNAME_PATTERN.test(username)) return { status: 400, body: { error: 'invalid_request' } };
-  if (!token) return { status: 401, body: { error: 'invalid_native_auth' } };
-  let verified;
-  try { verified = await verify(token); }
-  catch { return { status: 503, body: { error: 'profile_service_unavailable' } }; }
-  if (verified !== wallet) return { status: 401, body: { error: 'invalid_native_auth' } };
   try {
     const inserted = await pool().query(
       `INSERT INTO forest_players (wallet, username)
