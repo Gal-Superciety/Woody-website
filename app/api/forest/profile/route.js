@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getForestPool } from '../../../lib/forestDb';
 import { normalizeWallet } from '../../../lib/forestAuth.mjs';
 import { registerForestProfile } from '../../../lib/forestProfileService.mjs';
-import { verifyForestNativeAuth } from '../../../lib/forestNativeAuth.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,12 +31,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
   }
 
-  const authorization = request.headers.get('authorization') || '';
-  const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1] || '';
-  const result = await registerForestProfile(body, token, {
-    verify: verifyForestNativeAuth,
-    pool: getForestPool,
-  });
+  const result = await registerForestProfile(body, { pool: getForestPool });
   return NextResponse.json(result.body, {
     status: result.status,
     headers: { 'Cache-Control': 'no-store' },
