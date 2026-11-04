@@ -27,7 +27,12 @@ const solids = [
   {x:6550,y:FLOOR,w:530,h:120},{x:7220,y:FLOOR,w:680,h:120},
   {x:4200,y:326,w:125,h:20},{x:4790,y:342,w:120,h:20},
   {x:5400,y:335,w:120,h:20},{x:6100,y:328,w:125,h:20},
-  {x:6750,y:345,w:135,h:20},{x:7370,y:310,w:145,h:20}
+  {x:6750,y:345,w:135,h:20},{x:7370,y:310,w:145,h:20},
+  // Short, reachable stair runs teach the jump rhythm before later hazards.
+  {x:430,y:320,w:88,h:17},{x:1000,y:315,w:84,h:17},{x:2475,y:315,w:90,h:17},
+  {x:3430,y:277,w:92,h:17},{x:3570,y:235,w:92,h:17},{x:4328,y:282,w:88,h:17},
+  {x:6200,y:286,w:90,h:17},{x:6300,y:246,w:90,h:17},{x:6660,y:300,w:92,h:17},
+  {x:7500,y:270,w:90,h:17},{x:7620,y:230,w:90,h:17}
 ];
 const coinPositions = [
   [350,323],[410,323],[585,254],[642,254],[825,405],[900,310],
@@ -49,7 +54,8 @@ const logPositions = [
  {x:3650,w:65,h:32,type:'log'},{x:4310,w:43,h:44,type:'stump'},
  {x:4890,w:64,h:33,type:'log'},{x:5530,w:43,h:45,type:'stump'},
  {x:6190,w:70,h:34,type:'log'},{x:6850,w:44,h:43,type:'stump'},
- {x:7520,w:65,h:35,type:'log'}
+ {x:7520,w:65,h:35,type:'log'},
+ {x:3820,w:54,h:42,type:'stump'},{x:6365,w:58,h:40,type:'stump'}
 ];
 const crumblePositions = [
  {x:3870,y:360,w:95,h:18},{x:4480,y:370,w:98,h:18},
@@ -81,7 +87,7 @@ function createGame(level=1){
  elapsed:0,remaining:config.seconds,timeouts:0,notice:'',noticeUntil:0,ended:false,won:false,particles:[],last:0};
 }
 export default function ForestAdventure(){
- const canvas=useRef(null),game=useRef(null),sprite=useRef(null),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
+ const canvas=useRef(null),game=useRef(null),sprite=useRef(null),smallDragonSprite=useRef(null),guardianDragonSprite=useRef(null),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
  const [soundOn,setSoundOn]=useState(true);
  const [profileReady,setProfileReady]=useState(false);
  const toggleSound=()=>{const next=!soundOn;setSoundOn(next);audio.current?.setEnabled(next);};
@@ -105,6 +111,8 @@ export default function ForestAdventure(){
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1)));const saved=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');setRecords({times:saved.times||{},bossWins:Number(saved.bossWins)||0}); } catch {}
    const img=new Image();img.src='/woody-adventure-sprite.svg';img.onload=()=>{sprite.current=img;};
+   const smallDragon=new Image();smallDragon.src='/forest-dragon-small.svg';smallDragon.onload=()=>{smallDragonSprite.current=smallDragon;};
+   const guardianDragon=new Image();guardianDragon.src='/forest-dragon-guardian.svg';guardianDragon.onload=()=>{guardianDragonSprite.current=guardianDragon;};
  },[]);
  useEffect(()=>{
   const key=(e,down)=>{
@@ -367,9 +375,10 @@ export default function ForestAdventure(){
     ctx.fillStyle='rgba(222,252,156,.55)';ctx.beginPath();ctx.arc(sx,y,2.2,0,Math.PI*2);ctx.fill();
    }
    for(const s of solids){
-    ctx.fillStyle='#4a352f';ctx.fillRect(s.x,s.y,s.w,s.h);
-    ctx.fillStyle='#78a54b';ctx.fillRect(s.x,s.y,s.w,11);
-    ctx.fillStyle='#a4cf68';ctx.fillRect(s.x,s.y,s.w,3);
+    ctx.save();ctx.shadowColor='rgba(4,12,14,.38)';ctx.shadowBlur=s.y===FLOOR?7:12;ctx.shadowOffsetY=7;
+    ctx.fillStyle='#45352e';ctx.fillRect(s.x,s.y+8,s.w,Math.max(1,s.h-8));ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.fillStyle='#78a54b';ctx.fillRect(s.x,s.y,s.w,10);ctx.fillStyle='#a4cf68';ctx.fillRect(s.x,s.y,s.w,3);
+    ctx.fillStyle='rgba(19,40,33,.3)';ctx.fillRect(s.x,s.y+10,s.w,2);ctx.restore();
     ctx.fillStyle='rgba(24,18,22,.23)';
     for(let x=s.x+22;x<s.x+s.w;x+=65)ctx.fillRect(x,s.y+15,5,Math.min(45,s.h-15));
     for(let x=s.x+12;x<s.x+s.w;x+=87){
