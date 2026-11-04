@@ -414,7 +414,16 @@ export default function WalletConnectPanel() {
     safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address, providerType: providerType || 'xPortal', authToken: '' }));
     try {
       const nativeAuth = await beginNativeAuth();
-      const loginResult = await provider.login({ token: nativeAuth.initialPart });
+      pendingXPortalRef.current = provider;
+      pendingNativeAuthRef.current = nativeAuth;
+      const { uri, approval } = await provider.connect();
+      if (uri) {
+        setXPortalUri(uri);
+        if (isMobileDevice()) {
+          try { window.location.assign(uri); } catch { /* The visible xPortal link remains available. */ }
+        }
+      }
+      const loginResult = await provider.login({ approval, token: nativeAuth.initialPart });
       const nextAddress = getProviderAddress(provider, loginResult);
       const token = finishNativeAuth(nativeAuth, provider, nextAddress, loginResult);
       saveSession(nextAddress, providerType || 'xPortal', provider, token);
@@ -422,6 +431,8 @@ export default function WalletConnectPanel() {
       console.error('WOODY wallet login refresh failed', loginError);
       setError('Wallet is connected, but login verification did not finish. Approve the login request in xPortal and try again.');
     } finally {
+      if (pendingXPortalRef.current === provider) pendingXPortalRef.current = null;
+      pendingNativeAuthRef.current = null;
       finishConnection();
     }
   };
