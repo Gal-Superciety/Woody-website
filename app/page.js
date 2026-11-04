@@ -27,6 +27,7 @@ export default function Home() {
             <p className="v2-hero-description">Meet WOODY. One home for market intelligence, the community and a growing world of experiences on MultiversX.</p>
             <div className="v2-actions">
               <Link href="/app" className="v2-primary">OPEN COMMAND CENTER <span aria-hidden="true">↗</span></Link>
+              <Link href="/forest-adventure" className="v2-secondary">PLAY FOREST ADVENTURE <span aria-hidden="true">↗</span></Link>
               <Link href="/buy" className="v2-secondary">BUY WOODY <span aria-hidden="true">↗</span></Link>
             </div>
             <div className="v2-contract"><span>OFFICIAL TOKEN</span><code>WOODY-5f9d9c</code></div>
