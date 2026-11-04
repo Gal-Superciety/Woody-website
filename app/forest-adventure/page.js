@@ -231,6 +231,11 @@ export default function ForestAdventure(){
     // Small dragons weave through the air and fire at WOODY; guardians join the fight in later stages.
     for(const dragon of [...g.enemies,g.guardian].filter(Boolean)){
       if(!dragon.alive)continue;
+      dragon.facing=p.x<dragon.x?-1:1;
+      if(dragon.kind!=='small'){
+        dragon.x=dragon.origin+Math.sin(g.elapsed*.72+dragon.phase)*18;
+        dragon.y=dragon.baseY+Math.sin(g.elapsed*1.25+dragon.phase)*6;
+      }
       const volley=dragonVolley(dragon,p.x,g.elapsed);dragon.lastShot=volley.lastShot;
       g.enemyShots.push(...volley.shots);
     }
@@ -286,7 +291,7 @@ export default function ForestAdventure(){
     }
     for(const e of g.enemies){
      if(!e.alive)continue;
-     e.x=e.origin+Math.sin(g.elapsed*1.4+e.phase)*50;e.y=FLOOR-91+Math.sin(g.elapsed*2.5+e.phase)*13;
+     e.x=e.origin+Math.sin(g.elapsed*1.4+e.phase)*50;e.y=FLOOR-91+Math.sin(g.elapsed*2.5+e.phase)*13;e.facing=p.x<e.x?-1:1;
      if(overlap(p,e)&&p.invuln===0){
       if(p.vy>120&&oldBottom<=e.y+14){Object.assign(e,hitDragon(e));p.vy=-390;g.score+=e.alive?15:75;audio.current?.play('enemy');}
       else{
@@ -467,7 +472,7 @@ export default function ForestAdventure(){
    for(const e of g?.enemies||[]){
     if(!e.alive)continue;
     const x=e.x,y=e.y;ctx.save();ctx.translate(x+e.w/2,y+e.h/2+Math.sin(clock*3+e.phase)*2);ctx.scale(e.facing||1,1);ctx.rotate(Math.sin(clock*1.7+e.phase)*.035);
-    if(smallDragonSprite.current){ctx.drawImage(smallDragonSprite.current,-e.w*.66,-e.h*.65,e.w*1.32,e.h*1.32);}
+    if(smallDragonSprite.current){ctx.drawImage(smallDragonSprite.current,-e.w*.58,-e.h*.57,e.w*1.16,e.h*1.16);}
     else{
       ctx.fillStyle='#4e8e57';ctx.strokeStyle='#183d30';ctx.lineWidth=2;
       ctx.beginPath();ctx.moveTo(-11,4);ctx.quadraticCurveTo(-31,14,-39,5);ctx.lineTo(-31,1);ctx.quadraticCurveTo(-20,-6,-10,-7);ctx.fill();ctx.stroke();
