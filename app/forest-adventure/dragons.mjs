@@ -19,14 +19,14 @@ export function createDragonGuardian(level) {
   if (level === 2) {
     return {
       x: 5035, y: 274, w: 142, h: 112, origin: 5035,
-      hp: 8, maxHp: 8, lastShot: -2.4, phase: 0.8,
+      hp: 6, maxHp: 6, lastShot: -2.4, phase: 0.8,
       alive: true, facing: -1, kind: 'elder',
     };
   }
   if (level === 3) {
     return {
       x: 6865, y: 258, w: 164, h: 128, origin: 6865,
-      hp: 12, maxHp: 12, lastShot: -2.8, phase: 1.7,
+      hp: 10, maxHp: 10, lastShot: -2.8, phase: 1.7,
       alive: true, facing: -1, kind: 'ancient',
     };
   }
