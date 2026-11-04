@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createForestAudio } from './audio';
+import { createDragonGuardian, createSmallDragon, dragonVolley, hitDragon } from './dragons.mjs';
 import Leaderboard from './Leaderboard';
 import ForestPlayerGate from './ForestPlayerGate';
 
@@ -67,7 +68,8 @@ const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 function createGame(level=1){
  const config=LEVELS[level-1];
  return {level,config,player:{...START,x:config.start},coins:coinPositions.map(([x,y])=>({x,y,taken:false})),
- enemies:enemyPositions.map((x,i)=>({x,y:FLOOR-38,w:36,h:38,origin:x,phase:i*1.8,alive:true})),
+ enemies:enemyPositions.map((x,i)=>createSmallDragon(x,i*1.8,level)),
+ guardian:createDragonGuardian(level),
  keys:{left:false,right:false,jump:false,shoot:false},camera:Math.max(0,config.start-180),score:0,lives:3,checkpoint:config.start,
  powerups:powerups.map(([x,y])=>({x,y,taken:false})),moving:movingPlatforms.map(v=>({...v,currentY:v.y})),
  crumble:crumblePositions.map(v=>({...v,triggered:false,timer:0,fallen:false})),
@@ -217,25 +219,39 @@ export default function ForestAdventure(){
           }
         }
       }
-      for(const shot of g.enemyShots){
-        shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;
-        if(shot.life>0&&p.invuln===0&&overlap({x:shot.x-9,y:shot.y-9,w:18,h:18},p)){
-          shot.life=0;audio.current?.play('hit');g.lives--;p.invuln=1.5;
-          if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
-          else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;g.enemyShots=[];}
-        }
-      }
-      g.enemyShots=g.enemyShots.filter(v=>v.life>0);
     }
+    // Small dragons weave through the air and fire at WOODY; guardians join the fight in later stages.
+    for(const dragon of [...g.enemies,g.guardian].filter(Boolean)){
+      if(!dragon.alive)continue;
+      const volley=dragonVolley(dragon,p.x,g.elapsed);dragon.lastShot=volley.lastShot;
+      g.enemyShots.push(...volley.shots);
+    }
+    for(const shot of g.enemyShots){
+      shot.x+=shot.vx*dt;shot.y+=shot.vy*dt;shot.life-=dt;
+      if(shot.life>0&&p.invuln===0&&overlap({x:shot.x-9,y:shot.y-9,w:18,h:18},p)){
+        shot.life=0;audio.current?.play('hit');g.lives--;p.invuln=1.5;
+        if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
+        else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;g.enemyShots=[];}
+      }
+    }
+    g.enemyShots=g.enemyShots.filter(v=>v.life>0);
     // Fireballs hit the first living enemy they reach and cannot pass through terrain.
     for(const shot of g.shots){
       shot.x+=shot.vx*dt;shot.life-=dt;
       for(const enemy of g.enemies){
         if(enemy.alive&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},enemy)){
-          enemy.alive=false;shot.life=0;g.score+=75;audio.current?.play('enemy');
-          for(let i=0;i<14;i++)g.particles.push({x:enemy.x+18,y:enemy.y+17,vx:(Math.random()-.5)*240,vy:(Math.random()-.5)*210,life:.65});
+          Object.assign(enemy,hitDragon(enemy));shot.life=0;
+          if(!enemy.alive){g.score+=75;audio.current?.play('enemy');
+            for(let i=0;i<18;i++)g.particles.push({x:enemy.x+enemy.w/2,y:enemy.y+enemy.h/2,vx:(Math.random()-.5)*260,vy:(Math.random()-.5)*230,life:.7});
+          }else{g.score+=15;}
           break;
         }
+      }
+      if(shot.life>0&&g.guardian?.alive&&overlap({x:shot.x-8,y:shot.y-8,w:16,h:16},g.guardian)){
+        Object.assign(g.guardian,hitDragon(g.guardian));shot.life=0;g.score+=30;
+        if(!g.guardian.alive){g.score+=500;audio.current?.play('boss');g.notice=`${g.guardian.kind==='ancient'?'ANCIENT':'ELDER'} DRAGON DEFEATED!`;g.noticeUntil=g.elapsed+3.5;
+          for(let i=0;i<36;i++)g.particles.push({x:g.guardian.x+g.guardian.w/2,y:g.guardian.y+g.guardian.h/2,vx:(Math.random()-.5)*360,vy:(Math.random()-.5)*300,life:1});
+        }else{audio.current?.play('enemy');}
       }
       if(g.level===3&&shot.life>0){
         for(const soldier of g.shadows){
@@ -252,22 +268,30 @@ export default function ForestAdventure(){
       if(solids.some(v=>overlap({x:shot.x-5,y:shot.y-5,w:10,h:10},v)))shot.life=0;
     }
     g.shots=g.shots.filter(v=>v.life>0);
-    // Boss arena never becomes impossible if earlier shots were spent.
+    // Keep both dragon and king encounters beatable if WOODY spends every flame orb.
+    if(g.guardian?.alive&&p.x>g.guardian.x-90&&p.flame===0&&g.elapsed-(g.lastAmmoRefill||0)>7){
+      p.flame=5;g.lastAmmoRefill=g.elapsed;g.notice='DRAGON ARENA: +5 FIREBALLS';g.noticeUntil=g.elapsed+1.8;
+    }
     if(g.level===3&&g.boss?.alive&&p.x>7480&&p.flame===0&&g.elapsed-(g.lastAmmoRefill||0)>7){
       p.flame=5;g.lastAmmoRefill=g.elapsed;
       g.notice='BOSS ARENA: +5 FIREBALLS';g.noticeUntil=g.elapsed+1.8;
     }
     for(const e of g.enemies){
      if(!e.alive)continue;
-     e.x=e.origin+Math.sin(g.elapsed*1.4+e.phase)*50;
+     e.x=e.origin+Math.sin(g.elapsed*1.4+e.phase)*50;e.y=FLOOR-91+Math.sin(g.elapsed*2.5+e.phase)*13;
      if(overlap(p,e)&&p.invuln===0){
-      if(p.vy>120&&oldBottom<=e.y+14){e.alive=false;p.vy=-390;g.score+=75;audio.current?.play('enemy');}
+      if(p.vy>120&&oldBottom<=e.y+14){Object.assign(e,hitDragon(e));p.vy=-390;g.score+=e.alive?15:75;audio.current?.play('enemy');}
       else{
        audio.current?.play('hit');g.lives--;p.invuln=1.4;
        if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
        else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
       }
      }
+    }
+    if(g.guardian?.alive&&p.invuln===0&&overlap(p,g.guardian)){
+      audio.current?.play('hit');g.lives--;p.invuln=1.5;
+      if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
+      else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
     }
     if(g.level===3&&!g.ended&&p.invuln===0){
       for(const soldier of g.shadows){
@@ -433,10 +457,25 @@ export default function ForestAdventure(){
    }
    for(const e of g?.enemies||[]){
     if(!e.alive)continue;
-    ctx.fillStyle='#763f75';ctx.beginPath();ctx.ellipse(e.x+18,e.y+17,21,23,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#e8a8f6';ctx.beginPath();ctx.arc(e.x+12,e.y+12,5,0,Math.PI*2);ctx.arc(e.x+25,e.y+12,5,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#2d1640';ctx.fillRect(e.x+12,e.y+12,3,6);ctx.fillRect(e.x+25,e.y+12,3,6);
-    ctx.strokeStyle='#f2a4e4';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x+7,e.y+32);ctx.lineTo(e.x-4,e.y+38);ctx.moveTo(e.x+29,e.y+32);ctx.lineTo(e.x+41,e.y+38);ctx.stroke();
+    const x=e.x,y=e.y,flap=Math.sin(clock*13+e.phase)*.48;
+    ctx.save();ctx.translate(x+e.w/2,y+e.h/2);ctx.rotate(Math.sin(clock*2+e.phase)*.06);
+    ctx.fillStyle='#54794a';ctx.strokeStyle='#294b36';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(-8,-4);ctx.quadraticCurveTo(-e.w*.68,-e.h*(.78+flap),-e.w*.38,4);ctx.quadraticCurveTo(-e.w*.18,12,-8,5);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.moveTo(8,-4);ctx.quadraticCurveTo(e.w*.68,-e.h*(.78+flap),e.w*.38,4);ctx.quadraticCurveTo(e.w*.18,12,8,5);ctx.fill();ctx.stroke();
+    ctx.fillStyle=e.maxHp>1?'#8a6141':'#71a65c';ctx.beginPath();ctx.ellipse(0,2,19,13,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#df8a50';ctx.beginPath();ctx.moveTo(-12,0);ctx.lineTo(-25,-7);ctx.lineTo(-19,6);ctx.fill();ctx.beginPath();ctx.ellipse(17,-3,10,8,.2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#f4e7a5';ctx.beginPath();ctx.moveTo(21,3);ctx.lineTo(24,9);ctx.lineTo(27,3);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(18,-6,3.2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#182514';ctx.beginPath();ctx.arc(19,-6,1.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#355a37';ctx.beginPath();ctx.moveTo(-4,12);ctx.lineTo(-6,18);ctx.moveTo(8,12);ctx.lineTo(10,18);ctx.stroke();
+    if(e.hp<e.maxHp){ctx.fillStyle='rgba(20,30,20,.75)';ctx.fillRect(-17,-e.h/2-8,34,4);ctx.fillStyle='#ffcb69';ctx.fillRect(-17,-e.h/2-8,34*e.hp/e.maxHp,4);}ctx.restore();
+   }
+   if(g?.guardian?.alive){
+     const d=g.guardian,wing=Math.sin(clock*7+d.phase)*.22;ctx.save();ctx.translate(d.x+d.w/2,d.y+d.h/2);ctx.scale(d.facing,1);ctx.rotate(Math.sin(clock*1.4)*.025);
+     const ancient=d.kind==='ancient';ctx.fillStyle=ancient?'#4b315f':'#72523a';ctx.strokeStyle=ancient?'#251633':'#3e2b1d';ctx.lineWidth=4;
+     ctx.beginPath();ctx.moveTo(-18,-9);ctx.quadraticCurveTo(-d.w*.69,-d.h*(.66+wing),-d.w*.42,13);ctx.quadraticCurveTo(-d.w*.2,18,-16,13);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(18,-9);ctx.quadraticCurveTo(d.w*.68,-d.h*(.72-wing),d.w*.42,13);ctx.quadraticCurveTo(d.w*.2,18,16,13);ctx.fill();ctx.stroke();
+     ctx.fillStyle=ancient?'#79558e':'#a8784c';ctx.beginPath();ctx.ellipse(-5,8,d.w*.31,d.h*.35,-.08,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=ancient?'#65457b':'#92653f';ctx.beginPath();ctx.ellipse(d.w*.24,-d.h*.13,d.w*.2,d.h*.19,.12,0,Math.PI*2);ctx.fill();ctx.stroke();
+     ctx.fillStyle=ancient?'#e3a653':'#d9bf76';ctx.beginPath();ctx.moveTo(d.w*.16,-d.h*.26);ctx.lineTo(d.w*.12,-d.h*.53);ctx.lineTo(d.w*.25,-d.h*.31);ctx.lineTo(d.w*.34,-d.h*.51);ctx.lineTo(d.w*.35,-d.h*.22);ctx.fill();ctx.fillStyle='#fbefbd';ctx.beginPath();ctx.arc(d.w*.34,-d.h*.17,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#281c19';ctx.beginPath();ctx.arc(d.w*.35,-d.h*.17,2,0,Math.PI*2);ctx.fill();
+     ctx.fillStyle=ancient?'#e05d4d':'#e5a950';ctx.beginPath();ctx.moveTo(d.w*.38,-d.h*.03);ctx.lineTo(d.w*.53,d.h*.03);ctx.lineTo(d.w*.37,d.h*.09);ctx.fill();for(let n=0;n<4;n++){ctx.fillStyle=ancient?'#d08348':'#c39a61';ctx.beginPath();ctx.moveTo(-d.w*.24+n*12,d.h*.22);ctx.lineTo(-d.w*.27+n*12,d.h*.45);ctx.lineTo(-d.w*.17+n*12,d.h*.24);ctx.fill();}ctx.restore();
+     ctx.fillStyle='rgba(21,18,25,.82)';ctx.fillRect(d.x,d.y-22,d.w,8);ctx.fillStyle=ancient?'#d376ee':'#ffab5d';ctx.fillRect(d.x,d.y-22,d.w*d.hp/d.maxHp,8);ctx.fillStyle='#fff2df';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText(ancient?'ANCIENT DRAGON':'ELDER DRAGON',d.x+d.w/2,d.y-28);ctx.textAlign='left';
    }
    // Shadow WOODY soldiers and the stronger final king are unique to level three.
    for(const soldier of g?.shadows||[]){
@@ -458,8 +497,7 @@ export default function ForestAdventure(){
      ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.fillText('SHADOW WOODY KING',b.x-32,b.y-43);
    }
    for(const shot of g?.enemyShots||[]){
-     ctx.save();ctx.shadowColor='#d355ff';ctx.shadowBlur=17;ctx.fillStyle='#d56dff';
-     ctx.beginPath();ctx.arc(shot.x,shot.y,9,0,Math.PI*2);ctx.fill();ctx.restore();
+    const dragonFire=shot.kind==='dragon-fire';ctx.save();ctx.shadowColor=dragonFire?'#ff6325':'#d355ff';ctx.shadowBlur=17;ctx.fillStyle=dragonFire?'#ff9a32':'#d56dff';ctx.beginPath();ctx.arc(shot.x,shot.y,dragonFire?10:9,0,Math.PI*2);ctx.fill();if(dragonFire){ctx.fillStyle='#fff0a6';ctx.beginPath();ctx.arc(shot.x,shot.y,4,0,Math.PI*2);ctx.fill();}ctx.restore();
    }
    // Checkpoint and portal.
    ctx.fillStyle='#9c7949';ctx.fillRect(2160,355,7,101);ctx.fillStyle='#8df4be';ctx.beginPath();ctx.moveTo(2167,358);ctx.lineTo(2222,371);ctx.lineTo(2167,389);ctx.fill();
@@ -536,7 +574,7 @@ export default function ForestAdventure(){
       <div className="flex min-w-0 gap-1.5">{button('left','◀')}{button('right','▶')}</div>
       <div className="flex min-w-0 gap-1.5">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
     </div>
-    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot creatures from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the clock: Level 1 has 1:30, Level 2 has 1:18, and Level 3 has 1:35. Time-out costs a life and restarts the current level; enemies and water return you to the last checkpoint. Coins are in-game points only. Progress and records are stored in this browser.</p>
+    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot dragons from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the clock: Level 1 has 1:30, Level 2 has 1:18, and Level 3 has 1:35. Time-out costs a life and restarts the current level; enemies and water return you to the last checkpoint. Coins are in-game points only. Progress and records are stored in this browser.</p>
    </section>
    <Leaderboard />
    <p className="woody-footer mt-4 text-center text-xs text-white/50">WOODY Forest Adventure · Season 1. Three levels, one final boss. Your unlocked levels and personal records are saved on this device.</p>
