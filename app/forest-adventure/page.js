@@ -284,6 +284,11 @@ export default function ForestAdventure(){
       }
      }
     }
+    if(g.guardian?.alive&&p.invuln===0&&overlap(p,g.guardian)){
+      audio.current?.play('hit');g.lives--;p.invuln=1.5;
+      if(g.lives<=0){g.ended=true;setMode('over');audio.current?.play('over');audio.current?.stop();}
+      else{p.x=g.checkpoint;p.y=FLOOR-p.h;p.vy=0;p.jumps=0;p.ground=false;}
+    }
     if(g.level===3&&!g.ended&&p.invuln===0){
       for(const soldier of g.shadows){
         if(soldier.hp>0&&overlap(p,{x:soldier.x,y:FLOOR-55,w:43,h:55})){
