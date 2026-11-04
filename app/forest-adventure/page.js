@@ -267,7 +267,10 @@ export default function ForestAdventure(){
       if(solids.some(v=>overlap({x:shot.x-5,y:shot.y-5,w:10,h:10},v)))shot.life=0;
     }
     g.shots=g.shots.filter(v=>v.life>0);
-    // Boss arena never becomes impossible if earlier shots were spent.
+    // Keep both dragon and king encounters beatable if WOODY spends every flame orb.
+    if(g.guardian?.alive&&p.x>g.guardian.x-90&&p.flame===0&&g.elapsed-(g.lastAmmoRefill||0)>7){
+      p.flame=5;g.lastAmmoRefill=g.elapsed;g.notice='DRAGON ARENA: +5 FIREBALLS';g.noticeUntil=g.elapsed+1.8;
+    }
     if(g.level===3&&g.boss?.alive&&p.x>7480&&p.flame===0&&g.elapsed-(g.lastAmmoRefill||0)>7){
       p.flame=5;g.lastAmmoRefill=g.elapsed;
       g.notice='BOSS ARENA: +5 FIREBALLS';g.noticeUntil=g.elapsed+1.8;
