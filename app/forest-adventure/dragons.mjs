@@ -1,10 +1,11 @@
 export function createSmallDragon(origin, phase, level) {
   const hp = level > 1 ? 2 : 1;
+  const safeLevel = Math.max(1, Math.min(3, level));
   return {
     x: origin,
     y: 320,
-    w: 64,
-    h: 48,
+    w: 72,
+    h: 58,
     origin,
     phase,
     hp,
@@ -12,21 +13,23 @@ export function createSmallDragon(origin, phase, level) {
     alive: true,
     lastShot: -1.8,
     facing: 1,
+    kind: 'small',
+    level: safeLevel,
   };
 }
 
 export function createDragonGuardian(level) {
   if (level === 2) {
     return {
-      x: 5035, y: 274, w: 142, h: 112, origin: 5035,
-      hp: 6, maxHp: 6, lastShot: 0, phase: 0.8,
+      x: 4920, y: 252, w: 180, h: 138, origin: 4920,
+      hp: 5, maxHp: 5, lastShot: 0, phase: 0.8, baseY: 252,
       alive: true, facing: -1, kind: 'elder',
     };
   }
   if (level === 3) {
     return {
-      x: 6865, y: 258, w: 164, h: 128, origin: 6865,
-      hp: 10, maxHp: 10, lastShot: 0, phase: 1.7,
+      x: 6855, y: 235, w: 198, h: 152, origin: 6855,
+      hp: 8, maxHp: 8, lastShot: 0, phase: 1.7, baseY: 235,
       alive: true, facing: -1, kind: 'ancient',
     };
   }
@@ -42,18 +45,22 @@ export function hitDragon(dragon, damage = 1) {
 }
 
 export function dragonVolley(dragon, playerX, elapsed) {
-  if (!dragon?.alive || Math.abs(playerX - dragon.x) > 760 || elapsed - dragon.lastShot < 2.35) {
+  const isSmall = dragon?.kind === 'small';
+  const cooldown = isSmall ? [4.4, 3.7, 3.1][(dragon.level || 1) - 1] : 2.35;
+  const range = isSmall ? 620 : 760;
+  if (!dragon?.alive || Math.abs(playerX - dragon.x) > range || elapsed - dragon.lastShot < cooldown) {
     return { shots: [], lastShot: dragon?.lastShot ?? elapsed };
   }
   const dir = playerX < dragon.x ? -1 : 1;
-  const enraged = dragon.hp <= Math.ceil(dragon.maxHp / 3);
-  const spread = enraged ? [-120, -40, 40, 120] : [-52, 52];
+  const enraged = !isSmall && dragon.hp <= Math.ceil(dragon.maxHp / 3);
+  const spread = isSmall ? (dragon.level === 1 ? [0] : dragon.level === 2 ? [-28, 28] : [-48, 48]) : (enraged ? [-120, -40, 40, 120] : [-52, 52]);
+  const speed = isSmall ? [175, 205, 230][(dragon.level || 1) - 1] : enraged ? 300 : 250;
   return {
     lastShot: elapsed,
     shots: spread.map((vy, index) => ({
       x: dragon.x + (dir < 0 ? 5 : dragon.w - 5),
       y: dragon.y + dragon.h * (0.36 + index * 0.035),
-      vx: dir * (enraged ? 330 : 275),
+      vx: dir * speed,
       vy,
       life: 2.6,
       kind: 'dragon-fire',

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240">
+<defs>
+ <linearGradient id="armor" x1=".15" y1="0" x2=".9" y2="1"><stop stop-color="#a78bd0"/><stop offset=".36" stop-color="#7455a3"/><stop offset="1" stop-color="#33284f"/></linearGradient>
+ <linearGradient id="membrane" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#bd9be2"/><stop offset=".55" stop-color="#7655a8"/><stop offset="1" stop-color="#392b5c"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffe4a0"/><stop offset="1" stop-color="#bd8645"/></linearGradient>
+ <linearGradient id="belly" x1="0" y1="0" x2=".7" y2="1"><stop stop-color="#f4dca2"/><stop offset="1" stop-color="#a87951"/></linearGradient>
+ <radialGradient id="shine" cx=".25" cy=".18" r=".85"><stop stop-color="#fff" stop-opacity=".48"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+</defs>
+<g stroke="#211934" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+ <!-- long muscular tail with a pointed spade -->
+ <path fill="url(#armor)" d="M121 145Q84 143 56 166Q37 181 13 174Q30 165 27 147Q43 158 68 137L116 113Z"/>
+ <path fill="url(#gold)" d="M18 165 3 151 12 176 0 189 29 181 44 169Z"/>
+ <!-- far wing with visible bones -->
+ <path fill="url(#membrane)" d="M131 107Q98 63 61 23Q72 73 91 108Q61 72 27 69Q50 116 99 144L136 142Z"/>
+ <path fill="none" stroke="#e4d0fa" stroke-width="4" d="M133 111 65 28M125 119 31 72M114 130 64 96"/>
+ <!-- heavy hind legs -->
+ <path fill="url(#armor)" d="M132 157Q119 179 112 196L101 216Q109 227 129 222L151 194 171 170Z"/>
+ <path fill="url(#armor)" d="M213 157Q225 177 221 198L236 218Q254 222 259 209L246 184 250 162Z"/>
+ <path fill="url(#gold)" d="M101 214Q89 218 88 228Q105 235 134 227L131 218Z"/>
+ <path fill="url(#gold)" d="M236 212Q224 218 229 229Q249 236 270 225L258 215Z"/>
+ <!-- broad torso and plated belly -->
+ <path fill="url(#armor)" d="M105 99Q131 68 177 76Q231 83 249 123L239 174Q207 205 150 189Q118 179 105 146Z"/>
+ <path fill="url(#belly)" d="M147 112Q183 96 216 119L225 163Q201 186 162 173Q142 151 147 112Z"/>
+ <path fill="none" stroke="#9b7549" stroke-width="3" d="M149 125Q182 116 219 131M148 140Q185 133 222 146M153 157Q188 150 222 160M163 173Q193 166 217 172"/>
+ <!-- near wing dominates the silhouette -->
+ <path fill="url(#membrane)" d="M169 106Q200 48 255 21Q244 69 224 103Q263 72 307 78Q288 128 236 154L190 143Z"/>
+ <path fill="none" stroke="#e4d0fa" stroke-width="4" d="M174 111 253 27M187 119 304 82M204 132 270 105"/>
+ <!-- neck, thick jaw, long snout -->
+ <path fill="url(#armor)" d="M214 113Q236 90 242 68L266 63Q286 68 298 83L284 101 255 107 239 130Z"/>
+ <path fill="url(#armor)" d="M244 76Q235 48 218 35Q244 32 266 64L278 77Z"/>
+ <!-- twin swept horns -->
+ <path fill="url(#gold)" d="M271 72Q274 39 256 12Q286 26 292 70Z"/>
+ <path fill="url(#gold)" d="M287 79Q304 47 320 43Q310 70 306 87Z"/>
+ <!-- long dragon muzzle and nostrils -->
+ <path fill="#5c467d" d="M278 84Q305 72 319 87L310 105 283 106 265 97Z"/>
+ <path fill="url(#gold)" d="M313 88Q322 85 328 90L318 95 311 95Z"/>
+ <path fill="#efbf62" d="M258 81Q269 69 282 78L280 91 263 94Z"/>
+ <ellipse cx="271" cy="82" rx="2.5" ry="7" fill="#271f34" stroke="none"/>
+ <circle cx="307" cy="87" r="2.7" fill="#241b32" stroke="none"/>
+ <!-- forelegs with distinct feet and ivory claws -->
+ <path fill="url(#armor)" d="M152 166Q146 182 142 198L156 209 171 188 190 179Z"/>
+ <path fill="url(#armor)" d="M218 158Q231 175 244 187L259 183 240 157 232 145Z"/>
+ <path fill="url(#gold)" d="M140 197 134 209 148 206 155 216 163 205 173 211 177 195Z"/>
+ <path fill="url(#gold)" d="M243 184 244 199 256 190 267 198 263 182Z"/>
+ <!-- layered dorsal horns/spines -->
+ <path fill="url(#gold)" d="M121 105 132 80 146 97 161 73 176 93 194 74 205 101 224 96 230 121Z"/>
+ <path fill="#dbc6f4" d="M112 104 120 88 130 103ZM151 94 160 73 171 95ZM190 92 202 72 211 99Z"/>
+</g>
+<path fill="url(#shine)" d="M104 99Q132 68 177 76Q231 83 249 123L239 174Q207 205 150 189Q118 179 105 146Z"/>
+</svg>

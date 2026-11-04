@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 144">
+<defs>
+ <linearGradient id="scale" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b4d875"/><stop offset=".48" stop-color="#63a94f"/><stop offset="1" stop-color="#286343"/></linearGradient>
+ <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9bc96a"/><stop offset="1" stop-color="#3d8051"/></linearGradient>
+ <linearGradient id="belly" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#f8dfa1"/><stop offset="1" stop-color="#c69757"/></linearGradient>
+ <radialGradient id="shine" cx=".3" cy=".2" r=".8"><stop stop-color="#fff" stop-opacity=".48"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+</defs>
+<g stroke="#183d30" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+ <!-- long tapering tail and back wing make the silhouette unmistakably dragon-like -->
+ <path fill="url(#scale)" d="M73 83Q49 82 31 96Q21 104 10 102Q19 96 16 86Q30 94 43 79L72 63Z"/>
+ <path fill="#54a269" d="M69 63Q47 38 37 13Q61 18 78 38L100 51Q87 57 69 63Z"/>
+ <path fill="url(#wing)" d="M83 63Q64 34 41 16Q48 46 60 66Q38 45 22 43Q37 70 63 82L83 82Z"/>
+ <path fill="none" stroke="#d3e79b" stroke-width="2.5" d="M82 65 42 18M78 70 24 45M69 74 43 51"/>
+ <!-- rear legs -->
+ <path fill="url(#scale)" d="M77 91Q66 104 58 113L52 128Q57 135 70 132L84 112 97 102Z"/>
+ <path fill="url(#scale)" d="M108 89Q112 105 108 117L116 131Q127 135 133 128L128 108 130 94Z"/>
+ <path fill="#e1b874" d="M52 127Q44 129 42 135Q52 140 72 136L72 130Z"/>
+ <path fill="#e1b874" d="M116 128Q109 132 111 137Q125 141 139 134L132 128Z"/>
+ <!-- compact scaled torso, pale segmented belly -->
+ <path fill="url(#scale)" d="M64 62Q74 47 98 49Q122 51 131 70L125 101Q107 117 77 105Q63 93 64 62Z"/>
+ <path fill="url(#belly)" d="M84 68Q99 60 116 70L119 95Q105 106 86 96Q78 84 84 68Z"/>
+ <path fill="none" stroke="#b17e48" stroke-width="1.7" d="M84 77Q100 71 117 78M83 86Q101 81 118 87M87 95Q102 91 116 96"/>
+ <!-- shoulder wing nearer the viewer -->
+ <path fill="url(#wing)" d="M90 60Q109 26 136 17Q131 43 122 58Q143 43 162 47Q152 71 126 83L103 81Z"/>
+ <path fill="none" stroke="#d3e79b" stroke-width="2.5" d="M95 63 134 20M103 68 159 49M112 76 145 62"/>
+ <!-- neck and unmistakable horned dragon head, not a beak -->
+ <path fill="url(#scale)" d="M108 63Q122 52 127 40L142 38Q152 42 160 49L151 59 132 61 123 75Z"/>
+ <path fill="#83bd59" d="M128 45Q126 28 116 19Q130 18 139 37L145 45Z"/>
+ <path fill="#83bd59" d="M141 42Q146 28 160 25Q155 37 154 45Z"/>
+ <path fill="#4c8e4c" d="M144 49Q160 44 172 52L168 60 148 60 137 56Z"/>
+ <path fill="#f0c86e" d="M165 52Q170 50 175 53L170 57 164 57Z"/>
+ <!-- eye, brow, nostril -->
+ <path fill="#f3d574" d="M142 43Q147 37 153 42L152 48 145 49Z"/>
+ <ellipse cx="149" cy="44" rx="1.7" ry="4" fill="#19281e" stroke="none"/>
+ <circle cx="165" cy="52" r="1.5" fill="#203c29" stroke="none"/>
+ <!-- forelegs and claws -->
+ <path fill="url(#scale)" d="M95 91Q91 100 89 110L96 116 103 103 111 96Z"/>
+ <path fill="url(#scale)" d="M120 88Q125 98 130 104L139 104 132 91 128 83Z"/>
+ <path fill="#f5d18a" d="M89 109 85 114 93 113 96 118 100 113 103 116 105 109Z"/>
+ <path fill="#f5d18a" d="M130 102 130 108 136 104 141 108 141 101Z"/>
+ <!-- small dorsal spikes -->
+ <path fill="#e7c66d" d="M76 55 82 44 89 53 97 43 103 53 111 47 116 60Z"/>
+</g>
+<path fill="url(#shine)" d="M63 59Q79 44 100 48Q122 51 130 70L125 99Q105 113 78 103Q63 90 63 59Z"/>
+</svg>
