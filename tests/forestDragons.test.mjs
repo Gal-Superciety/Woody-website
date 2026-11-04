@@ -8,6 +8,14 @@ test('small dragons are tougher in later levels', () => {
   assert.equal(createSmallDragon(900, 0, 3).maxHp, 2);
 });
 
+test('early small dragons use one slow fireball and later flocks scale up gradually', () => {
+  const easy = createSmallDragon(900, 0, 1);
+  const medium = createSmallDragon(900, 0, 2);
+  assert.equal(dragonVolley(easy, 600, 2.5).shots.length, 0);
+  assert.equal(dragonVolley(easy, 600, 2.7).shots.length, 1);
+  assert.equal(dragonVolley(medium, 600, 2.5).shots.length, 2);
+});
+
 test('later levels add large dragons with more health than small dragons', () => {
   assert.equal(createDragonGuardian(1), null);
   assert.ok(createDragonGuardian(2).maxHp > createSmallDragon(900, 0, 2).maxHp);
