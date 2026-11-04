@@ -466,25 +466,24 @@ export default function ForestAdventure(){
    }
    for(const e of g?.enemies||[]){
     if(!e.alive)continue;
-    const x=e.x,y=e.y,flap=Math.sin(clock*13+e.phase)*.48;
-    ctx.save();ctx.translate(x+e.w/2,y+e.h/2);ctx.rotate(Math.sin(clock*2+e.phase)*.06);
-    ctx.fillStyle='#54794a';ctx.strokeStyle='#294b36';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(-8,-4);ctx.quadraticCurveTo(-e.w*.68,-e.h*(.78+flap),-e.w*.38,4);ctx.quadraticCurveTo(-e.w*.18,12,-8,5);ctx.fill();ctx.stroke();
-    ctx.beginPath();ctx.moveTo(8,-4);ctx.quadraticCurveTo(e.w*.68,-e.h*(.78+flap),e.w*.38,4);ctx.quadraticCurveTo(e.w*.18,12,8,5);ctx.fill();ctx.stroke();
-    ctx.fillStyle=e.maxHp>1?'#8a6141':'#71a65c';ctx.beginPath();ctx.ellipse(0,2,19,13,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.fillStyle='#df8a50';ctx.beginPath();ctx.moveTo(-12,0);ctx.lineTo(-25,-7);ctx.lineTo(-19,6);ctx.fill();ctx.beginPath();ctx.ellipse(17,-3,10,8,.2,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#f4e7a5';ctx.beginPath();ctx.moveTo(21,3);ctx.lineTo(24,9);ctx.lineTo(27,3);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(18,-6,3.2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#182514';ctx.beginPath();ctx.arc(19,-6,1.5,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='#355a37';ctx.beginPath();ctx.moveTo(-4,12);ctx.lineTo(-6,18);ctx.moveTo(8,12);ctx.lineTo(10,18);ctx.stroke();
-    if(e.hp<e.maxHp){ctx.fillStyle='rgba(20,30,20,.75)';ctx.fillRect(-17,-e.h/2-8,34,4);ctx.fillStyle='#ffcb69';ctx.fillRect(-17,-e.h/2-8,34*e.hp/e.maxHp,4);}ctx.restore();
+    const x=e.x,y=e.y;ctx.save();ctx.translate(x+e.w/2,y+e.h/2+Math.sin(clock*3+e.phase)*2);ctx.scale(e.facing||1,1);ctx.rotate(Math.sin(clock*1.7+e.phase)*.035);
+    if(smallDragonSprite.current){ctx.drawImage(smallDragonSprite.current,-e.w*.66,-e.h*.65,e.w*1.32,e.h*1.32);}
+    else{
+      ctx.fillStyle='#4e8e57';ctx.strokeStyle='#183d30';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-11,4);ctx.quadraticCurveTo(-31,14,-39,5);ctx.lineTo(-31,1);ctx.quadraticCurveTo(-20,-6,-10,-7);ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.moveTo(-6,-6);ctx.quadraticCurveTo(-34,-46,-43,-35);ctx.quadraticCurveTo(-31,-10,-12,5);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(4,-5);ctx.quadraticCurveTo(27,-44,42,-34);ctx.quadraticCurveTo(31,-10,12,7);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#6eaa57';ctx.beginPath();ctx.ellipse(0,3,18,12,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#e3c47a';ctx.beginPath();ctx.ellipse(5,8,10,5,0,0,Math.PI);ctx.fill();
+      ctx.fillStyle='#6eaa57';ctx.beginPath();ctx.ellipse(18,-5,10,8,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(14,-10);ctx.lineTo(12,-19);ctx.lineTo(20,-12);ctx.moveTo(22,-10);ctx.lineTo(29,-17);ctx.lineTo(27,-8);ctx.stroke();
+      ctx.fillStyle='#fff0b3';ctx.beginPath();ctx.arc(20,-7,2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#18251c';ctx.beginPath();ctx.arc(21,-7,1,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e3c47a';ctx.beginPath();ctx.moveTo(24,-1);ctx.lineTo(35,2);ctx.lineTo(25,4);ctx.fill();
+      ctx.strokeStyle='#d9bc79';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-5,11);ctx.lineTo(-8,17);ctx.moveTo(7,11);ctx.lineTo(10,17);ctx.stroke();
+    }ctx.restore();
+    if(e.hp<e.maxHp){ctx.fillStyle='rgba(20,30,20,.8)';ctx.fillRect(e.x+e.w*.2,e.y-9,e.w*.6,4);ctx.fillStyle='#ffcb69';ctx.fillRect(e.x+e.w*.2,e.y-9,e.w*.6*e.hp/e.maxHp,4);}
    }
    if(g?.guardian?.alive){
-     const d=g.guardian,wing=Math.sin(clock*7+d.phase)*.22;ctx.save();ctx.translate(d.x+d.w/2,d.y+d.h/2);ctx.scale(d.facing,1);ctx.rotate(Math.sin(clock*1.4)*.025);
-     const ancient=d.kind==='ancient';ctx.fillStyle=ancient?'#4b315f':'#72523a';ctx.strokeStyle=ancient?'#251633':'#3e2b1d';ctx.lineWidth=4;
-     ctx.beginPath();ctx.moveTo(-18,-9);ctx.quadraticCurveTo(-d.w*.69,-d.h*(.66+wing),-d.w*.42,13);ctx.quadraticCurveTo(-d.w*.2,18,-16,13);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(18,-9);ctx.quadraticCurveTo(d.w*.68,-d.h*(.72-wing),d.w*.42,13);ctx.quadraticCurveTo(d.w*.2,18,16,13);ctx.fill();ctx.stroke();
-     ctx.fillStyle=ancient?'#79558e':'#a8784c';ctx.beginPath();ctx.ellipse(-5,8,d.w*.31,d.h*.35,-.08,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=ancient?'#65457b':'#92653f';ctx.beginPath();ctx.ellipse(d.w*.24,-d.h*.13,d.w*.2,d.h*.19,.12,0,Math.PI*2);ctx.fill();ctx.stroke();
-     ctx.fillStyle=ancient?'#e3a653':'#d9bf76';ctx.beginPath();ctx.moveTo(d.w*.16,-d.h*.26);ctx.lineTo(d.w*.12,-d.h*.53);ctx.lineTo(d.w*.25,-d.h*.31);ctx.lineTo(d.w*.34,-d.h*.51);ctx.lineTo(d.w*.35,-d.h*.22);ctx.fill();ctx.fillStyle='#fbefbd';ctx.beginPath();ctx.arc(d.w*.34,-d.h*.17,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#281c19';ctx.beginPath();ctx.arc(d.w*.35,-d.h*.17,2,0,Math.PI*2);ctx.fill();
-     ctx.fillStyle=ancient?'#e05d4d':'#e5a950';ctx.beginPath();ctx.moveTo(d.w*.38,-d.h*.03);ctx.lineTo(d.w*.53,d.h*.03);ctx.lineTo(d.w*.37,d.h*.09);ctx.fill();for(let n=0;n<4;n++){ctx.fillStyle=ancient?'#d08348':'#c39a61';ctx.beginPath();ctx.moveTo(-d.w*.24+n*12,d.h*.22);ctx.lineTo(-d.w*.27+n*12,d.h*.45);ctx.lineTo(-d.w*.17+n*12,d.h*.24);ctx.fill();}ctx.restore();
-     ctx.fillStyle='rgba(21,18,25,.82)';ctx.fillRect(d.x,d.y-22,d.w,8);ctx.fillStyle=ancient?'#d376ee':'#ffab5d';ctx.fillRect(d.x,d.y-22,d.w*d.hp/d.maxHp,8);ctx.fillStyle='#fff2df';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText(ancient?'ANCIENT DRAGON':'ELDER DRAGON',d.x+d.w/2,d.y-28);ctx.textAlign='left';
+    const d=g.guardian,ancient=d.kind==='ancient';ctx.save();ctx.translate(d.x+d.w/2,d.y+d.h/2+Math.sin(clock*1.2+d.phase)*4);ctx.scale(d.facing||1,1);ctx.rotate(Math.sin(clock*1.4+d.phase)*.018);
+    if(guardianDragonSprite.current){ctx.drawImage(guardianDragonSprite.current,-d.w*.67,-d.h*.67,d.w*1.34,d.h*1.34);}
+    else{ctx.fillStyle=ancient?'#57406f':'#75563d';ctx.strokeStyle='#241b35';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-20,-5);ctx.quadraticCurveTo(-d.w*.72,-d.h*.8,-d.w*.46,14);ctx.lineTo(-12,11);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(15,-5);ctx.quadraticCurveTo(d.w*.7,-d.h*.82,d.w*.46,14);ctx.lineTo(12,11);ctx.fill();ctx.stroke();ctx.beginPath();ctx.ellipse(-4,12,d.w*.3,d.h*.36,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.ellipse(d.w*.25,-12,d.w*.19,d.h*.18,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#e7c16d';ctx.beginPath();ctx.moveTo(d.w*.25,-d.h*.23);ctx.lineTo(d.w*.18,-d.h*.52);ctx.lineTo(d.w*.34,-d.h*.2);ctx.fill();ctx.fillStyle='#fff0b3';ctx.beginPath();ctx.arc(d.w*.31,-16,5,0,Math.PI*2);ctx.fill();}
+    ctx.restore();ctx.fillStyle='rgba(21,18,25,.86)';ctx.fillRect(d.x,d.y-25,d.w,9);ctx.fillStyle=ancient?'#c27ce1':'#e5a85e';ctx.fillRect(d.x,d.y-25,d.w*d.hp/d.maxHp,9);ctx.fillStyle='#fff2df';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText(ancient?'ANCIENT DRAGON':'ELDER DRAGON',d.x+d.w/2,d.y-31);ctx.textAlign='left';
    }
    // Shadow WOODY soldiers and the stronger final king are unique to level three.
    for(const soldier of g?.shadows||[]){
