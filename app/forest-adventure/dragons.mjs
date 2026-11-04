@@ -4,8 +4,8 @@ export function createSmallDragon(origin, phase, level) {
   return {
     x: origin,
     y: 320,
-    w: 64,
-    h: 48,
+    w: 72,
+    h: 58,
     origin,
     phase,
     hp,
@@ -21,15 +21,15 @@ export function createSmallDragon(origin, phase, level) {
 export function createDragonGuardian(level) {
   if (level === 2) {
     return {
-      x: 5035, y: 274, w: 142, h: 112, origin: 5035,
-      hp: 5, maxHp: 5, lastShot: 0, phase: 0.8, baseY: 274,
+      x: 4920, y: 252, w: 180, h: 138, origin: 4920,
+      hp: 5, maxHp: 5, lastShot: 0, phase: 0.8, baseY: 252,
       alive: true, facing: -1, kind: 'elder',
     };
   }
   if (level === 3) {
     return {
-      x: 6865, y: 258, w: 164, h: 128, origin: 6865,
-      hp: 8, maxHp: 8, lastShot: 0, phase: 1.7, baseY: 258,
+      x: 6855, y: 235, w: 198, h: 152, origin: 6855,
+      hp: 8, maxHp: 8, lastShot: 0, phase: 1.7, baseY: 235,
       alive: true, facing: -1, kind: 'ancient',
     };
   }
