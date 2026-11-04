@@ -3,7 +3,7 @@
 ## Current foundation
 - Forest Adventure remains playable, unchanged in scoring or game physics.
 - Weekly and all-time leaderboard UI and read API, backed by the same PostgreSQL database as player profiles.
-- Player profile form in the Command Center: a unique 3–20 character game name is bound to a MultiversX wallet after the Native Auth proof from wallet connection is verified by the server. Saving a name does not request a second signature.
+- Forest Adventure profile form: a unique 3–20 character game name is stored alongside the wallet address supplied by the connected wallet session. Saving a name does not request a signature or transaction. The server cannot cryptographically verify wallet ownership without a signed proof, so this association is not suitable for prize eligibility.
 - PostgreSQL schema for players, seasons, and individually verified runs. The old challenge table is retained for migration compatibility; its endpoint is removed.
 - Leaderboard deliberately counts ONLY `verification_status='verified'` scores.
 - Profile registration does not submit or verify game scores. The game score remains client-controlled until authoritative run verification is implemented.
