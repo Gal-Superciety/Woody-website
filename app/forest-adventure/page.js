@@ -219,6 +219,7 @@ export default function ForestAdventure(){
           }
         }
       }
+    }
     // Small dragons weave through the air and fire at WOODY; guardians join the fight in later stages.
     for(const dragon of [...g.enemies,g.guardian].filter(Boolean)){
       if(!dragon.alive)continue;
