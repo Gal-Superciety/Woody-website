@@ -10,11 +10,10 @@ function errorText(code) {
   if (code === 'profile_request_timeout' || code === 'AbortError') return 'Saving took too long to confirm. You can retry; your existing profile will be recovered if it was saved.';
   if (code === 'username_taken') return 'That game name is already taken. Try another one.';
   if (code === 'profile_already_exists') return 'This wallet already has a game profile.';
-  if (code === 'invalid_native_auth') return 'Reconnect your wallet to verify it, then create your profile.';
   return 'Player profiles are not available right now. Please try again later.';
 }
 
-export default function ForestProfileRegistration({ wallet, authToken, onProfileCreated, onAuthInvalid }) {
+export default function ForestProfileRegistration({ wallet, onProfileCreated }) {
   const [username, setUsername] = useState('');
   const [profile, setProfile] = useState(null);
   const [serviceState, setServiceState] = useState('loading');
@@ -47,17 +46,12 @@ export default function ForestProfileRegistration({ wallet, authToken, onProfile
       setError('Choose a game name with 3–20 letters, numbers or underscores.');
       return;
     }
-    if (!authToken) {
-      setError('Disconnect and reconnect your wallet to verify it before creating your profile.');
-      return;
-    }
-
     setIsSaving(true);
     setError('');
     try {
       const result = await forestRequest('/api/forest/profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ wallet, username: cleanName }),
       });
       setProfile(result.profile);
@@ -74,10 +68,6 @@ export default function ForestProfileRegistration({ wallet, authToken, onProfile
         } catch { /* Keep the original actionable error below. */ }
       }
       setError(errorText(cause.name === 'AbortError' ? cause.name : cause.message));
-      if (cause.message === 'invalid_native_auth') {
-        setServiceState('auth-required');
-        onAuthInvalid?.();
-      }
     } finally {
       setIsSaving(false);
     }
@@ -87,7 +77,7 @@ export default function ForestProfileRegistration({ wallet, authToken, onProfile
     <section id="player-profile" className="relative z-10 mt-5 rounded-2xl border border-emerald-400/30 bg-slate-950/70 p-5 text-white">
       <p className="text-xs font-bold uppercase tracking-[.2em] text-emerald-300">Forest Adventure · Player profile</p>
       <h3 className="mt-2 text-xl font-black">Choose your game name</h3>
-      <p className="mt-1 text-sm text-white/65">Your name is linked to this wallet. Your wallet is verified when you connect; saving your name does not ask for another approval or send a transaction.</p>
+      <p className="mt-1 text-sm text-white/65">Your name is linked to this wallet. Your connected wallet address is saved with this name. Saving does not ask you to sign a message or send a transaction.</p>
 
       {serviceState === 'loading' && <p className="mt-4 text-sm text-white/60">Checking your player profile…</p>}
       {serviceState === 'unavailable' && <div role="alert" className="mt-4 rounded-lg border border-amber-300/20 bg-amber-950/40 p-3 text-sm text-amber-100">Player profiles are temporarily unavailable. <button type="button" onClick={() => setLoadAttempt(attempt => attempt + 1)} className="ml-1 underline underline-offset-2">Try again</button></div>}
@@ -97,10 +87,7 @@ export default function ForestProfileRegistration({ wallet, authToken, onProfile
           <Link href="/forest-adventure#leaderboard" className="rounded-lg bg-emerald-400 px-4 py-2 font-bold text-slate-950">View leaderboard ↗</Link>
         </div>
       )}
-      {(serviceState === 'auth-required' || (serviceState === 'ready' && !authToken)) && (
-        <p className="mt-4 rounded-lg border border-amber-300/20 bg-amber-950/40 p-3 text-sm text-amber-100">Reconnect your wallet to verify it before creating a player profile. Your saved player name will still appear automatically when this same wallet returns.</p>
-      )}
-      {serviceState === 'ready' && authToken && (
+      {serviceState === 'ready' && (
         <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={register}>
           <label className="flex-1">
             <span className="sr-only">Game name</span>
