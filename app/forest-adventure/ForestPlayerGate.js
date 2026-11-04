@@ -11,6 +11,7 @@ export default function ForestPlayerGate({ onReady }) {
   const [session, setSession] = useState(null);
   const [state, setState] = useState('checking-session');
   const [profile, setProfile] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -42,7 +43,7 @@ export default function ForestPlayerGate({ onReady }) {
       });
 
     return () => { active = false; };
-  }, []);
+  }, [retryCount]);
 
   const enterForest = () => onReady(profile);
 
@@ -73,7 +74,12 @@ export default function ForestPlayerGate({ onReady }) {
         ) : null}
 
         {state === 'create' && session ? (
-          <ForestProfileRegistration wallet={session.address} authToken={session.authToken} onProfileCreated={(nextProfile) => {
+          <ForestProfileRegistration wallet={session.address} authToken={session.authToken} onAuthInvalid={() => {
+            const nextSession = { ...session, authToken: '' };
+            try { window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(nextSession)); } catch {}
+            setSession(nextSession);
+            setState('reconnect');
+          }} onProfileCreated={(nextProfile) => {
             setProfile(nextProfile);
             setState('registered');
           }} />
@@ -88,7 +94,7 @@ export default function ForestPlayerGate({ onReady }) {
         ) : null}
 
         {state === 'unavailable' ? (
-          <div role="alert" className="mt-6 rounded-xl border border-amber-300/20 bg-amber-950/40 p-4 text-sm text-amber-100">Player profiles are temporarily unavailable. Please refresh and try again shortly.</div>
+          <div role="alert" className="mt-6 rounded-xl border border-amber-300/20 bg-amber-950/40 p-4 text-sm text-amber-100">Player profiles are temporarily unavailable. <button type="button" onClick={() => setRetryCount(count => count + 1)} className="ml-1 underline underline-offset-2">Try again</button></div>
         ) : null}
       </section>
     </main>

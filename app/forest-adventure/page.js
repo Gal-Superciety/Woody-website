@@ -120,6 +120,7 @@ export default function ForestAdventure(){
   return ()=>{window.removeEventListener('keydown',kd);window.removeEventListener('keyup',ku);window.removeEventListener('blur',blur);};
  },[]);
  useEffect(()=>{
+  if(!profileReady)return;
   const ctx=canvas.current?.getContext('2d');if(!ctx)return;
   let alive=true,previous=0,uiClock=0;
   const draw=(now)=>{
@@ -489,7 +490,7 @@ export default function ForestAdventure(){
   };
   raf.current=requestAnimationFrame(draw);
   return()=>{alive=false;cancelAnimationFrame(raf.current);};
- },[]);
+ },[profileReady]);
  const press=(key,down)=>{if(game.current)game.current.keys[key]=down;};
  const button=(key,label)=>(
    <button type="button" aria-label={label} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);press(key,true);}}

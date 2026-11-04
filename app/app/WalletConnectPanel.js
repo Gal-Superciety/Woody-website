@@ -156,7 +156,20 @@ export default function WalletConnectPanel() {
         if (!Provider || !mounted) return;
         let provider;
         const callbacks = {
-          onClientLogin: () => {},
+          onClientLogin: async () => {
+            try {
+              const nextAddress = await provider?.getAddress?.();
+              if (!mounted || !isValidAddress(nextAddress)) return;
+              const saved = JSON.parse(storage?.getItem(STORAGE_KEY) || 'null');
+              if (saved?.address !== nextAddress) {
+                setAddress(nextAddress);
+                setProfileAuthToken('');
+                setProviderType('xPortal');
+                storage?.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: 'xPortal', authToken: '' }));
+                refreshBalances(nextAddress);
+              }
+            } catch { /* The explicit wallet login action can recover a missing proof. */ }
+          },
           onClientLogout: () => {
             storage?.removeItem(STORAGE_KEY);
             if (mounted) {
@@ -185,7 +198,7 @@ export default function WalletConnectPanel() {
         setProfileAuthToken(restoredToken);
         setProviderType('xPortal');
         refreshBalances(verifiedAddress);
-        if (returnPath() === '/forest-adventure') router.replace('/forest-adventure');
+        if (restoredToken && returnPath() === '/forest-adventure') router.replace('/forest-adventure');
       } catch {
         storage?.removeItem(STORAGE_KEY);
       } finally {
@@ -320,11 +333,18 @@ export default function WalletConnectPanel() {
       const callbacks = {
         onClientLogin: async () => {
           const connectedAddress = await walletConnectProvider?.getAddress?.();
-          if (isValidAddress(connectedAddress)) {
-            try {
-              const token = finishNativeAuth(nativeAuth, walletConnectProvider, connectedAddress);
-              saveSession(connectedAddress, 'xPortal', walletConnectProvider, token);
-            } catch { /* Wait for the authenticated login result below. */ }
+          if (!isValidAddress(connectedAddress)) return;
+          try {
+            const token = finishNativeAuth(nativeAuth, walletConnectProvider, connectedAddress);
+            saveSession(connectedAddress, 'xPortal', walletConnectProvider, token);
+          } catch {
+            // A session_update may change accounts without carrying a fresh
+            // Native Auth signature. Never keep the old account's proof.
+            setAddress(connectedAddress);
+            setProfileAuthToken('');
+            setProviderType('xPortal');
+            safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address: connectedAddress, providerType: 'xPortal', authToken: '' }));
+            refreshBalances(connectedAddress);
           }
         },
         onClientLogout: () => {
@@ -381,6 +401,42 @@ export default function WalletConnectPanel() {
     }
   };
 
+  const refreshWalletLogin = async () => {
+    const provider = providerRef.current;
+    if (!address || !provider?.login) {
+      setError('Wallet session is unavailable. Disconnect and connect xPortal again.');
+      return;
+    }
+    setIsConnecting(true);
+    setActiveProvider('reauth');
+    setError('');
+    setProfileAuthToken('');
+    safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address, providerType: providerType || 'xPortal', authToken: '' }));
+    try {
+      const nativeAuth = await beginNativeAuth();
+      pendingXPortalRef.current = provider;
+      pendingNativeAuthRef.current = nativeAuth;
+      const { uri, approval } = await provider.connect();
+      if (uri) {
+        setXPortalUri(uri);
+        if (isMobileDevice()) {
+          try { window.location.assign(uri); } catch { /* The visible xPortal link remains available. */ }
+        }
+      }
+      const loginResult = await provider.login({ approval, token: nativeAuth.initialPart });
+      const nextAddress = getProviderAddress(provider, loginResult);
+      const token = finishNativeAuth(nativeAuth, provider, nextAddress, loginResult);
+      saveSession(nextAddress, providerType || 'xPortal', provider, token);
+    } catch (loginError) {
+      console.error('WOODY wallet login refresh failed', loginError);
+      setError('Wallet is connected, but login verification did not finish. Approve the login request in xPortal and try again.');
+    } finally {
+      if (pendingXPortalRef.current === provider) pendingXPortalRef.current = null;
+      pendingNativeAuthRef.current = null;
+      finishConnection();
+    }
+  };
+
   const handleDisconnect = async () => {
     setError('');
     try {
@@ -419,6 +475,7 @@ export default function WalletConnectPanel() {
           {address ? (
             <div className="flex flex-wrap gap-2 sm:justify-end">
               <button type="button" onClick={() => refreshBalances(address)} className="cta cta-blue">{isLoadingBalances ? 'Refreshing...' : 'Refresh Balances'}</button>
+              {!profileAuthToken ? <button type="button" onClick={refreshWalletLogin} disabled={isConnecting} className="cta cta-orange disabled:opacity-60">{isConnecting && activeProvider === 'reauth' ? 'Verifying wallet…' : 'Refresh wallet login'}</button> : null}
               <button type="button" onClick={handleDisconnect} className="cta cta-blue">Disconnect</button>
             </div>
           ) : (
