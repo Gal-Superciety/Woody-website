@@ -106,8 +106,11 @@ export function renderForest3D(ctx,{g,cam,viewW,H,WORLD,FLOOR,solids,clock,sprit
  const portal=project(g?.config.end-90||WORLD-90,0,16,cam,viewW);ctx.save();ctx.shadowColor='#9ce6ff';ctx.shadowBlur=22;ctx.strokeStyle='#a5eaff';ctx.lineWidth=9;ctx.beginPath();ctx.ellipse(portal.x,portal.y-60,25,57,0,0,Math.PI*2);ctx.stroke();ctx.restore();
  for(const c of g?.checkpoints||[]){const q=project(c,0,12,cam,viewW);ctx.fillStyle='#8df4be';ctx.fillRect(q.x,q.y-95,4,95);}
  if(g?.player){
-   const p=g.player,ground=project(p.x+p.w/2,0,0,cam,viewW);
-   const height=Math.max(0,FLOOR-(p.y+p.h)),shadowScale=1-clamp(height/520,0,.58),shadowAlpha=.34*(1-clamp(height/280,0,.72));
+   const p=g.player,playerCenter=p.x+p.w/2,playerBottom=p.y+p.h;
+   const surfaces=[...solids,...(g.moving||[]).map(v=>({...v,y:v.currentY}))];
+   const under=surfaces.filter(s=>playerCenter>=s.x-28&&playerCenter<=s.x+s.w+28&&s.y>=playerBottom-8).sort((a,b)=>a.y-b.y)[0]||{y:FLOOR};
+   const ground=project(playerCenter,FLOOR-under.y,0,cam,viewW);
+   const height=Math.max(0,under.y-playerBottom),shadowScale=1-clamp(height/520,0,.58),shadowAlpha=.34*(1-clamp(height/280,0,.72));
    ctx.save();ctx.globalAlpha=shadowAlpha;ctx.fillStyle='#0b1918';ctx.shadowColor='#101b18';ctx.shadowBlur=5;
    ctx.beginPath();ctx.ellipse(ground.x,ground.y-3,25*shadowScale,8*shadowScale,0,0,Math.PI*2);ctx.fill();ctx.restore();
    woody(ctx,p,clock,cam,viewW,sprite);
