@@ -19,17 +19,22 @@ function box(ctx,x,y,z,w,h,d,top,side,cam,viewW){
 }
 function line3(ctx,a,b,color,width,cam,viewW){const p=project(...a,cam,viewW),q=project(...b,cam,viewW);ctx.strokeStyle=color;ctx.lineWidth=width*p.s;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();}
 function coin(ctx,x,y,clock,cam,viewW){const p=project(x,y+Math.sin(clock*4+x)*5,18,cam,viewW),s=12*p.s;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(clock*.7);ctx.shadowBlur=15;ctx.shadowColor='#ffe37b';const g=ctx.createLinearGradient(-s,-s,s,s);g.addColorStop(0,'#fff7bf');g.addColorStop(.45,'#ffc33b');g.addColorStop(1,'#a96518');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,0,s*.72,s,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff0a0';ctx.lineWidth=2;ctx.stroke();ctx.restore();}
-function woody(ctx,p,clock,cam,viewW){
- const x=p.x+p.w/2,y=456-(p.y+p.h/2),stride=p.ground&&Math.abs(p.vx)>20?Math.sin(clock*19):0,z=0;
- ctx.save();if(p.invuln>0&&Math.floor(clock*12)%2)ctx.globalAlpha=.45;
- // Feet, articulated arms, orange body, aviator jacket, head, crest and beak.
- ellipsoid(ctx,x-9+stride*3,y-19,z,7,7,7,'#243f5d',cam,viewW);ellipsoid(ctx,x+9-stride*3,y-19,z,7,7,7,'#243f5d',cam,viewW);
- line3(ctx,[x-10,y-15,z],[x-15+stride*3,y-4,z],'#1d3854',6,cam,viewW);line3(ctx,[x+10,y-15,z],[x+15-stride*3,y-4,z],'#1d3854',6,cam,viewW);
- ellipsoid(ctx,x,y+1,z,16,21,10,'#f08b35',cam,viewW,10,7);ellipsoid(ctx,x,y-4,z-9,10,14,2,'#ffd7a1',cam,viewW,8,5);
- line3(ctx,[x-13,y+4,z],[x-23,y-4+stride*2,z],'#d9782e',6,cam,viewW);line3(ctx,[x+13,y+4,z],[x+22,y-1-stride*2,z],'#ffb65c',6,cam,viewW);
- ellipsoid(ctx,x,y+22,z,17,17,12,'#244b70',cam,viewW,10,7);
- ellipsoid(ctx,x+7,y+25,z-11,3.4,4,2,'#b8f2a4',cam,viewW);ellipsoid(ctx,x+8,y+25,z-13,1.2,1.7,1,'#152535',cam,viewW);
- const beak=project(x+16,y+19,z-5,cam,viewW),tip=project(x+33,y+16,z-4,cam,viewW),low=project(x+17,y+12,z-4,cam,viewW);polygon(ctx,[beak,tip,low],'#f7a332','#b95621');ctx.restore();
+function woody(ctx,p,clock,cam,viewW,sprite){
+ const worldX=p.x+p.w/2,worldY=456-(p.y+p.h/2),q=project(worldX,worldY,0,cam,viewW);
+ const stride=p.ground&&Math.abs(p.vx)>20?Math.sin(clock*18):0;
+ const stretch=p.ground?1:1+Math.min(.08,Math.abs(p.vy)/900);
+ ctx.save();ctx.translate(q.x,q.y+(p.ground?Math.abs(stride)*-1.5:0));
+ if(p.invuln>0&&Math.floor(clock*12)%2)ctx.globalAlpha=.4;
+ ctx.scale((p.facing||1)*1.08,stretch);
+ ctx.rotate(p.ground?stride*.018:clamp(p.vy/850,-.1,.12));
+ if(sprite){ctx.shadowColor='rgba(8,18,24,.34)';ctx.shadowBlur=7;ctx.drawImage(sprite,-39,-46,78,92);}
+ else{
+   ellipsoid(ctx,0,-4,0,17,21,10,'#f08b35',0,viewW,10,7);
+   ellipsoid(ctx,0,18,0,18,18,12,'#244b70',0,viewW,10,7);
+   ellipsoid(ctx,8,20,-11,4,4,2,'#b8f2a4',0,viewW);
+   polygon(ctx,[project(15,15,-5,0,viewW),project(33,12,-4,0,viewW),project(16,8,-4,0,viewW)],'#f7a332','#b95621');
+ }
+ ctx.restore();
 }
 function dragon(ctx,e,clock,cam,viewW,big=false){
  const x=e.x+e.w/2,y=456-(e.y+e.h/2),z=0,scale=big?1.8:.78,pulse=Math.sin(clock*4+e.phase)*4;
@@ -83,5 +88,11 @@ export function renderForest3D(ctx,{g,cam,viewW,H,WORLD,FLOOR,solids,clock,sprit
  for(const s of g?.shots||[]){const q=project(s.x,FLOOR-s.y,20,cam,viewW);ctx.shadowColor='#ff7926';ctx.shadowBlur=18;ellipsoid(ctx,q.x,456-q.y,0,8,8,5,'#ffc447',0,viewW,7,4);ctx.shadowBlur=0;}
  const portal=project(g?.config.end-90||WORLD-90,0,16,cam,viewW);ctx.save();ctx.shadowColor='#9ce6ff';ctx.shadowBlur=22;ctx.strokeStyle='#a5eaff';ctx.lineWidth=9;ctx.beginPath();ctx.ellipse(portal.x,portal.y-60,25,57,0,0,Math.PI*2);ctx.stroke();ctx.restore();
  for(const c of g?.checkpoints||[]){const q=project(c,0,12,cam,viewW);ctx.fillStyle='#8df4be';ctx.fillRect(q.x,q.y-95,4,95);}
- if(g?.player){const ground=project(g.player.x+g.player.w/2,0,0,cam,viewW);ctx.fillStyle='rgba(11,25,24,.35)';ctx.beginPath();ctx.ellipse(ground.x,ground.y,22,7,0,0,7);ctx.fill();woody(ctx,g.player,clock,cam,viewW);}
+ if(g?.player){
+   const p=g.player,ground=project(p.x+p.w/2,0,0,cam,viewW);
+   const height=Math.max(0,FLOOR-(p.y+p.h)),shadowScale=1-clamp(height/520,0,.58),shadowAlpha=.34*(1-clamp(height/280,0,.72));
+   ctx.save();ctx.globalAlpha=shadowAlpha;ctx.fillStyle='#0b1918';ctx.shadowColor='#101b18';ctx.shadowBlur=5;
+   ctx.beginPath();ctx.ellipse(ground.x,ground.y-3,25*shadowScale,8*shadowScale,0,0,Math.PI*2);ctx.fill();ctx.restore();
+   woody(ctx,p,clock,cam,viewW,sprite);
+ }
 }
