@@ -173,7 +173,9 @@ export default function ForestAdventure(){
       for(let i=0;i<6;i++)g.particles.push({x:p.x+p.w/2+p.facing*26,y:p.y+25,vx:p.facing*(80+Math.random()*160),vy:(Math.random()-.5)*100,life:.28});
     }
     p.x=Math.max(g.config.start,Math.min(g.config.end-p.w/2,p.x+p.vx*dt));
-    p.vy=Math.min(1000,p.vy+1750*dt);p.y+=p.vy*dt;p.ground=false;
+    // Tap for a quick hop; hold jump for a higher platform jump.
+    const jumpGravity=p.vy<0?(g.keys.jump?1950:2500):2100;
+    p.vy=Math.min(1000,p.vy+jumpGravity*dt);p.y+=p.vy*dt;p.ground=false;
     for(const platform of g.moving){platform.currentY=platform.y+Math.sin(g.elapsed*1.4+platform.phase)*platform.range;}
     for(const platform of g.crumble){
       if(platform.triggered&&!platform.fallen){platform.timer+=dt;if(platform.timer>=0.85)platform.fallen=true;}
