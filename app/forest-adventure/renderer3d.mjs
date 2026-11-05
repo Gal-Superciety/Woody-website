@@ -54,6 +54,18 @@ export function renderForest3D(ctx,{g,cam,viewW,H,WORLD,FLOOR,solids,clock,sprit
  ctx.fillStyle='#d4f1bd';ctx.shadowColor='#b9ffc7';ctx.shadowBlur=36;ctx.beginPath();ctx.arc(viewW*.82,86,37,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
  // Layered distant ridges and a depth plane of original forest trees.
  for(let layer=0;layer<3;layer++){const step=370-layer*68,shift=cam*(.08+layer*.12);ctx.fillStyle=['#244f68','#1b5d58','#164b3d'][layer];for(let i=-2;i<viewW/step+3;i++){const x=i*step-shift%step;polygon(ctx,[{x:x-140,y:350},{x:x+step*.45,y:105+layer*38},{x:x+step+120,y:350}],ctx.fillStyle);}}
+ // Give every walkable floor segment a clear grass top and an earth side.
+ // Ravine intervals are intentionally omitted here and rendered as water below.
+ for(const s of solids){if(s.y!==FLOOR)continue;
+   const left=project(s.x,0,18,cam,viewW),right=project(s.x+s.w,0,18,cam,viewW);
+   const edgeY=(left.y+right.y)/2;
+   const terrain=ctx.createLinearGradient(0,edgeY,0,H);
+   terrain.addColorStop(0,'#628a47');terrain.addColorStop(.12,'#47713f');terrain.addColorStop(1,'#29463a');
+   polygon(ctx,[left,right,{x:right.x,y:H+8},{x:left.x,y:H+8}],terrain);
+   ctx.strokeStyle='#a6d47a';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(left.x,left.y);ctx.lineTo(right.x,right.y);ctx.stroke();
+   ctx.strokeStyle='rgba(210,239,155,.65)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(left.x,left.y-3);ctx.lineTo(right.x,right.y-3);ctx.stroke();
+   for(let x=s.x+28;x<s.x+s.w-12;x+=58){const q=project(x,0,16,cam,viewW);ctx.fillStyle='rgba(193,220,128,.42)';ctx.beginPath();ctx.ellipse(q.x,q.y+16,3,1.5,0,0,Math.PI*2);ctx.fill();}
+ }
  for(let x=Math.floor(cam/320)*320-640;x<cam+viewW+650;x+=320)tree(ctx,x,170+(Math.sin(x)*.5+.5)*70,cam,viewW,clock);
  // Platform world, shaded soil depth, grass tops and individual stones.
  for(const s of solids){box(ctx,s.x,FLOOR-s.y-s.h,18,s.w,s.h,80,'#85b558','#493c33',cam,viewW);const a=project(s.x,FLOOR-s.y,18,cam,viewW),b=project(s.x+s.w,FLOOR-s.y,18,cam,viewW);ctx.strokeStyle='#c7e580';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();for(let x=s.x+35;x<s.x+s.w;x+=95){ellipsoid(ctx,x,FLOOR-s.y+5,6,7,4,5,'#b3d477',cam,viewW,6,3);}}
