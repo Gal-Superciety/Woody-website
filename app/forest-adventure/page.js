@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createForestAudio } from './audio';
-import { renderForest3D } from './renderer3d.mjs';
+import { renderForest2D } from './renderer2d.mjs';
 import { createDragonGuardian, createSmallDragon, dragonVolley, hitDragon } from './dragons.mjs';
 import Leaderboard from './Leaderboard';
 import ForestPlayerGate from './ForestPlayerGate';
@@ -351,7 +351,7 @@ export default function ForestAdventure(){
     if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor((p.x-g.config.start)/(g.config.end-g.config.start)*100)),boost:p.doubleJump,ammo:p.flame,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
-   renderForest3D(ctx,{g,cam,viewW,H,WORLD,solids,clock,sprite:sprite.current,smallDragonSprite:smallDragonSprite.current,guardianDragonSprite:guardianDragonSprite.current});
+   renderForest2D(ctx,{g,cam,viewW,H,WORLD,FLOOR,solids,clock,sprite:sprite.current,smallDragonSprite:smallDragonSprite.current,guardianDragonSprite:guardianDragonSprite.current});
    raf.current=requestAnimationFrame(draw);
   };
   raf.current=requestAnimationFrame(draw);
