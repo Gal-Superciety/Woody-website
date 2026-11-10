@@ -2,8 +2,10 @@
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const polygon=(ctx,points,fill,stroke,width=1)=>{ctx.beginPath();ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}};
 const hash=n=>{const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x);};
-function tree(ctx,x,base,scale,clock){
- const sx=x, trunkH=(158+hash(Math.round(x))*85)*scale,tw=16*scale;
+function tree(ctx,x,base,scale,clock,worldSeed=x){
+ // Use a world-space seed for fixed geometry. Screen-space x moves with the
+ // camera, so deriving tree height from it makes crowns flicker while scrolling.
+ const sx=x, trunkH=(158+hash(Math.round(worldSeed))*85)*scale,tw=16*scale;
  ctx.save();
  ctx.fillStyle='rgba(8,23,30,.25)';ctx.beginPath();ctx.ellipse(sx,base+3,38*scale,8*scale,0,0,Math.PI*2);ctx.fill();
  const wood=ctx.createLinearGradient(sx-tw,0,sx+tw,0);wood.addColorStop(0,'#352c32');wood.addColorStop(.35,'#72503c');wood.addColorStop(.7,'#503b34');wood.addColorStop(1,'#2f3036');
@@ -61,7 +63,7 @@ function drawWater(ctx,a,b,cam,FLOOR,H,clock){
  for(let n=0;n<6;n++){const bx=x+((clock*42+n*37)%Math.max(1,w));const by=FLOOR+29+(n*23)%Math.max(1,H-FLOOR-40);ctx.fillStyle='rgba(221,255,242,.45)';ctx.beginPath();ctx.arc(bx,by,1.5+n%2,0,Math.PI*2);ctx.fill();}
 }
 function drawTreeRows(ctx,cam,viewW,clock){
- for(const layer of [0,1]){const step=layer===0?385:560,par=layer===0?.52:.72,first=Math.floor(cam*par/step)*step-step;for(let worldX=first;worldX<cam*par+viewW+step;worldX+=step){const sc=layer===0?.76:1.02;tree(ctx,worldX-cam*par,446,sc,clock);}}
+ for(const layer of [0,1]){const step=layer===0?385:560,par=layer===0?.52:.72,first=Math.floor(cam*par/step)*step-step;for(let worldX=first;worldX<cam*par+viewW+step;worldX+=step){const sc=layer===0?.76:1.02;tree(ctx,worldX-cam*par,446,sc,clock,worldX);}}
 }
 function drawMovingPlatform(ctx,m,cam,clock){
  const x=m.x-cam,y=m.currentY,w=m.w,h=m.h;
