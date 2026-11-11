@@ -26,9 +26,9 @@ const walletErrorMessage = (error) => {
 const isBrowser = () => typeof window !== 'undefined';
 const returnPath = () => {
   if (!isBrowser()) return '/app';
-  return new URLSearchParams(window.location.search).get('returnTo') === '/forest-adventure'
-    ? '/forest-adventure'
-    : '/app';
+  const requested = new URLSearchParams(window.location.search).get('returnTo');
+  if (['/forest-adventure', '/woody-casino'].includes(requested)) return requested;
+  return window.location.pathname === '/woody-casino' ? '/woody-casino' : '/app';
 };
 const isMobileDevice = () => isBrowser() && (
   navigator.userAgentData?.mobile || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -315,9 +315,8 @@ export default function WalletConnectPanel() {
         onClientEvent: () => {},
       };
 
-      const redirectPath = returnPath() === '/forest-adventure'
-        ? '/app?returnTo=%2Fforest-adventure'
-        : '/app';
+      const targetPath = returnPath();
+      const redirectPath = targetPath === '/app' ? '/app' : `/app?returnTo=${encodeURIComponent(targetPath)}`;
       const mobileOptions = isMobileDevice() ? {
         metadata: {
           name: 'WOODY Meme',
@@ -382,7 +381,7 @@ export default function WalletConnectPanel() {
         <div>
           <p className="badge mb-4">MultiversX Wallet</p>
           <h2 className="wallet-title">Your wallet</h2>
-          <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-lg">Connect your wallet to view balances and use your player profile. Connecting only shares your wallet address; the site does not ask you to sign a message or send a transaction.</p>
+          <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-lg">Connect your wallet to view balances. Connecting only shares your wallet address; the site does not ask you to sign a message or send a transaction.</p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
           {address ? (

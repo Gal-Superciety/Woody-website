@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-const links = [['/', 'Home'], ['/app', 'Command Center'], ['/buy', 'Buy WOODY'], ['/forest-adventure', 'Arcade']];
+const links = [['/', 'Home'], ['/app', 'Command Center'], ['/buy', 'Buy WOODY'], ['/forest-adventure', 'Arcade'], ['/woody-casino', 'Mini Games']];
 export default function SiteNav() {
   const path = usePathname();
   return <header className="site-header"><nav className="site-nav" aria-label="Main navigation">
