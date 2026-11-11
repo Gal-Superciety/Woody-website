@@ -361,14 +361,25 @@ export default function ForestAdventure(){
  const button=(key,label)=>(
    <button type="button" aria-label={label} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);press(key,true);}}
     onPointerUp={()=>press(key,false)} onPointerCancel={()=>press(key,false)}
-    className="woody-control min-w-0 flex-1 select-none rounded-xl border border-emerald-300/50 bg-emerald-900/80 px-2 py-3 text-sm font-bold text-white active:bg-orange-500 touch-none sm:px-5 sm:py-4 sm:text-lg">{label}</button>
+    className="woody-control min-w-0 flex-1 select-none rounded-xl border border-emerald-300/25 bg-gradient-to-b from-emerald-800 to-emerald-950 px-2 py-3 text-xs font-black uppercase tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,.12),0_8px_22px_rgba(0,0,0,.25)] transition hover:border-emerald-200/60 active:scale-[.98] active:bg-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 touch-none sm:px-5 sm:py-4 sm:text-base">{label}</button>
  );
  if(!profileReady)return <ForestPlayerGate onReady={()=>setProfileReady(true)} />;
  return <main className="woody-page mx-auto max-w-6xl px-2 py-3 md:px-8 md:py-8">
-   <section className="woody-intro mb-3 rounded-3xl border border-emerald-300/20 bg-gradient-to-r from-emerald-950/90 to-sky-950/80 p-6">
-    <span className="text-xs font-bold uppercase tracking-[.3em] text-emerald-300">WOODY ARCADE · THREE LEVELS</span>
-    <h1 className="mt-2 text-3xl font-black text-orange-300 md:text-5xl">{LEVELS[game.current?.level-1||selectedLevel-1].name}</h1>
-    <p className="mt-2 text-sm text-white/75">Explore the forest, leap over fallen trees and sharp stumps, collect golden WOODY coins and reach the portal before time runs out.</p>
+   <section className="woody-intro relative mb-4 overflow-hidden rounded-[28px] border border-emerald-300/20 bg-[radial-gradient(ellipse_at_90%_10%,rgba(34,211,153,.16),transparent_38%),linear-gradient(120deg,#041b1a,#0b2131_70%,#111827)] p-5 shadow-[0_18px_60px_rgba(0,0,0,.22)] sm:p-7 md:mb-6 md:p-8">
+    <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-48 w-48 rounded-full border border-emerald-200/10 sm:h-64 sm:w-64" />
+    <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+     <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[.24em] text-emerald-300 sm:text-xs"><span>WOODY ARCADE</span><span className="text-white/25">/</span><span>FOREST ADVENTURE</span></div>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+       <h1 className="text-2xl font-black tracking-tight text-white sm:text-4xl md:text-5xl">{LEVELS[game.current?.level-1||selectedLevel-1].name}</h1>
+       <span className="rounded-full border border-amber-200/20 bg-amber-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[.16em] text-amber-200">{LEVELS[game.current?.level-1||selectedLevel-1].difficulty}</span>
+      </div>
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-200/80 sm:text-base">Explore the woods, collect WOODY coins and reach the portal. Dodge dragons, jump over fallen logs and keep an eye on the clock.</p>
+     </div>
+     <div className="grid min-w-0 grid-cols-3 gap-2 lg:min-w-[280px]">
+      {[['01','LEVELS'],['★','PERSONAL BEST'],['∞','FREE PLAY']].map(([value,label])=><div key={label} className="rounded-2xl border border-white/10 bg-black/20 px-2 py-3 text-center sm:px-3"><strong className="block text-lg font-black text-emerald-200 sm:text-xl">{value}</strong><span className="mt-1 block text-[8px] font-bold uppercase tracking-[.14em] text-slate-400 sm:text-[9px]">{label}</span></div>)}
+     </div>
+    </div>
    </section>
    <section ref={arcade} className="woody-arcade overflow-hidden rounded-2xl border border-emerald-400/30 bg-slate-950 p-1.5 shadow-[0_0_50px_rgba(16,185,129,.12)] md:rounded-3xl md:p-4">
     <div className="woody-hud mb-1.5 flex flex-wrap items-center gap-1 text-[10px] font-bold text-white/90 sm:mb-3 sm:gap-3 sm:text-sm">
@@ -399,7 +410,7 @@ export default function ForestAdventure(){
       </div>}
     </div>
     <div className="woody-controls mt-2 grid grid-cols-2 gap-2 sm:mt-4">
-      <div className="flex min-w-0 gap-1.5">{button('left','◀')}{button('right','▶')}</div>
+      <div className="flex min-w-0 gap-1.5">{button('left','◀ LEFT')}{button('right','RIGHT ▶')}</div>
       <div className="flex min-w-0 gap-1.5">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
     </div>
     <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot dragons from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the clock: Level 1 has 1:30, Level 2 has 1:18, and Level 3 has 1:35. Time-out costs a life and restarts the current level; enemies and water return you to the last checkpoint. Coins are in-game points only. Progress and records are stored in this browser.</p>
