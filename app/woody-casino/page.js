@@ -29,22 +29,22 @@ export default function WoodyMiniGames() {
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelTurn, setWheelTurn] = useState(0);
   const [cards, setCards] = useState(null);
-  const [message, setMessage] = useState('Alege un joc și încearcă-l cu credite demonstrative.');
+  const [message, setMessage] = useState('Choose a game and try it with demo credits.');
   const [messageType, setMessageType] = useState('');
 
   const setNotice = (text, type = '') => { setMessage(text); setMessageType(type); };
   const setBet = amount => setWager(current => Math.max(5, Math.min(200, current + amount)));
   const beginRound = () => {
-    if (credits < wager) { setNotice('Nu ai suficiente credite demo. Resetează jocul pentru a primi 1.000.', 'loss'); return false; }
+    if (credits < wager) { setNotice('Not enough demo credits. Reset the game to receive 1,000 more.', 'loss'); return false; }
     setCredits(current => current - wager);
     return true;
   };
   const pay = amount => setCredits(current => current + amount);
-  const reset = () => { setCredits(STARTING_CREDITS); setWager(25); setCards(null); setSpinning(false); setWheelSpinning(false); setWinningCells([]); setNotice('Demo resetat. Ai primit 1.000 de credite fictive.'); };
+  const reset = () => { setCredits(STARTING_CREDITS); setWager(25); setCards(null); setSpinning(false); setWheelSpinning(false); setWinningCells([]); setNotice('Demo reset. You received 1,000 fictional credits.'); };
 
   const playSlots = () => {
     if (spinning || !beginRound()) return;
-    setSpinning(true); setWinningCells([]); setNotice('Rolele se învârt…');
+    setSpinning(true); setWinningCells([]); setNotice('The reels are spinning…');
     const result = Array.from({length:9}, () => ICONS[Math.floor(Math.random()*ICONS.length)]);
     window.setTimeout(() => {
       setReels(result); setSpinning(false);
@@ -54,14 +54,14 @@ export default function WoodyMiniGames() {
       if (winningLines.length) {
         const prize = wager * 5 * winningLines.length;
         pay(prize);
-        setNotice(`${winningLines.length} ${winningLines.length === 1 ? 'linie' : 'linii'} câștigătoare! +${prize} credite demo.`, 'win');
-      } else setNotice(`Nicio linie câștigătoare. Ai folosit ${wager} credite demo.`, 'loss');
+        setNotice(`${winningLines.length} ${winningLines.length === 1 ? 'line' : 'lines'} winning! +${prize} demo credits.`, 'win');
+      } else setNotice(`No winning line. You used ${wager} demo credits.`, 'loss');
     }, 750);
   };
 
   const playWheel = () => {
     if (wheelSpinning || !beginRound()) return;
-    setWheelSpinning(true); setNotice('Roata se învârte…');
+    setWheelSpinning(true); setNotice('The wheel is spinning…');
     const sectorIndex = Math.floor(Math.random() * ROULETTE_SECTORS.length);
     const outcome = ROULETTE_SECTORS[sectorIndex];
     const targetAngle = (360 - (sectorIndex * 30 + 15)) % 360;
@@ -72,31 +72,31 @@ export default function WoodyMiniGames() {
     });
     window.setTimeout(() => {
       setWheelSpinning(false);
-      const colorName = outcome === 'red' ? 'ROȘU' : outcome === 'black' ? 'NEGRU' : 'VERDE';
-      if (outcome === rouletteColor) { const prize = wager * (outcome === 'green' ? 4 : 2); pay(prize); setNotice(`A ieșit ${colorName}! +${prize} credite demo.`, 'win'); }
-      else setNotice(`A ieșit ${colorName}. Încearcă din nou.`, 'loss');
+      const colorName = outcome === 'red' ? 'RED' : outcome === 'black' ? 'BLACK' : 'GREEN';
+      if (outcome === rouletteColor) { const prize = wager * (outcome === 'green' ? 4 : 2); pay(prize); setNotice(`It landed on ${colorName}! +${prize} demo credits.`, 'win'); }
+      else setNotice(`It landed on ${colorName}. Try again.`, 'loss');
     }, 3500);
   };
 
   const finishBlackjack = (player, dealer, pushIfEqual = true) => {
     const playerTotal = handValue(player), dealerTotal = handValue(dealer);
-    if (playerTotal > 21) { setCards({player, dealer, done:true}); setNotice(`Ai trecut de 21 (${playerTotal}).`, 'loss'); }
-    else if (dealerTotal > 21 || playerTotal > dealerTotal) { const prize = wager * 2; pay(prize); setCards({player, dealer, done:true}); setNotice(`Ai câștigat runda: ${playerTotal} la ${dealerTotal}. +${prize} credite demo.`, 'win'); }
-    else if (playerTotal === dealerTotal && pushIfEqual) { pay(wager); setCards({player, dealer, done:true}); setNotice(`Egalitate: ${playerTotal} la ${dealerTotal}. Miza demo revine.`, ''); }
-    else { setCards({player, dealer, done:true}); setNotice(`Dealerul câștigă: ${playerTotal} la ${dealerTotal}.`, 'loss'); }
+    if (playerTotal > 21) { setCards({player, dealer, done:true}); setNotice(`You went over 21 (${playerTotal}).`, 'loss'); }
+    else if (dealerTotal > 21 || playerTotal > dealerTotal) { const prize = wager * 2; pay(prize); setCards({player, dealer, done:true}); setNotice(`You won the round: ${playerTotal} to ${dealerTotal}. +${prize} demo credits.`, 'win'); }
+    else if (playerTotal === dealerTotal && pushIfEqual) { pay(wager); setCards({player, dealer, done:true}); setNotice(`Push: ${playerTotal} to ${dealerTotal}. Your demo bet is returned.`, ''); }
+    else { setCards({player, dealer, done:true}); setNotice(`Dealer wins: ${playerTotal} to ${dealerTotal}.`, 'loss'); }
   };
   const startBlackjack = () => {
     if (cards && !cards.done || !beginRound()) return;
     const player = [randomCard(), randomCard()], dealer = [randomCard(), randomCard()];
     if (handValue(player) === 21) finishBlackjack(player, dealer);
-    else { setCards({player, dealer, done:false}); setNotice('Trage o carte sau oprește-te.'); }
+    else { setCards({player, dealer, done:false}); setNotice('Hit or stand.'); }
   };
-  const hit = () => { if (!cards || cards.done) return; const player = [...cards.player, randomCard()]; if (handValue(player) > 21) finishBlackjack(player, cards.dealer); else { setCards({...cards, player}); setNotice('Trage o carte sau oprește-te.'); } };
+  const hit = () => { if (!cards || cards.done) return; const player = [...cards.player, randomCard()]; if (handValue(player) > 21) finishBlackjack(player, cards.dealer); else { setCards({...cards, player}); setNotice('Hit or stand.'); } };
   const stand = () => { if (!cards || cards.done) return; const dealer = [...cards.dealer]; while (handValue(dealer) < 17) dealer.push(randomCard()); finishBlackjack(cards.player, dealer); };
 
-  const chooseGame = id => { setGame(id); setCards(null); setWinningCells([]); setNotice('Alege miza demo și începe o rundă.'); setMessageType(''); };
+  const chooseGame = id => { setGame(id); setCards(null); setWinningCells([]); setNotice('Choose a demo bet and start a round.'); setMessageType(''); };
   const play = () => game === 'slots' ? playSlots() : game === 'roulette' ? playWheel() : startBlackjack();
-  const title = game === 'slots' ? 'Fructe norocoase' : game === 'roulette' ? 'Roata pădurii' : 'Blackjack';
+  const title = game === 'slots' ? 'Lucky Fruits' : game === 'roulette' ? 'Forest Wheel' : 'Blackjack';
 
   return <>
     <main className={styles.page}>
