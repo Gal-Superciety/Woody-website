@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import WalletConnectPanel from '../app/WalletConnectPanel';
 import styles from './WoodyMiniGames.module.css';
 
 const STARTING_CREDITS = 1000;
@@ -95,6 +96,12 @@ export default function WoodyMiniGames() {
           </div>
           <div className={styles.heroArt} aria-hidden="true"><div className={styles.orbitOne}/><div className={styles.orbitTwo}/><div className={styles.moon}/><div className={styles.mascot}><span>W</span></div><i>✦</i><b>+25</b></div>
           <div className={styles.creditCard}><span>DEMO CREDITS</span><strong>◉ {credits.toLocaleString('en-US')}</strong><small>Fictional · no real value</small></div>
+        </section>
+
+        <section className={styles.walletSection}>
+          <div className={styles.sectionHeader}><div><div className={styles.kicker}>MULTIVERSX MAINNET</div><h2>Your WOODY wallet</h2></div><span>LIVE TOKEN BALANCE</span></div>
+          <div className="dashboard-section wallet-section"><WalletConnectPanel /></div>
+          <p className={styles.walletNote}>Connecting displays your real balance only. The demo games above still use fictional credits; real-token bets need a dedicated, audited game contract.</p>
         </section>
 
         <section id="games" className={styles.games}>
