@@ -6,6 +6,8 @@ import styles from './WoodyMiniGames.module.css';
 
 const STARTING_CREDITS = 1000;
 const ICONS = ['🍒', '🍋', '🍇', '🍉', '⭐', '🌿'];
+const SLOT_PAYLINES = [[0,1,2],[3,4,5],[6,7,8],[0,4,8],[2,4,6]];
+const ROULETTE_SECTORS = ['red','black','red','black','green','red','black','red','black','green','red','black'];
 const CARD_SUITS = ['♠', '♥', '♦', '♣'];
 const randomCard = () => ({ rank: ['A','2','3','4','5','6','7','8','9','10','J','Q','K'][Math.floor(Math.random()*13)], suit: CARD_SUITS[Math.floor(Math.random()*4)] });
 const cardPoints = card => card.rank === 'A' ? 11 : ['J','Q','K'].includes(card.rank) ? 10 : Number(card.rank);
@@ -21,9 +23,11 @@ export default function WoodyMiniGames() {
   const [wager, setWager] = useState(25);
   const [game, setGame] = useState('slots');
   const [spinning, setSpinning] = useState(false);
-  const [reels, setReels] = useState(['🍒','⭐','🌿']);
+  const [reels, setReels] = useState(['🍒','⭐','🌿','🍋','🍒','🍉','🌿','⭐','🍒']);
+  const [winningCells, setWinningCells] = useState([]);
   const [rouletteColor, setRouletteColor] = useState('red');
   const [wheelSpinning, setWheelSpinning] = useState(false);
+  const [wheelTurn, setWheelTurn] = useState(0);
   const [cards, setCards] = useState(null);
   const [message, setMessage] = useState('Alege un joc și încearcă-l cu credite demonstrative.');
   const [messageType, setMessageType] = useState('');
@@ -36,31 +40,42 @@ export default function WoodyMiniGames() {
     return true;
   };
   const pay = amount => setCredits(current => current + amount);
-  const reset = () => { setCredits(STARTING_CREDITS); setWager(25); setCards(null); setSpinning(false); setWheelSpinning(false); setNotice('Demo resetat. Ai primit 1.000 de credite fictive.'); };
+  const reset = () => { setCredits(STARTING_CREDITS); setWager(25); setCards(null); setSpinning(false); setWheelSpinning(false); setWinningCells([]); setNotice('Demo resetat. Ai primit 1.000 de credite fictive.'); };
 
   const playSlots = () => {
     if (spinning || !beginRound()) return;
-    setSpinning(true); setNotice('Rolele se învârt…');
-    const result = Array.from({length:3}, () => ICONS[Math.floor(Math.random()*ICONS.length)]);
+    setSpinning(true); setWinningCells([]); setNotice('Rolele se învârt…');
+    const result = Array.from({length:9}, () => ICONS[Math.floor(Math.random()*ICONS.length)]);
     window.setTimeout(() => {
       setReels(result); setSpinning(false);
-      const counts = result.reduce((acc, icon) => (acc[icon] = (acc[icon] || 0) + 1, acc), {});
-      const matches = Math.max(...Object.values(counts));
-      if (matches === 3) { const prize = wager * 8; pay(prize); setNotice(`Trei simboluri potrivite! +${prize} credite demo.`, 'win'); }
-      else if (matches === 2) { const prize = wager * 2; pay(prize); setNotice(`Două simboluri potrivite! +${prize} credite demo.`, 'win'); }
-      else setNotice(`De data aceasta nu s-au potrivit. Ai folosit ${wager} credite demo.`, 'loss');
+      const winningLines = SLOT_PAYLINES.filter(([a,b,c]) => result[a] === result[b] && result[b] === result[c]);
+      const winners = [...new Set(winningLines.flat())];
+      setWinningCells(winners);
+      if (winningLines.length) {
+        const prize = wager * 5 * winningLines.length;
+        pay(prize);
+        setNotice(`${winningLines.length} ${winningLines.length === 1 ? 'linie' : 'linii'} câștigătoare! +${prize} credite demo.`, 'win');
+      } else setNotice(`Nicio linie câștigătoare. Ai folosit ${wager} credite demo.`, 'loss');
     }, 750);
   };
 
   const playWheel = () => {
     if (wheelSpinning || !beginRound()) return;
     setWheelSpinning(true); setNotice('Roata se învârte…');
-    const outcome = ['red','black','red','black','green'][Math.floor(Math.random()*5)];
+    const sectorIndex = Math.floor(Math.random() * ROULETTE_SECTORS.length);
+    const outcome = ROULETTE_SECTORS[sectorIndex];
+    const targetAngle = (360 - (sectorIndex * 30 + 15)) % 360;
+    setWheelTurn(current => {
+      const currentAngle = ((current % 360) + 360) % 360;
+      const alignment = (targetAngle - currentAngle + 360) % 360;
+      return current + 360 * 7 + alignment;
+    });
     window.setTimeout(() => {
       setWheelSpinning(false);
-      if (outcome === rouletteColor) { const prize = wager * (outcome === 'green' ? 4 : 2); pay(prize); setNotice(`A ieșit ${outcome === 'red' ? 'ROȘU' : outcome === 'black' ? 'NEGRU' : 'VERDE'}! +${prize} credite demo.`, 'win'); }
-      else setNotice(`A ieșit ${outcome === 'red' ? 'ROȘU' : outcome === 'black' ? 'NEGRU' : 'VERDE'}. Încearcă din nou.`, 'loss');
-    }, 1250);
+      const colorName = outcome === 'red' ? 'ROȘU' : outcome === 'black' ? 'NEGRU' : 'VERDE';
+      if (outcome === rouletteColor) { const prize = wager * (outcome === 'green' ? 4 : 2); pay(prize); setNotice(`A ieșit ${colorName}! +${prize} credite demo.`, 'win'); }
+      else setNotice(`A ieșit ${colorName}. Încearcă din nou.`, 'loss');
+    }, 3500);
   };
 
   const finishBlackjack = (player, dealer, pushIfEqual = true) => {
@@ -79,7 +94,7 @@ export default function WoodyMiniGames() {
   const hit = () => { if (!cards || cards.done) return; const player = [...cards.player, randomCard()]; if (handValue(player) > 21) finishBlackjack(player, cards.dealer); else { setCards({...cards, player}); setNotice('Trage o carte sau oprește-te.'); } };
   const stand = () => { if (!cards || cards.done) return; const dealer = [...cards.dealer]; while (handValue(dealer) < 17) dealer.push(randomCard()); finishBlackjack(cards.player, dealer); };
 
-  const chooseGame = id => { setGame(id); setCards(null); setNotice('Alege miza demo și începe o rundă.'); setMessageType(''); };
+  const chooseGame = id => { setGame(id); setCards(null); setWinningCells([]); setNotice('Alege miza demo și începe o rundă.'); setMessageType(''); };
   const play = () => game === 'slots' ? playSlots() : game === 'roulette' ? playWheel() : startBlackjack();
   const title = game === 'slots' ? 'Fructe norocoase' : game === 'roulette' ? 'Roata pădurii' : 'Blackjack';
 
@@ -114,8 +129,8 @@ export default function WoodyMiniGames() {
         <section className={styles.table} aria-live="polite">
           <header className={styles.tableHeader}><div><div className={styles.kicker}>NOW PLAYING</div><h2>{title}</h2></div><span className={styles.live}><i/> DEMO</span></header>
           <div className={styles.playArea}>
-            {game==='slots' && <div className={styles.reels}>{reels.map((icon,i)=><div key={i} className={`${styles.reel} ${spinning?styles.bounce:''}`}>{spinning?'✦':icon}</div>)}</div>}
-            {game==='roulette' && <><span className={styles.pointer}>▼</span><div className={`${styles.wheel} ${wheelSpinning?styles.spin:''}`}><span>W</span></div><div className={styles.colors}>{[['red','RED'],['black','BLACK'],['green','GREEN']].map(([color,label])=><button key={color} onClick={()=>setRouletteColor(color)} className={`${styles.color} ${styles[color]} ${rouletteColor===color?styles.colorActive:''}`} aria-pressed={rouletteColor===color}>{label}</button>)}</div></>}
+            {game==='slots' && <><div className={styles.slotFrame}><div className={`${styles.reels} ${spinning?styles.reelsSpinning:''}`}>{reels.map((icon,i)=><div key={i} className={`${styles.reel} ${spinning?styles.bounce:''} ${winningCells.includes(i)?styles.winningReel:''}`}>{spinning?'✦':icon}</div>)}</div></div><div className={styles.paylineLabel}>5 WIN LINES <span>3 × 3</span></div></>}
+            {game==='roulette' && <><span className={`${styles.pointer} ${wheelSpinning?styles.pointerActive:''}`}>▼</span><div className={styles.wheel} style={{transform:`rotate(${wheelTurn}deg)`}}><span>W</span></div><div className={styles.colors}>{[['red','RED'],['black','BLACK'],['green','GREEN']].map(([color,label])=><button key={color} onClick={()=>setRouletteColor(color)} className={`${styles.color} ${styles[color]} ${rouletteColor===color?styles.colorActive:''}`} aria-pressed={rouletteColor===color}>{label}</button>)}</div></>}
             {game==='blackjack' && cards && <div className={styles.hands}><div><small>YOU <b>{handValue(cards.player)}</b></small><div className={styles.cardRow}>{cards.player.map((card,i)=><PlayingCard card={card} key={i}/>)}</div></div><span>VS</span><div><small>DEALER <b>{cards.done?handValue(cards.dealer):'?'}</b></small><div className={styles.cardRow}>{cards.dealer.map((card,i)=><PlayingCard card={card} hidden={i===1&&!cards.done} key={i}/>)}</div></div></div>}
             {game==='blackjack' && !cards && <div className={styles.blackjackIntro}><span>♠</span><b>21</b><small>Deal yourself in.</small></div>}
             <div className={`${styles.message} ${messageType==='win'?styles.messageWin:messageType==='loss'?styles.messageLoss:''}`}>{message}</div>
