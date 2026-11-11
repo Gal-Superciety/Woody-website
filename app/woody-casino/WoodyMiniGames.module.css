@@ -3,3 +3,19 @@
 @media(max-width:760px){.container{width:min(100% - 32px,1240px)}.hero{grid-template-columns:1fr .65fr;min-height:315px}.heroArt{transform:scale(.82);margin-left:-28px}.creditCard{right:0;bottom:12px}.gameGrid{gap:9px}.gameCard{padding:13px;min-height:151px}.gameCard strong{font-size:11px}.gameCard small{font-size:9px;line-height:1.5}.table{padding:18px}.playArea{min-height:260px}}
 @media(max-width:540px){.page{padding-top:23px}.hero{grid-template-columns:1fr;min-height:auto;padding-top:18px}.heroCopy{padding:20px 0 0}.hero h1{font-size:clamp(39px,11vw,55px)}.heroCopy p{font-size:12px}.heroArt{height:190px;transform:scale(.72);margin:-5px auto -22px;width:100%}.creditCard{position:relative;right:auto;bottom:auto;margin:0 auto 20px;width:max-content}.sectionHeader{align-items:start;flex-direction:column;gap:7px}.sectionHeader h2{font-size:22px}.gameGrid{grid-template-columns:1fr}.gameCard{min-height:82px;padding:12px 12px 12px 60px}.gameIcon{position:absolute;left:12px;top:13px;margin:0}.gameCard strong{font-size:12px}.gameCard small{font-size:9px}.playLabel{bottom:13px}.table{padding:15px 10px}.tableHeader h2{font-size:20px}.playArea{min-height:250px;padding:19px 7px}.reel{width:62px;height:64px;font-size:33px}.hands{gap:10px}.playingCard{width:43px;height:67px;font-size:12px}.suit{font-size:17px}.notice{align-items:flex-start;flex-wrap:wrap;padding:13px;gap:9px}.notice div{min-width:70%;}.notice button{margin-left:28px}.footer{font-size:8px}.walletSection .sectionHeader{align-items:start}}
 @media(prefers-reduced-motion:reduce){.reel,.wheel{animation:none;transition:none}}
+
+/* Larger, clearer casino game surfaces. */
+.slotFrame{padding:9px;border:1px solid #e7c77a88;border-radius:15px;background:linear-gradient(145deg,#20292d,#10171a);box-shadow:0 12px 26px #0006,inset 0 0 0 3px #0b1115}
+.reels{display:grid;grid-template-columns:repeat(3,minmax(58px,72px));grid-template-rows:repeat(3,64px);gap:6px;padding:4px}
+.reel{width:auto;height:auto;border:1px solid #d7cda9;border-radius:9px;background:linear-gradient(145deg,#fff9e8,#d9d0b8);box-shadow:inset 0 -4px #a99b7a,0 3px 8px #0006;display:grid;place-items:center;font-size:34px;transition:transform .18s,box-shadow .18s,outline-color .18s}
+.reelsSpinning .reel{filter:blur(.25px)}
+.winningReel{outline:3px solid #b9f16c;outline-offset:1px;box-shadow:0 0 18px #b9f16c75,inset 0 -4px #a99b7a}
+.paylineLabel{margin-top:8px;color:#ffcb8e;font:9px var(--font-inter),sans-serif;letter-spacing:.15em;text-align:center}
+.paylineLabel span{margin-left:10px;color:#91a09d}
+.wheel{background:conic-gradient(from 0deg,#ad413d 0deg 30deg,#121820 30deg 60deg,#ad413d 60deg 90deg,#121820 90deg 120deg,#2c7646 120deg 150deg,#ad413d 150deg 180deg,#121820 180deg 210deg,#ad413d 210deg 240deg,#121820 240deg 270deg,#2c7646 270deg 300deg,#ad413d 300deg 330deg,#121820 330deg 360deg);transition:transform 3.45s cubic-bezier(.12,.78,.15,1);will-change:transform;position:relative}
+.wheel:after{content:'';position:absolute;inset:7px;border-radius:50%;border:1px solid #fff7;pointer-events:none}
+.pointer{filter:drop-shadow(0 2px 3px #0009);transition:transform .2s}
+.pointerActive{animation:pointerBounce .18s ease-in-out infinite alternate}
+@keyframes pointerBounce{to{transform:translateY(3px)}}
+@media(max-width:540px){.reels{grid-template-columns:repeat(3,minmax(52px,62px));grid-template-rows:repeat(3,58px);gap:5px}.reel{font-size:30px}.slotFrame{padding:7px}.wheel{width:139px;height:139px}}
+@media(prefers-reduced-motion:reduce){.wheel{transition:none}.pointerActive{animation:none}}
