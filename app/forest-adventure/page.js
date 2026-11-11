@@ -377,7 +377,7 @@ export default function ForestAdventure(){
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-200/80 sm:text-base">Explore the woods, collect WOODY coins and reach the portal. Dodge dragons, jump over fallen logs and keep an eye on the clock.</p>
      </div>
      <div className="grid min-w-0 grid-cols-3 gap-2 lg:min-w-[280px]">
-      {[['01','LEVELS'],['★','PERSONAL BEST'],['∞','FREE PLAY']].map(([value,label])=><div key={label} className="rounded-2xl border border-white/10 bg-black/20 px-2 py-3 text-center sm:px-3"><strong className="block text-lg font-black text-emerald-200 sm:text-xl">{value}</strong><span className="mt-1 block text-[8px] font-bold uppercase tracking-[.14em] text-slate-400 sm:text-[9px]">{label}</span></div>)}
+      {[[String(LEVELS.length).padStart(2,'0'),'LEVELS'],[best.toLocaleString(),'PERSONAL BEST'],['FREE','NO ENTRY FEE']].map(([value,label])=><div key={label} className="rounded-2xl border border-white/10 bg-black/20 px-2 py-3 text-center sm:px-3"><strong className="block text-lg font-black text-emerald-200 sm:text-xl">{value}</strong><span className="mt-1 block text-[8px] font-bold uppercase tracking-[.14em] text-slate-400 sm:text-[9px]">{label}</span></div>)}
      </div>
     </div>
    </section>
