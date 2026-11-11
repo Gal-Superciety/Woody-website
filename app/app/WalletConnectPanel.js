@@ -100,7 +100,7 @@ export default function WalletConnectPanel({ onWalletChange } = {}) {
   const walletChangeRef = useRef(onWalletChange);
   walletChangeRef.current = onWalletChange;
   const updateAddress = nextAddress => {
-    updateAddress(nextAddress);
+    setAddress(nextAddress);
     walletChangeRef.current?.(nextAddress || null);
   };
   const [providerType, setProviderType] = useState('');
