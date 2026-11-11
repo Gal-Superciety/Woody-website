@@ -91,12 +91,18 @@ async function readWalletData(address) {
   };
 }
 
-export default function WalletConnectPanel() {
+export default function WalletConnectPanel({ onWalletChange } = {}) {
   const router = useRouter();
   const providerRef = useRef(null);
   const pendingXPortalRef = useRef(null);
   const balanceRequestRef = useRef(0);
   const [address, setAddress] = useState('');
+  const walletChangeRef = useRef(onWalletChange);
+  walletChangeRef.current = onWalletChange;
+  const updateAddress = nextAddress => {
+    setAddress(nextAddress);
+    walletChangeRef.current?.(nextAddress || null);
+  };
   const [providerType, setProviderType] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [activeProvider, setActiveProvider] = useState('');
@@ -148,7 +154,7 @@ export default function WalletConnectPanel() {
               if (!mounted || !isValidAddress(nextAddress)) return;
               const saved = JSON.parse(storage?.getItem(STORAGE_KEY) || 'null');
               if (saved?.address !== nextAddress) {
-                setAddress(nextAddress);
+                updateAddress(nextAddress);
                 setProviderType('xPortal');
                 storage?.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: 'xPortal' }));
                 refreshBalances(nextAddress);
@@ -160,7 +166,7 @@ export default function WalletConnectPanel() {
             if (mounted) {
               providerRef.current = null;
               balanceRequestRef.current += 1;
-              setAddress('');
+              updateAddress('');
               setProviderType('');
               setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
             }
@@ -176,7 +182,7 @@ export default function WalletConnectPanel() {
           return;
         }
         providerRef.current = provider;
-        setAddress(verifiedAddress);
+        updateAddress(verifiedAddress);
         setProviderType('xPortal');
         refreshBalances(verifiedAddress);
         if (returnPath() === '/forest-adventure') router.replace('/forest-adventure');
@@ -197,7 +203,7 @@ export default function WalletConnectPanel() {
 
   const failConnection = (message = FRIENDLY_FAILURE) => {
     providerRef.current = null;
-    setAddress('');
+    updateAddress('');
     setProviderType('');
     setXPortalUri('');
     setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
@@ -213,7 +219,7 @@ export default function WalletConnectPanel() {
     }
     if (pendingXPortalRef.current === nextProvider) pendingXPortalRef.current = null;
     providerRef.current = nextProvider || null;
-    setAddress(nextAddress);
+    updateAddress(nextAddress);
     setProviderType(nextProviderType);
     setError('');
     setXPortalUri('');
@@ -307,7 +313,7 @@ export default function WalletConnectPanel() {
         },
         onClientLogout: () => {
           providerRef.current = null;
-          setAddress('');
+          updateAddress('');
           setProviderType('');
           setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
           clearSession();
@@ -358,7 +364,7 @@ export default function WalletConnectPanel() {
       console.error('WOODY wallet disconnect failed', disconnectError);
     } finally {
       providerRef.current = null;
-      setAddress('');
+      updateAddress('');
       setProviderType('');
       setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
       clearSession();

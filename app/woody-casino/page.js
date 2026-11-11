@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import ForestProfileRegistration from '../app/ForestProfileRegistration';
 import WalletConnectPanel from '../app/WalletConnectPanel';
 import styles from './WoodyMiniGames.module.css';
 
@@ -20,6 +21,7 @@ function handValue(hand) {
 
 export default function WoodyMiniGames() {
   const [credits, setCredits] = useState(STARTING_CREDITS);
+  const [walletAddress, setWalletAddress] = useState('');
   const [wager, setWager] = useState(25);
   const [game, setGame] = useState('slots');
   const [spinning, setSpinning] = useState(false);
@@ -115,8 +117,13 @@ export default function WoodyMiniGames() {
 
         <section className={styles.walletSection}>
           <div className={styles.sectionHeader}><div><div className={styles.kicker}>MULTIVERSX MAINNET</div><h2>Your WOODY wallet</h2></div><span>LIVE TOKEN BALANCE</span></div>
-          <div className="dashboard-section wallet-section"><WalletConnectPanel /></div>
-          <p className={styles.walletNote}>Connecting displays your real balance only. The demo games above still use fictional credits; real-token bets need a dedicated, audited game contract.</p>
+          <div className="dashboard-section wallet-section"><WalletConnectPanel onWalletChange={setWalletAddress} /></div>
+          {walletAddress ? (
+            <ForestProfileRegistration wallet={walletAddress} gameTitle="WOODY Arcade" leaderboardHref="/woody-casino#games" leaderboardLabel="Back to mini games ↗" />
+          ) : (
+            <p className={styles.walletNote}>Connect your MultiversX wallet to load or create the player profile linked to that wallet.</p>
+          )}
+          <p className={styles.walletNote}>Your wallet loads the same saved player profile across WOODY games. Demo credits remain fictional; real-token bets need a dedicated, audited game contract.</p>
         </section>
 
         <section id="games" className={styles.games}>
