@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ForestProfileRegistration from '../app/ForestProfileRegistration';
 import { forestRequest } from '../lib/forestRequest.mjs';
+import { restoreVerifiedWalletSession } from '../lib/verifiedWalletSession.mjs';
 
 const SESSION_KEY = 'woody:multiversx-wallet-session';
 
@@ -15,33 +16,38 @@ export default function ForestPlayerGate({ onReady }) {
 
   useEffect(() => {
     let active = true;
-    let saved;
-    try {
-      saved = JSON.parse(window.sessionStorage.getItem(SESSION_KEY) || 'null');
-    } catch { /* A damaged browser session can be re-created by reconnecting. */ }
 
-    if (!saved?.address) {
-      setState('connect');
-      return () => { active = false; };
-    }
+    async function loadProfile() {
+      setState('checking-session');
+      setSession(null);
+      setProfile(null);
 
-    setSession(saved);
-    setState('loading');
-    forestRequest(`/api/forest/profile?wallet=${encodeURIComponent(saved.address)}`, { cache: 'no-store' })
-      .then(result => {
+      // Never trust an arbitrary address from sessionStorage; re-check the
+      // live wallet provider, including on return from the xPortal mobile app.
+      const verified = await restoreVerifiedWalletSession();
+      if (!active) return;
+      if (!verified?.address) {
+        setState('connect');
+        return;
+      }
+
+      setSession(verified);
+      setState('loading');
+      try {
+        const result = await forestRequest(
+          `/api/forest/profile?wallet=${encodeURIComponent(verified.address)}`,
+          { cache: 'no-store' },
+        );
         if (!active) return;
         setProfile(result.profile);
-        setState('registered');
-      })
-      .catch(error => {
+        setState(result.profile ? 'registered' : 'create');
+      } catch (error) {
         if (!active) return;
-        if (error.message === 'profile_not_found') {
-          setState('create');
-          return;
-        }
-        setState('unavailable');
-      });
+        setState(error.message === 'profile_not_found' ? 'create' : 'unavailable');
+      }
+    }
 
+    loadProfile().catch(() => { if (active) setState('unavailable'); });
     return () => { active = false; };
   }, [retryCount]);
 
@@ -62,7 +68,7 @@ export default function ForestPlayerGate({ onReady }) {
           <div className="mt-6 rounded-2xl border border-sky-300/20 bg-slate-950/70 p-5">
             <h2 className="text-xl font-bold text-sky-200">Connect your wallet to get started</h2>
             <p className="mt-2 text-sm text-white/65">The site reads your connected wallet address. Choosing a game name does not ask you to sign anything or send a transaction.</p>
-            <Link href="/app?returnTo=%2Fforest-adventure" className="mt-4 inline-flex rounded-xl bg-orange-500 px-5 py-3 font-black text-white hover:bg-orange-400">Connect wallet ↗</Link>
+            <Link href="/profile?returnTo=%2Fforest-adventure" className="mt-4 inline-flex rounded-xl bg-orange-500 px-5 py-3 font-black text-white hover:bg-orange-400">Connect wallet ↗</Link>
           </div>
         ) : null}
 
