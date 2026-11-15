@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
+import { resolveWalletReturnPath, WALLET_RETURN_KEY } from '../lib/walletRoutes.mjs';
 
 const STORAGE_KEY = 'woody:multiversx-wallet-session';
 const WEB_WALLET_URL = 'https://wallet.multiversx.com';
@@ -27,8 +28,18 @@ const isBrowser = () => typeof window !== 'undefined';
 const returnPath = () => {
   if (!isBrowser()) return '/app';
   const requested = new URLSearchParams(window.location.search).get('returnTo');
-  if (['/forest-adventure', '/woody-casino'].includes(requested)) return requested;
-  return window.location.pathname === '/woody-casino' ? '/woody-casino' : '/app';
+  let pending = '';
+  try { pending = window.localStorage.getItem(WALLET_RETURN_KEY) || ''; }
+  catch { /* Browser storage may be disabled. */ }
+  return resolveWalletReturnPath({
+    requested,
+    pending,
+    current: window.location.pathname,
+  });
+};
+const clearPendingWalletReturn = () => {
+  if (!isBrowser()) return;
+  try { window.localStorage.removeItem(WALLET_RETURN_KEY); } catch { /* Optional hint. */ }
 };
 const isMobileDevice = () => isBrowser() && (
   navigator.userAgentData?.mobile || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -185,7 +196,16 @@ export default function WalletConnectPanel({ onWalletChange } = {}) {
         updateAddress(verifiedAddress);
         setProviderType('xPortal');
         refreshBalances(verifiedAddress);
-        if (returnPath() === '/forest-adventure') router.replace('/forest-adventure');
+        // A mobile deep link can return to /app without preserving the
+        // original query. Restore the exact approved destination if pending.
+        const requested = new URLSearchParams(window.location.search).get('returnTo');
+        let pending = '';
+        try { pending = window.localStorage.getItem(WALLET_RETURN_KEY) || ''; } catch {}
+        if (requested || pending) {
+          const destination = returnPath();
+          clearPendingWalletReturn();
+          router.replace(destination);
+        }
       } catch {
         storage?.removeItem(STORAGE_KEY);
       } finally {
@@ -209,7 +229,8 @@ export default function WalletConnectPanel({ onWalletChange } = {}) {
     setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
     setError(message);
     clearSession();
-    router.replace(returnPath());
+    clearPendingWalletReturn();
+    // Keep an actionable connection error visible on the current page.
   };
 
   const saveSession = (nextAddress, nextProviderType, nextProvider) => {
@@ -225,7 +246,9 @@ export default function WalletConnectPanel({ onWalletChange } = {}) {
     setXPortalUri('');
     safeSessionStorage()?.setItem(STORAGE_KEY, JSON.stringify({ address: nextAddress, providerType: nextProviderType }));
     refreshBalances(nextAddress);
-    router.replace(returnPath());
+    const destination = returnPath();
+    clearPendingWalletReturn();
+    router.replace(destination);
   };
 
   useEffect(() => {
@@ -322,6 +345,8 @@ export default function WalletConnectPanel({ onWalletChange } = {}) {
       };
 
       const targetPath = returnPath();
+      try { window.localStorage.setItem(WALLET_RETURN_KEY, targetPath); }
+      catch { /* The safe query parameter is sufficient if storage is blocked. */ }
       const redirectPath = targetPath === '/app' ? '/app' : `/app?returnTo=${encodeURIComponent(targetPath)}`;
       const mobileOptions = isMobileDevice() ? {
         metadata: {
@@ -368,7 +393,8 @@ export default function WalletConnectPanel({ onWalletChange } = {}) {
       setProviderType('');
       setWalletData({ egld: '—', woody: '—', woodyRaw: '0', woodyDecimals: 18 });
       clearSession();
-      router.replace('/app');
+      clearPendingWalletReturn();
+      router.replace('/profile');
     }
   };
 
