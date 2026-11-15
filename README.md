@@ -27,3 +27,41 @@ npm run build
 - Forest Adventure stochează scorurile local în browser; punctele din joc nu au valoare de token.
 
 Deployul public este pe Vercel din ramura `main`: https://woody-website.vercel.app/.
+
+
+## WOODY 3.0 navigation and wallet sessions
+
+Pages:
+- `/` — public homepage, links to Command Center, Buy WOODY, Arcade and Profile.
+- `/app` — public market / pool dashboard; wallet management is not duplicated here.
+- `/arcade` — one hub for Forest Adventure and fictional-credit Mini Games.
+- `/profile` — single wallet connection panel and persistent public player profile lookup.
+- `/forest-adventure` and `/woody-casino` — existing game URLs still supported.
+
+Use `/profile?returnTo=%2Fforest-adventure` to start the xPortal connect flow
+and return directly to the game. Only internal allowlisted destinations are
+accepted. Mobile WalletConnect return intent is temporarily saved as a route
+hint, never as proof of wallet ownership.
+
+Forest Adventure now verifies the live xPortal (or browser extension) provider
+session before retrieving a profile. A bare `sessionStorage` wallet address
+is **not** accepted as a connected session. This read-only check does not ask
+for message signing or transaction approval.
+
+### Security restriction before prizes
+
+The existing `POST /api/forest/profile` only validates address and username;
+it DOES NOT cryptographically verify that the requester owns the address.
+Do not use these profiles or current game data for monetary payouts, wallet
+authorization or prize claims. A verified wallet challenge / NativeAuth session
+must be added for registration, profile changes and prize-related actions.
+Read-only connection can stay signature-free.
+
+### Mobile acceptance checklist
+
+1. On Android, open `/profile` and connect xPortal. Approve in the wallet.
+2. Return to the website; verify wallet address and EGLD / WOODY balances.
+3. Open `/arcade`, then `/forest-adventure`; verify existing username is reused.
+4. Disconnect, reload and confirm the player gate requires an actual provider session.
+5. Repeat using `/profile?returnTo=%2Fforest-adventure`.
+6. Verify desktop QR flow, mobile menu and mini-game demo route separately.
