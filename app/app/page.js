@@ -1,15 +1,10 @@
-import WalletConnectPanel from './WalletConnectPanel';
 import CommandCenter from './CommandCenter';
 
 export const metadata = {
   title: 'WOODY Command Center',
-  description: 'Live WOODY market intelligence and MultiversX wallet dashboard.',
+  description: 'Live WOODY market intelligence, flows and MultiversX pool reserves.',
 };
 
 export default function WoodyApp() {
-  return (
-    <main className="dashboard-shell">
-      <CommandCenter><WalletConnectPanel /></CommandCenter>
-    </main>
-  );
+  return <main className="dashboard-shell"><CommandCenter /></main>;
 }
