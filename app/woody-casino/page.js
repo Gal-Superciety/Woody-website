@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import ForestProfileRegistration from '../app/ForestProfileRegistration';
-import WalletConnectPanel from '../app/WalletConnectPanel';
+import Link from 'next/link';
 import styles from './WoodyMiniGames.module.css';
 
 const STARTING_CREDITS = 1000;
@@ -21,7 +20,6 @@ function handValue(hand) {
 
 export default function WoodyMiniGames() {
   const [credits, setCredits] = useState(STARTING_CREDITS);
-  const [walletAddress, setWalletAddress] = useState('');
   const [wager, setWager] = useState(25);
   const [game, setGame] = useState('slots');
   const [spinning, setSpinning] = useState(false);
@@ -115,15 +113,15 @@ export default function WoodyMiniGames() {
           <div className={styles.creditCard}><span>DEMO CREDITS</span><strong>◉ {credits.toLocaleString('en-US')}</strong><small>Fictional · no real value</small></div>
         </section>
 
-        <section className={styles.walletSection}>
-          <div className={styles.sectionHeader}><div><div className={styles.kicker}>MULTIVERSX MAINNET</div><h2>Your WOODY wallet</h2></div><span>LIVE TOKEN BALANCE</span></div>
-          <div className="dashboard-section wallet-section"><WalletConnectPanel onWalletChange={setWalletAddress} /></div>
-          {walletAddress ? (
-            <ForestProfileRegistration wallet={walletAddress} gameTitle="WOODY Arcade" leaderboardHref="/woody-casino#games" leaderboardLabel="Back to mini games ↗" />
-          ) : (
-            <p className={styles.walletNote}>Connect your MultiversX wallet to load or create the player profile linked to that wallet.</p>
-          )}
-          <p className={styles.walletNote}>Your wallet loads the same saved player profile across WOODY games. Demo credits remain fictional; real-token bets need a dedicated, audited game contract.</p>
+        <section className={styles.walletSection} aria-label="WOODY player account">
+          <div className={styles.sectionHeader}>
+            <div><div className={styles.kicker}>ONE WALLET · ONE PLAYER PROFILE</div><h2>Bring your WOODY ID</h2></div>
+            <span>SHARED ACROSS WOODY GAMES</span>
+          </div>
+          <p className={styles.walletNote}>Manage xPortal and your player name in one place. The games below remain free demos; no real WOODY or EGLD is wagered.</p>
+          <Link href="/profile?returnTo=%2Fwoody-casino" className="cta cta-orange mt-4 inline-flex px-5 py-3 text-sm font-bold">
+            Open my player profile →
+          </Link>
         </section>
 
         <section id="games" className={styles.games}>
