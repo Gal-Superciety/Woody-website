@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { UserSecretKey } from '@multiversx/sdk-core';
 import {
-  getForestProgress, heartbeatForest, mergeForestProgress, parseRun, saveForestRun,
+  getForestProgress, heartbeatForest, importForestLocalProgress, mergeForestProgress, parseRun, saveForestRun,
 } from '../app/lib/forestGameService.mjs';
 
 const wallet = UserSecretKey.generate().generatePublicKey().toAddress('erd').toBech32();
@@ -85,4 +85,45 @@ test('a finished game is saved transactionally and a replay never increases prog
   assert.equal(savedIds.size, 1);
   assert.equal(current.boss_wins, 0);
   assert.equal(actions.filter(action => action === 'COMMIT').length, 2);
+});
+
+test('legacy browser records import into cloud idempotently without creating fake runs', async () => {
+  let current = { best_score: 25, unlocked_level: 1, best_times: { 1: 45 }, boss_wins: 0 };
+  const sqlCalls = [];
+  const client = {
+    async query(sql, params = []) {
+      sqlCalls.push(sql);
+      if (['BEGIN', 'COMMIT', 'ROLLBACK'].includes(sql)) return { rowCount: 0 };
+      if (sql.includes('INSERT INTO forest_progress')) return { rowCount: 0 };
+      if (sql.includes('FROM forest_progress WHERE wallet = $1 FOR UPDATE')) {
+        return { rowCount: 1, rows: [{ ...current }] };
+      }
+      if (sql.includes('UPDATE forest_progress')) {
+        current = {
+          best_score: params[1],
+          unlocked_level: params[2],
+          best_times: JSON.parse(params[3]),
+          boss_wins: params[4],
+        };
+        return { rowCount: 1 };
+      }
+      throw new Error('Unexpected SQL');
+    },
+    release() {},
+  };
+  const pool = { connect: async () => client };
+  const body = {
+    wallet, bestScore: 100, unlockedLevel: 2,
+    bestTimes: { 1: 60, 2: 78 }, bossWins: 1,
+  };
+  const first = await importForestLocalProgress(pool, body);
+  const second = await importForestLocalProgress(pool, body);
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  assert.deepEqual(second.body.progress, {
+    best_score: 100, unlocked_level: 2,
+    best_times: { 1: 45, 2: 78 }, boss_wins: 1,
+  });
+  assert.equal(sqlCalls.some(sql => sql.includes('forest_casual_runs')), false);
+  assert.equal((await importForestLocalProgress(pool, { ...body, bestTimes: { 1: -10 } })).status, 400);
 });

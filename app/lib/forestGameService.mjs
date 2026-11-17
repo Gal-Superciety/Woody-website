@@ -60,6 +60,78 @@ export async function getForestProgress(pool, rawWallet) {
   return { status: 200, body: { progress: publicProgress(result.rows[0] || EMPTY_PROGRESS) } };
 }
 
+// Migrate existing, device-local achievements without manufacturing historical
+// match results. Imported values stay casual/unverified and never qualify for prizes.
+export async function importForestLocalProgress(pool, body) {
+  const wallet = normalizeWallet(body?.wallet);
+  const bestScore = body?.bestScore;
+  const unlockedLevel = body?.unlockedLevel;
+  const bossWins = body?.bossWins;
+  const rawTimes = body?.bestTimes;
+  if (!wallet ||
+    !Number.isInteger(bestScore) || bestScore < 0 || bestScore > 100000 ||
+    !Number.isInteger(unlockedLevel) || unlockedLevel < 1 || unlockedLevel > 3 ||
+    !Number.isInteger(bossWins) || bossWins < 0 || bossWins > 100000 ||
+    !rawTimes || typeof rawTimes !== 'object' || Array.isArray(rawTimes)) {
+    return { status: 400, body: { error: 'invalid_progress' } };
+  }
+  const incomingTimes = {};
+  for (const level of ['1', '2', '3']) {
+    if (rawTimes[level] === undefined) continue;
+    const seconds = Number(rawTimes[level]);
+    if (!Number.isInteger(seconds) || seconds < 1 || seconds > 7200) {
+      return { status: 400, body: { error: 'invalid_progress' } };
+    }
+    incomingTimes[level] = seconds;
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `INSERT INTO forest_progress(wallet)
+         SELECT wallet FROM forest_players WHERE wallet = $1
+         ON CONFLICT(wallet) DO NOTHING`,
+      [wallet],
+    );
+    const rows = await client.query(
+      'SELECT best_score, unlocked_level, best_times, boss_wins FROM forest_progress WHERE wallet = $1 FOR UPDATE',
+      [wallet],
+    );
+    if (!rows.rowCount) {
+      await client.query('ROLLBACK');
+      return { status: 404, body: { error: 'profile_not_found' } };
+    }
+    const previous = publicProgress(rows.rows[0]);
+    const times = { ...previous.best_times };
+    for (const [level,seconds] of Object.entries(incomingTimes)) {
+      const existingSeconds = Number(times[level]);
+      times[level] = Number.isInteger(existingSeconds) && existingSeconds > 0
+        ? Math.min(existingSeconds, seconds) : seconds;
+    }
+    const progress = {
+      best_score: Math.max(previous.best_score, bestScore),
+      unlocked_level: Math.max(previous.unlocked_level, unlockedLevel),
+      best_times: times,
+      boss_wins: Math.max(previous.boss_wins, bossWins),
+    };
+    await client.query(
+      `UPDATE forest_progress
+          SET best_score = $2, unlocked_level = $3, best_times = $4::jsonb,
+              boss_wins = $5, last_seen_at = now(), updated_at = now()
+        WHERE wallet = $1`,
+      [wallet, progress.best_score, progress.unlocked_level,
+        JSON.stringify(progress.best_times), progress.boss_wins],
+    );
+    await client.query('COMMIT');
+    return { status: 200, body: { ok: true, progress } };
+  } catch (error) {
+    try { await client.query('ROLLBACK'); } catch {}
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function heartbeatForest(pool, body) {
   const wallet = normalizeWallet(body?.wallet);
   if (!wallet || typeof body?.playing !== 'boolean') {
