@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import ForestActivityStats from '../components/ForestActivityStats';
+import ForestSavedProgress from '../components/ForestSavedProgress';
 import { useState } from 'react';
 import WalletConnectPanel from '../app/WalletConnectPanel';
 import ForestProfileRegistration from '../app/ForestProfileRegistration';
@@ -18,6 +20,7 @@ export default function ProfileHub() {
           </div>
           <Link href="/arcade" className="rounded-xl border border-white/20 px-5 py-3 text-sm font-bold text-white/85 hover:bg-white/10">Explore Arcade ↗</Link>
         </div>
+        <ForestActivityStats />
         <section className="dashboard-section wallet-section rounded-2xl border border-white/15 bg-slate-900/50 p-5 sm:p-8" aria-label="Wallet connection">
           <WalletConnectPanel onWalletChange={setWallet} />
         </section>
@@ -28,6 +31,7 @@ export default function ProfileHub() {
             Connect xPortal to look up the profile linked to your wallet. No transaction is needed to view your balance or an existing player profile.
           </section>
         )}
+        {wallet ? <ForestSavedProgress wallet={wallet} /> : null}
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <Link href="/forest-adventure" className="rounded-xl border border-emerald-400/25 bg-emerald-900/20 p-5 hover:bg-emerald-900/35"><strong className="block text-lg">🌲 Forest Adventure</strong><span className="mt-2 block text-sm text-white/65">Adventure and leaderboard →</span></Link>
           <Link href="/woody-casino" className="rounded-xl border border-orange-400/25 bg-orange-900/20 p-5 hover:bg-orange-900/35"><strong className="block text-lg">🎮 Mini Games</strong><span className="mt-2 block text-sm text-white/65">Free demo games →</span></Link>

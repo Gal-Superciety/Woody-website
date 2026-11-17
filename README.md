@@ -24,7 +24,7 @@ npm run build
 - `/app` afișează preț, holderi, volum, semnale și rezerve pe pool. Totalul USD este o **estimare**: pentru fiecare pool lizibil, `2 × rezerva WOODY × prețul USD WOODY`. Poolurile indisponibile sunt excluse; tokenurile pereche nu sunt evaluate independent.
 - Portofelul xPortal folosește WalletConnect, iar soldurile EGLD/WOODY se citesc din API-ul public MultiversX. Este necesar `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` pentru conexiune. Restabilirea unei sesiuni se bazează pe sesiunea autentificată din provider, nu doar pe adresa salvată în browser.
 - `/buy` conține linkuri către xExchange, OneDex și JEX. Verifică tokenul și ruta înainte de semnare.
-- Forest Adventure stochează scorurile local în browser; punctele din joc nu au valoare de token.
+- Forest Adventure păstrează o copie locală pentru joc offline și sincronizează partidele încheiate, scorul maxim, nivelurile deblocate și timpii în PostgreSQL (Supabase), folosind profilul legat de adresa xPortal. `/arcade` și `/profile` afișează numărul real de profiluri create, jucătorii activi recent și jocurile salvate. Scorurile sunt **casual / neverificate**, nu eligibile pentru premii; punctele din joc nu au valoare de token.
 
 Deployul public este pe Vercel din ramura `main`: https://woody-website.vercel.app/.
 
@@ -50,7 +50,7 @@ for message signing or transaction approval.
 
 ### Security restriction before prizes
 
-The existing `POST /api/forest/profile` only validates address and username;
+The existing `POST /api/forest/profile` and casual progress endpoints only validate address and supplied game data;
 it DOES NOT cryptographically verify that the requester owns the address.
 Do not use these profiles or current game data for monetary payouts, wallet
 authorization or prize claims. A verified wallet challenge / NativeAuth session

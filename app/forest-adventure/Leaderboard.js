@@ -34,6 +34,17 @@ export default function Leaderboard() {
     return () => controller.abort();
   }, [period, refreshKey]);
 
+  useEffect(() => {
+    const timer = setInterval(() => setRefreshKey(value => value + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const refreshAfterSave = () => setRefreshKey(value => value + 1);
+    window.addEventListener('woody:forest-run-saved', refreshAfterSave);
+    return () => window.removeEventListener('woody:forest-run-saved', refreshAfterSave);
+  }, []);
+
   const rows = data?.rows || [];
   const podium = rows.slice(0, 3);
   const remaining = rows.slice(3);
@@ -48,7 +59,7 @@ export default function Leaderboard() {
             <div>
               <p className="text-[10px] font-black uppercase tracking-[.28em] text-emerald-300">WOODY ARCADE · RANKINGS</p>
               <h2 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-4xl">Forest leaderboard</h2>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">A place for verified Forest Adventure runs. No entry fees, ads, or automatic prizes.</p>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">Live stats and saved community scores from real game sessions. Scores are not anti-cheat verified or prize-eligible.</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -67,6 +78,22 @@ export default function Leaderboard() {
           </div>
         </header>
 
+        {data?.stats && (
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Live Forest Adventure player statistics">
+            {[
+              ['Registered profiles', data.stats.profiles],
+              ['Active now · 3 min', data.stats.active_now],
+              ['Playing now · 3 min', data.stats.playing_now],
+              ['Saved games', data.stats.saved_runs],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-white/10 bg-slate-950/65 p-3 sm:p-4">
+                <strong className="block text-2xl font-black tabular-nums text-emerald-200">{Number(value || 0).toLocaleString()}</strong>
+                <span className="mt-1 block text-[11px] font-bold text-slate-300">{label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {data?.season && period === 'weekly' && (
           <div className="mt-5 flex flex-wrap items-center gap-2 rounded-xl border border-emerald-300/15 bg-emerald-300/[.06] px-4 py-3 text-xs text-emerald-100/80">
             <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,.8)]" />
@@ -78,7 +105,7 @@ export default function Leaderboard() {
 
         {!data && (
           <div role="status" className="mt-6 grid min-h-44 place-items-center rounded-2xl border border-white/10 bg-slate-950/40 text-sm text-slate-300">
-            <span className="animate-pulse">Loading verified rankings…</span>
+            <span className="animate-pulse">Loading saved scores and player activity…</span>
           </div>
         )}
         {data?.status === 'setup' && (
@@ -88,7 +115,7 @@ export default function Leaderboard() {
         )}
         {data?.status === 'no-season' && period === 'weekly' && (
           <div role="status" className="mt-6 rounded-2xl border border-sky-300/15 bg-sky-950/20 p-5 text-sm text-sky-100">
-            There is no open weekly season right now. Check the all-time board for verified runs.
+            There is no open weekly season right now. Check the all-time board for saved games.
           </div>
         )}
         {data?.status === 'unavailable' && (
@@ -100,10 +127,10 @@ export default function Leaderboard() {
         {data?.status === 'ok' && !rows.length && (
           <div className="mt-6 overflow-hidden rounded-2xl border border-dashed border-emerald-300/25 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,.10),transparent_65%),rgba(2,6,23,.42)] px-5 py-10 text-center sm:px-8 sm:py-14">
             <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-amber-200/20 bg-amber-300/10 text-3xl text-amber-200" aria-hidden="true">🏆</span>
-            <h3 className="mt-5 text-lg font-black text-white sm:text-xl">The forest is waiting for its first verified score</h3>
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-300">Your personal best is saved on this device. Global ranked scores will appear here when secure score submission and verification are enabled.</p>
+            <h3 className="mt-5 text-lg font-black text-white sm:text-xl">Waiting for the first saved game</h3>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-300">Finish a game to appear here. Game records sync with your connected profile; community scores are not verified for competitions.</p>
             <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/70 px-3 py-2 text-[10px] font-bold uppercase tracking-[.18em] text-slate-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-300" /> Ranked score submissions are not active
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-300" /> Casual scores · no prize eligibility
             </div>
           </div>
         )}
@@ -117,7 +144,7 @@ export default function Leaderboard() {
                 </div>
                 <h3 className="mt-4 truncate text-lg font-black text-white">{row.username}</h3>
                 <div className="mt-3 flex items-end justify-between gap-3">
-                  <span className="text-xs text-slate-400">{Number(row.games).toLocaleString()} verified runs</span>
+                  <span className="text-xs text-slate-400">{Number(row.games).toLocaleString()} saved games</span>
                   <span className="text-xl font-black tabular-nums text-emerald-300">{Number(row.points).toLocaleString()}<small className="ml-1 text-[10px] font-bold uppercase tracking-wider text-emerald-100/60">pts</small></span>
                 </div>
               </article>
@@ -140,7 +167,7 @@ export default function Leaderboard() {
           </div>
         )}
         <footer className="mt-5 flex flex-col gap-2 border-t border-white/[.08] pt-4 text-xs leading-relaxed text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <span>Only server-verified scores are ranked. No paid entry or automatic prizes.</span>
+          <span>Casual, client-reported results only; anti-cheat verification is required before any prize competition.</span>
           <span>Wallet connection does not sign a message or send a transaction.</span>
         </footer>
       </div>
