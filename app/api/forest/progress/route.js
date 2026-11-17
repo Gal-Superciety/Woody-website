@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getForestPool } from '../../../lib/forestDb';
-import { getForestProgress, heartbeatForest, saveForestRun } from '../../../lib/forestGameService.mjs';
+import { getForestProgress, heartbeatForest, importForestLocalProgress, saveForestRun } from '../../../lib/forestGameService.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,6 +34,7 @@ export async function POST(request) {
   try {
     const pool = getForestPool();
     if (body?.action === 'heartbeat') return respond(await heartbeatForest(pool, body));
+    if (body?.action === 'import') return respond(await importForestLocalProgress(pool, body));
     if (body?.action === 'run') return respond(await saveForestRun(pool, body));
     return respond({ status: 400, body: { error: 'unknown_action' } });
   } catch (error) {
