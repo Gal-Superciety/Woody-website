@@ -154,10 +154,27 @@ export default function ForestAdventure(){
    const restore=async()=>{
      setSyncStatus('loading');
      try{
+       const local=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');
+       const legacy={
+         action:'import',wallet:playerWallet,
+         bestScore:Math.max(0,Math.min(100000,Math.round(Number(localStorage.getItem('woody-adventure-best-v1'))||0))),
+         unlockedLevel:Math.max(1,Math.min(3,Math.round(Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1))),
+         bestTimes:local.times||{},
+         bossWins:Math.max(0,Math.min(100000,Math.round(Number(local.bossWins)||0))),
+       };
        const response=await fetch('/api/forest/progress?wallet='+encodeURIComponent(playerWallet),{cache:'no-store'});
        if(!response.ok)throw Error('progress_unavailable');
        const data=await response.json();
        if(mounted)applyCloudProgress(data.progress);
+       // Import old achievements once a real provider session is re-established.
+       // Historical runs are NOT fabricated in the public leaderboard.
+       const migrated=await fetch('/api/forest/progress',{
+         method:'POST',headers:{'Content-Type':'application/json'},
+         body:JSON.stringify(legacy),
+       });
+       if(!migrated.ok)throw Error('legacy_import_failed');
+       const imported=await migrated.json();
+       if(mounted)applyCloudProgress(imported.progress);
        const recovered=await flushForestRuns(localStorage,playerWallet);
        if(mounted){applyCloudProgress(recovered);setSyncStatus('ready');}
      }catch{if(mounted)setSyncStatus('pending');}
