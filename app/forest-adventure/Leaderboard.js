@@ -39,6 +39,12 @@ export default function Leaderboard() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const refreshAfterSave = () => setRefreshKey(value => value + 1);
+    window.addEventListener('woody:forest-run-saved', refreshAfterSave);
+    return () => window.removeEventListener('woody:forest-run-saved', refreshAfterSave);
+  }, []);
+
   const rows = data?.rows || [];
   const podium = rows.slice(0, 3);
   const remaining = rows.slice(3);
