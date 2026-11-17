@@ -11,14 +11,36 @@ export default function ForestSavedProgress({ wallet }) {
     const controller = new AbortController();
     setProgress(null);
     setError(false);
-    fetch('/api/forest/progress?wallet=' + encodeURIComponent(wallet), {
-      signal: controller.signal,
-      cache: 'no-store',
-    }).then(async response => {
-      if (!response.ok) throw new Error('progress_unavailable');
-      return response.json();
-    }).then(data => { if (!controller.signal.aborted) setProgress(data.progress); })
-      .catch(() => { if (!controller.signal.aborted) setError(true); });
+    const load = async () => {
+      try {
+        // Older browser-only achievements can be carried into the profile
+        // without fabricating historical leaderboard results.
+        let records = {};
+        try { records = JSON.parse(localStorage.getItem('woody-adventure-records-v1') || '{}') || {}; } catch {}
+        const legacy = {
+          action: 'import', wallet,
+          bestScore: Math.max(0, Math.min(100000, Math.round(Number(localStorage.getItem('woody-adventure-best-v1')) || 0))),
+          unlockedLevel: Math.max(1, Math.min(3, Math.round(Number(localStorage.getItem('woody-adventure-unlocked-v1')) || 1))),
+          bestTimes: records.times || {},
+          bossWins: Math.max(0, Math.min(100000, Math.round(Number(records.bossWins) || 0))),
+        };
+        try {
+          await fetch('/api/forest/progress', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal, body: JSON.stringify(legacy),
+          });
+        } catch { /* Existing cloud records can still be shown. */ }
+        const response = await fetch('/api/forest/progress?wallet=' + encodeURIComponent(wallet), {
+          signal: controller.signal, cache: 'no-store',
+        });
+        if (!response.ok) throw new Error('progress_unavailable');
+        const data = await response.json();
+        if (!controller.signal.aborted) setProgress(data.progress);
+      } catch {
+        if (!controller.signal.aborted) setError(true);
+      }
+    };
+    void load();
     return () => controller.abort();
   }, [wallet]);
 
