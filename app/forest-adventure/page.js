@@ -5,6 +5,7 @@ import { renderForest2D } from './renderer2d.mjs';
 import { createDragonGuardian, createSmallDragon, dragonVolley, hitDragon } from './dragons.mjs';
 import Leaderboard from './Leaderboard';
 import ForestPlayerGate from './ForestPlayerGate';
+import { enqueueForestRun, flushForestRuns } from '../lib/forestPersistence.mjs';
 
 const W = 960, H = 540, WORLD = 7900, FLOOR = 456;
 const LEVELS=[
@@ -91,6 +92,8 @@ export default function ForestAdventure(){
  const canvas=useRef(null),game=useRef(null),sprite=useRef(null),smallDragonSprite=useRef(null),guardianDragonSprite=useRef(null),raf=useRef(null),arcade=useRef(null),audio=useRef(null);
  const [soundOn,setSoundOn]=useState(true);
  const [profileReady,setProfileReady]=useState(false);
+ const [playerWallet,setPlayerWallet]=useState('');
+ const [syncStatus,setSyncStatus]=useState('loading');
  const toggleSound=()=>{const next=!soundOn;setSoundOn(next);audio.current?.setEnabled(next);};
  useEffect(()=>{audio.current=createForestAudio();return()=>{audio.current?.dispose();audio.current=null;};},[]);
  const [fullScreen,setFullScreen]=useState(false);
@@ -108,6 +111,73 @@ export default function ForestAdventure(){
  const [selectedLevel,setSelectedLevel]=useState(1),[unlocked,setUnlocked]=useState(1);
  const [records,setRecords]=useState({times:{},bossWins:0});
  const [mode,setMode]=useState('ready'),[best,setBest]=useState(0),[hud,setHud]=useState({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:ROUND_SECONDS,notice:''});
+ const applyCloudProgress=useCallback(progress=>{
+   if(!progress)return;
+   const bestScore=Math.max(0,Number(progress.best_score)||0);
+   const cloudUnlocked=Math.min(3,Math.max(1,Number(progress.unlocked_level)||1));
+   setBest(old=>{
+     const next=Math.max(old,bestScore);
+     try{localStorage.setItem('woody-adventure-best-v1',String(next));}catch{}
+     return next;
+   });
+   setUnlocked(old=>{
+     const next=Math.max(old,cloudUnlocked);
+     try{localStorage.setItem('woody-adventure-unlocked-v1',String(next));}catch{}
+     return next;
+   });
+   setRecords(old=>{
+     const times={...old.times};
+     for(const [level,value] of Object.entries(progress.best_times||{})){
+       const seconds=Number(value);
+       if(Number.isFinite(seconds)&&seconds>0)times[level]=Math.min(Number(times[level])||Infinity,seconds);
+     }
+     const next={times,bossWins:Math.max(old.bossWins,Number(progress.boss_wins)||0)};
+     try{localStorage.setItem('woody-adventure-records-v1',JSON.stringify(next));}catch{}
+     return next;
+   });
+ },[]);
+ const saveResult=useCallback(async run=>{
+   try{
+     enqueueForestRun(localStorage,run);
+     setSyncStatus('saving');
+     const progress=await flushForestRuns(localStorage,run.wallet);
+     applyCloudProgress(progress);
+     setSyncStatus('saved');
+     window.dispatchEvent(new Event('woody:forest-run-saved'));
+   }catch{
+     setSyncStatus('pending');
+   }
+ },[applyCloudProgress]);
+ useEffect(()=>{
+   if(!profileReady||!playerWallet)return;
+   let mounted=true;
+   const restore=async()=>{
+     setSyncStatus('loading');
+     try{
+       const response=await fetch('/api/forest/progress?wallet='+encodeURIComponent(playerWallet),{cache:'no-store'});
+       if(!response.ok)throw Error('progress_unavailable');
+       const data=await response.json();
+       if(mounted)applyCloudProgress(data.progress);
+       const recovered=await flushForestRuns(localStorage,playerWallet);
+       if(mounted){applyCloudProgress(recovered);setSyncStatus('ready');}
+     }catch{if(mounted)setSyncStatus('pending');}
+   };
+   void restore();
+   return()=>{mounted=false;};
+ },[profileReady,playerWallet,applyCloudProgress]);
+ useEffect(()=>{
+   if(!profileReady||!playerWallet)return;
+   const heartbeat=()=>{
+     if(document.visibilityState==='hidden')return;
+     void fetch('/api/forest/progress',{
+       method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({action:'heartbeat',wallet:playerWallet,playing:mode==='playing'}),
+     }).catch(()=>{});
+   };
+   heartbeat();
+   const timer=setInterval(heartbeat,45_000);
+   return()=>clearInterval(timer);
+ },[profileReady,playerWallet,mode]);
  const start=useCallback((level=selectedLevel)=>{audio.current?.setBoss(false);audio.current?.start(level);game.current=createGame(level);setHud({score:0,lives:3,time:0,progress:0,boost:0,ammo:0,remaining:LEVELS[level-1].seconds,notice:''});setMode('playing');},[selectedLevel]);
  useEffect(()=>{
    try { setBest(Number(localStorage.getItem('woody-adventure-best-v1')) || 0);setUnlocked(Math.min(3,Math.max(1,Number(localStorage.getItem('woody-adventure-unlocked-v1'))||1)));const saved=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');setRecords({times:saved.times||{},bossWins:Number(saved.bossWins)||0}); } catch {}
@@ -347,7 +417,17 @@ export default function ForestAdventure(){
     g.particles=g.particles.filter(v=>v.life>0);
     for(const v of g.particles){v.x+=v.vx*dt;v.y+=v.vy*dt;v.vy+=250*dt;v.life-=dt;}
     uiClock+=dt;
-    if(g.ended){setBest(previous=>{const next=Math.max(previous,g.score);try{localStorage.setItem('woody-adventure-best-v1',String(next));}catch{}return next;});}
+    if(g.ended){
+      setBest(previous=>{const next=Math.max(previous,g.score);try{localStorage.setItem('woody-adventure-best-v1',String(next));}catch{}return next;});
+      if(playerWallet&&!g.reported){
+        g.reported=true;
+        void saveResult({
+          wallet:playerWallet,id:crypto.randomUUID(),level:g.level,score:Math.round(g.score),
+          durationMs:Math.min(7200000,Math.max(1000,Math.round(g.elapsed*1000))),
+          completed:Boolean(g.won),
+        });
+      }
+    }
     if(uiClock>.12){setHud({score:g.score,lives:g.lives,time:Math.floor(g.elapsed),progress:Math.min(100,Math.floor((p.x-g.config.start)/(g.config.end-g.config.start)*100)),boost:p.doubleJump,ammo:p.flame,remaining:Math.ceil(g.remaining),notice:g.elapsed<g.noticeUntil?g.notice:''});uiClock=0;}
    }
    const cam=g?.camera||0,clock=g?.elapsed||now/1000;
@@ -356,14 +436,14 @@ export default function ForestAdventure(){
   };
   raf.current=requestAnimationFrame(draw);
   return()=>{alive=false;cancelAnimationFrame(raf.current);};
- },[profileReady]);
+ },[profileReady,playerWallet,saveResult]);
  const press=(key,down)=>{if(game.current)game.current.keys[key]=down;};
  const button=(key,label)=>(
    <button type="button" aria-label={label} onPointerDown={e=>{e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);press(key,true);}}
     onPointerUp={()=>press(key,false)} onPointerCancel={()=>press(key,false)}
     className="woody-control min-w-0 flex-1 select-none rounded-xl border border-emerald-300/25 bg-gradient-to-b from-emerald-800 to-emerald-950 px-2 py-3 text-xs font-black uppercase tracking-wide text-white shadow-[inset_0_1px_0_rgba(255,255,255,.12),0_8px_22px_rgba(0,0,0,.25)] transition hover:border-emerald-200/60 active:scale-[.98] active:bg-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 touch-none sm:px-5 sm:py-4 sm:text-base">{label}</button>
  );
- if(!profileReady)return <ForestPlayerGate onReady={()=>setProfileReady(true)} />;
+ if(!profileReady)return <ForestPlayerGate onReady={profile=>{setPlayerWallet(profile?.wallet||'');setProfileReady(true);}} />;
  return <main className="woody-page mx-auto max-w-6xl px-2 py-3 md:px-8 md:py-8">
    <section className="woody-intro relative mb-4 overflow-hidden rounded-[28px] border border-emerald-300/20 bg-[radial-gradient(ellipse_at_90%_10%,rgba(34,211,153,.16),transparent_38%),linear-gradient(120deg,#041b1a,#0b2131_70%,#111827)] p-5 shadow-[0_18px_60px_rgba(0,0,0,.22)] sm:p-7 md:mb-6 md:p-8">
     <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-48 w-48 rounded-full border border-emerald-200/10 sm:h-64 sm:w-64" />
@@ -413,10 +493,13 @@ export default function ForestAdventure(){
       <div className="flex min-w-0 gap-1.5">{button('left','◀ LEFT')}{button('right','RIGHT ▶')}</div>
       <div className="flex min-w-0 gap-1.5">{button('shoot','🔥 FIRE')}{button('jump','▲ JUMP')}</div>
     </div>
-    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot dragons from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the clock: Level 1 has 1:30, Level 2 has 1:18, and Level 3 has 1:35. Time-out costs a life and restarts the current level; enemies and water return you to the last checkpoint. Coins are in-game points only. Progress and records are stored in this browser.</p>
+    <p role="status" className="mt-3 text-xs font-semibold text-emerald-200/80">
+      {syncStatus==='saving'?'Saving your game to WOODY Gaming…':syncStatus==='saved'?'Game saved to your profile.':syncStatus==='pending'?'Cloud sync unavailable. Finished games are queued on this device for retry.':syncStatus==='loading'?'Syncing your saved profile…':'Progress sync enabled for this profile.'}
+    </p>
+    <p className="woody-help mt-4 text-xs text-white/60">Keyboard: A / D or ← / → to move · SPACE / ↑ / W to jump · F to shoot. Mobile: hold the buttons. Amber fire orbs grant five fireballs; shoot dragons from a distance. Blue crystals grant three mid-air double jumps. Jump over logs and stumps: touching them costs one life and returns you to the last checkpoint. Cracked platforms collapse 0.85 seconds after you land. Beat the clock: Level 1 has 1:30, Level 2 has 1:18, and Level 3 has 1:35. Time-out costs a life and restarts the current level; enemies and water return you to the last checkpoint. Coins are in-game points only. Progress and records are backed up to your player profile after a finished game. Offline results remain queued on this device.</p>
    </section>
    <Leaderboard />
-   <p className="woody-footer mt-4 text-center text-xs text-white/50">WOODY Forest Adventure · Season 1. Three levels, one final boss. Your unlocked levels and personal records are saved on this device.</p>
+   <p className="woody-footer mt-4 text-center text-xs text-white/50">WOODY Forest Adventure · Season 1. Three levels, one final boss. Unlocked levels and personal records are saved to your player profile after finished games; the browser keeps an offline copy.</p>
    <style jsx global>{`
      /* Keep all four touch buttons and the stage visible together on a phone. */
      @media (max-width: 900px) and (orientation: landscape) and (max-height: 600px) {
