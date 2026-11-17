@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import ForestActivityStats from '../components/ForestActivityStats';
 
 export const metadata = {
   title: 'WOODY Arcade | Forest Adventure & Mini Games',
@@ -36,6 +37,7 @@ export default function ArcadeHub() {
           </div>
           <Link href="/profile" className="rounded-xl border border-orange-300/40 bg-orange-400/15 px-5 py-3 text-sm font-bold text-orange-200 hover:bg-orange-400/25">My Player Profile →</Link>
         </div>
+        <ForestActivityStats />
         <div className="grid gap-5 md:grid-cols-2">
           {games.map(game => (
             <Link key={game.href} href={game.href} className={`group rounded-3xl border border-white/15 bg-gradient-to-br ${game.accent} p-7 shadow-xl transition hover:border-orange-300/60 hover:-translate-y-1 sm:p-9`}>
