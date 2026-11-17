@@ -154,7 +154,8 @@ export default function ForestAdventure(){
    const restore=async()=>{
      setSyncStatus('loading');
      try{
-       const local=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}');
+       let local={};
+       try{local=JSON.parse(localStorage.getItem('woody-adventure-records-v1')||'{}')||{};}catch{}
        const legacy={
          action:'import',wallet:playerWallet,
          bestScore:Math.max(0,Math.min(100000,Math.round(Number(localStorage.getItem('woody-adventure-best-v1'))||0))),
