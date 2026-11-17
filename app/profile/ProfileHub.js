@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import ForestActivityStats from '../components/ForestActivityStats';
 import { useState } from 'react';
 import WalletConnectPanel from '../app/WalletConnectPanel';
 import ForestProfileRegistration from '../app/ForestProfileRegistration';
@@ -18,6 +19,7 @@ export default function ProfileHub() {
           </div>
           <Link href="/arcade" className="rounded-xl border border-white/20 px-5 py-3 text-sm font-bold text-white/85 hover:bg-white/10">Explore Arcade ↗</Link>
         </div>
+        <ForestActivityStats />
         <section className="dashboard-section wallet-section rounded-2xl border border-white/15 bg-slate-900/50 p-5 sm:p-8" aria-label="Wallet connection">
           <WalletConnectPanel onWalletChange={setWallet} />
         </section>
