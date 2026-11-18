@@ -1,3 +1,4 @@
+import { replayForest } from '../forest-adventure/replay.mjs';
 import { normalizeWallet } from './forestAuth.mjs';
 
 const EMPTY_PROGRESS = Object.freeze({
@@ -149,11 +150,22 @@ export async function heartbeatForest(pool, body) {
   return { status: 200, body: { ok: true } };
 }
 
-// Casual game data only: the wallet address and score originate in the browser.
-// Without signed wallet ownership and authoritative gameplay replay, it must
-// never be used to allocate prizes or establish a verified competitive ranking.
+// Casual game data only. Even replayed results lack wallet ownership proof
+// and a server-issued competition session. They are ineligible for prizes.
 export async function saveForestRun(pool, body) {
-  const run = parseRun(body);
+  // Older cached clients can still sync casual rounds. New clients send the
+  // inputs so the server can derive scoring, completion and elapsed time.
+  const replay = body?.replay === undefined ? undefined : replayForest({
+    version: body.replay?.version,
+    inputs: body.replay?.inputs,
+    level: body.level,
+  });
+  if (replay === null) return { status: 400, body: { error: 'invalid_replay' } };
+  const run = parseRun(replay ? {
+    ...body,
+    ...replay,
+    durationMs: Math.max(1000, replay.durationMs),
+  } : body);
   if (!run) return { status: 400, body: { error: 'invalid_run' } };
   const client = await pool.connect();
   try {
